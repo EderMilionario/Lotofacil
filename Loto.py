@@ -201,45 +201,57 @@ if not st.session_state.auth:
                     st.rerun()
                 else: st.error("Acesso Negado.")
     st.stop()
-# --- BLOCO DE SINCRONIZAÇÃO INICIAL (COLAR NO TOPO, APÓS OS IMPORTS) ---
+# --- BOTÃO NO TOPO: HISTÓRICO 1 ATÉ 3670 ---
 with st.sidebar:
-    st.markdown("### 📥 Admin: Sincronização")
-    if st.button("🚀 BAIXAR HISTÓRICO 1-3670"):
-        # Reset da base para garantir integridade
+    if st.button("🚀 BAIXAR HISTÓRICO 1-3670", type="secondary"):
+        # 1. Apaga os dados antigos
         st.session_state.data["historico_dados"] = []
+        st.session_state.data["ia_memoria"] = {} 
+        st.session_state.data["banca"] = 0.0
+        st.session_state.data["jogos_salvos"] = []
         
-        with st.spinner("Baixando dados..."):
+        with st.spinner("Baixando até o 3670..."):
             try:
+                # 2. Pega todos e filtra
                 res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
+                res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
                 
-                # Filtro: mantemos apenas até o 3670
-                res_todos = sorted([c for c in res_todos if int(c['concurso']) <= 3670], key=lambda k: int(k['concurso']))
+                # FILTRO PARA O 3670
+                res_todos = [c for c in res_todos if int(c['concurso']) <= 3670]
                 
                 barra = st.progress(0)
-                total = len(res_todos)
+                logs_massa = []
+                total_concursos = len(res_todos)
                 
                 for i, res_conc in enumerate(res_todos):
                     num = int(res_conc['concurso'])
-                    dezenas = sorted([int(d) for d in res_conc['dezenas']])
+                    dezenas_sorteadas = sorted([int(d) for d in res_conc['dezenas']])
                     
                     st.session_state.data["historico_dados"].append({
                         "concurso": num, 
-                        "dezenas": dezenas, 
+                        "dezenas": dezenas_sorteadas, 
                         "data": res_conc.get('data', '')
                     })
                     
-                    # Processa aprendizado
-                    auditar_e_aprender_unificado(num, dezenas, extrair_rateios_api(res_conc.get('premiacoes', [])))
+                    rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
+                    lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
                     
-                    if i % 50 == 0:
-                        barra.progress((i + 1) / total)
-                
+                    if i == total_concursos - 1:
+                        logs_massa.extend(relatorio_parcial)
+                        
+                    if i % 100 == 0:
+                        barra.progress((i + 1) / total_concursos)
+                        
                 barra.progress(1.0)
+                if logs_massa:
+                    st.session_state.ultimo_aprendizado = list(set(logs_massa))
+                    
                 salvar_dados(st.session_state.data)
-                st.success("✅ Base 1-3670 carregada!")
+                st.success(f"✅ Banco recriado até 3670!")
                 st.rerun()
+                
             except Exception as e:
-                st.error(f"Erro: {e}")    
+                st.error(f"Erro: {e}")
 
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
