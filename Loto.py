@@ -10,38 +10,47 @@ from datetime import datetime
 import urllib3
 from fpdf import FPDF
 from datetime import datetime
+import re
+
+def remover_emojis(texto):
+    """Remove emojis e caracteres que causam erros no PDF."""
+    if not isinstance(texto, str):
+        texto = str(texto)
+    # Remove caracteres que não são comuns (emojis, etc)
+    return texto.encode('ascii', 'ignore').decode('ascii')
 
 def gerar_pdf_jogos(jogos):
-    # Usamos o FPDF do fpdf2
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Cabeçalho
+    # Cabeçalho (Limpo)
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
     
-    # Listagem
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(200, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Listagem dos Jogos
     for i, j in enumerate(jogos, 1):
-        # Aqui, garantimos que o texto seja compatível com o PDF
-        # Se você quer o símbolo, tentamos o 'replace'. 
-        # O fpdf2 lida melhor com isso, mas precisa da fonte correta.
-        dna_info = j.get('dna', 'DNA')
+        # Limpeza dos textos antes de inserir no PDF
+        estrategia = remover_emojis(j.get('estrategia', 'Padrao'))
+        dna = remover_emojis(j.get('dna', 'DNA Padrao'))
         
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True)
+        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {estrategia}", ln=True)
         
         pdf.set_font("Arial", '', 10)
-        # O PDF vai renderizar o texto. Se o símbolo 🧬 não aparecer, 
-        # é porque a fonte do sistema operacional não o tem.
-        pdf.cell(200, 6, f"{dna_info}", ln=True)
+        pdf.cell(200, 6, f"DNA: {dna}", ln=True)
         
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
+        
         pdf.set_font("Courier", 'B', 12)
-        pdf.cell(200, 10, dezenas, ln=True, border=1, align='C')
+        pdf.cell(200, 10, dezenas, ln=True, border=1)
         pdf.ln(5)
     
-    return pdf.output(dest='S')
+    return pdf.output(dest='S').encode('latin-1')
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def exibir_mini_painel_financeiro():
     b_atual = st.session_state.data.get("banca", 0.0)
