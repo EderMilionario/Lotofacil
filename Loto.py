@@ -185,12 +185,18 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
             motivo_tamanho = f"Matriz Padrão (19 dezenas): Seguindo a tendência em cenário estatístico estável."
 
     # -----------------------------------------------------------------
-    # 5. Cálculo da Taxa de Confiança Global (0.0 a 1.0)
+    # 5. CÁLCULO DA TAXA DE CONFIANÇA GLOBAL (0.0 a 1.0) - CALIBRADO PARA REALIDADE
     # -----------------------------------------------------------------
     fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
-    fator_ia = min(max((score_estrategia - 11.0) / 4.0, 0.0), 1.0) # Normaliza entre 11 e 15 pontos
     
+    # Nova régua (Min-Max Scaling realista): 
+    # Média 8.0 = 0% de confiança | Média 9.5 = 50% | Média 11.0+ = 100%
+    fator_ia = min(max((score_estrategia - 8.0) / 3.0, 0.0), 1.0) 
+    
+    # Peso ponderado: 60% baseado no Histórico (IA) e 40% no Momento (Quentes)
     taxa_confianca = (fator_quentes * 0.4) + (fator_ia * 0.6)
+    
+    # Impede que a confiança zere totalmente (mantém um mínimo de 10% de instinto de sobrevivência)
     taxa_confianca = max(min(taxa_confianca, 1.0), 0.1)
 
     detalhes = {
@@ -199,7 +205,6 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
         "score_ia": score_estrategia
     }
 
-    # 🛑 O RETORNO QUE HAVIA SIDO APAGADO ESTÁ AQUI
     return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 
 # =====================================================================
