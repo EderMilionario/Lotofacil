@@ -11,9 +11,7 @@ import urllib3
 from fpdf import FPDF
 from datetime import datetime
 
-# Usamos fpdf2 (importado como FPDF)
 def gerar_pdf_jogos(jogos):
-    # A classe PDF da fpdf2 é mais robusta
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -25,19 +23,17 @@ def gerar_pdf_jogos(jogos):
     pdf.cell(200, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
     pdf.ln(10)
     
-    # Listagem dos Jogos
+    # Listagem
     for i, j in enumerate(jogos, 1):
-        # Usamos uma codificação segura para evitar erros de índice
-        estrategia = j.get('estrategia', 'Padrao').encode('latin-1', 'replace').decode('latin-1')
-        dna = j.get('dna', 'DNA').encode('latin-1', 'replace').decode('latin-1')
+        # Aqui removemos qualquer risco de emoji travar o PDF
+        estrategia = str(j.get('estrategia', 'Padrao')).replace("🧬", "")
+        dna = str(j.get('dna', 'DNA')).replace("🧬", "")
         
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {estrategia}", ln=True)
         
         pdf.set_font("Arial", '', 10)
-        # Se o símbolo 🧬 causar problema, o .encode('latin-1', 'replace') o transforma em '?' 
-        # para evitar o CRASH do seu sistema.
-        pdf.cell(200, 6, f"{dna}", ln=True)
+        pdf.cell(200, 6, f"DNA: {dna}", ln=True)
         
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
         pdf.set_font("Courier", 'B', 12)
