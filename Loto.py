@@ -1601,22 +1601,22 @@ with tabs[3]:
             st.button("🗑️ LIMPAR TODOS", on_click=cb_excluir_todos, type="secondary", use_container_width=True)
             
         with col_btn2:
-        # 1. Buscamos as dezenas do concurso anterior da memória do seu sistema
-        ultimas_dezenas = []
-        if 'caixa_latest' in st.session_state and 'dezenas' in st.session_state.caixa_latest:
-            ultimas_dezenas = st.session_state.caixa_latest['dezenas']
+            # 1. Buscamos as dezenas do concurso anterior da memória do seu sistema
+            ultimas_dezenas = []
+            if 'caixa_latest' in st.session_state and 'dezenas' in st.session_state.caixa_latest:
+                ultimas_dezenas = st.session_state.caixa_latest['dezenas']
             
-        # 2. Injetamos as últimas dezenas na função para ela calcular as Repetidas!
-        pdf_bytes = gerar_pdf_jogos(st.session_state.data["jogos_salvos"], ultimas_dezenas)
+            # 2. Injetamos as últimas dezenas na função para ela calcular as Repetidas!
+            pdf_bytes = gerar_pdf_jogos(st.session_state.data["jogos_salvos"], ultimas_dezenas)
         
-        st.download_button(
-            label="📤 EXPORTAR RELATÓRIO (PDF)",
-            data=pdf_bytes,
-            file_name="Relatorio_LotoMatrix.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True
-        )
+            st.download_button(
+                label="📤 EXPORTAR RELATÓRIO (PDF)",
+                data=pdf_bytes,
+                file_name="Relatorio_LotoMatrix.pdf",
+                mime="application/pdf",
+                type="primary",
+                use_container_width=True
+            )
         st.markdown("---")
         # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
         
