@@ -10,6 +10,24 @@ from datetime import datetime
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+def exibir_mini_painel_financeiro():
+    b_atual = st.session_state.data.get("banca", 0.0)
+    t_aportes = st.session_state.data.get("historico_aportes", 0.0)
+    t_saques = st.session_state.data.get("historico_saques", 0.0)
+    res_global = (b_atual + t_saques) - t_aportes
+
+    str_banca = f"R$ {b_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    str_res = f"R$ {res_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    if res_global > 0:
+        status_msg = f"🟢 **Lucro Global:** `{str_res}`"
+    elif res_global < 0:
+        status_msg = f"🔴 **Prejuízo Global:** `{str_res}`"
+    else:
+        status_msg = f"⚪ **Empate Global:** `{str_res}`"
+
+    st.markdown(f"> 🏦 **Banca Disponível:** `{str_banca}` &nbsp;&nbsp;|&nbsp;&nbsp; {status_msg}")
+    st.write("")
 def salvar_dados(dados):
     """Força a gravação silenciosa da memória da IA no arquivo local do PC"""
     try:
@@ -661,27 +679,7 @@ with tabs[0]:
 
 # --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
-    # =====================================================================
-    # PAINEL DE STATUS FINANCEIRO (VISUALIZAÇÃO RÁPIDA)
-    # =====================================================================
-    b_atual = st.session_state.data.get("banca", 0.0)
-    t_aportes = st.session_state.data.get("historico_aportes", 0.0)
-    t_saques = st.session_state.data.get("historico_saques", 0.0)
-    res_global = (b_atual + t_saques) - t_aportes
-
-    str_banca = f"R$ {b_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    str_res = f"R$ {res_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-    if res_global > 0:
-        status_msg = f"🟢 **Lucro Global:** `{str_res}`"
-    elif res_global < 0:
-        status_msg = f"🔴 **Prejuízo Global:** `{str_res}`"
-    else:
-        status_msg = f"⚪ **Empate Global:** `{str_res}`"
-
-    st.markdown(f"> 🏦 **Banca Disponível:** `{str_banca}` &nbsp;&nbsp;|&nbsp;&nbsp; {status_msg}")
-    st.write("") # Adiciona um espacinho em branco para não colar no código de baixo
-    # =====================================================================
+    exibir_mini_painel_financeiro()
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
         st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
@@ -1081,27 +1079,7 @@ with tabs[1]:
 
 # --- TAB 3: GERADOR AUTÔNOMO ---
 with tabs[2]:
-    # =====================================================================
-    # PAINEL DE STATUS FINANCEIRO (VISUALIZAÇÃO RÁPIDA)
-    # =====================================================================
-    b_atual = st.session_state.data.get("banca", 0.0)
-    t_aportes = st.session_state.data.get("historico_aportes", 0.0)
-    t_saques = st.session_state.data.get("historico_saques", 0.0)
-    res_global = (b_atual + t_saques) - t_aportes
-
-    str_banca = f"R$ {b_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    str_res = f"R$ {res_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-    if res_global > 0:
-        status_msg = f"🟢 **Lucro Global:** `{str_res}`"
-    elif res_global < 0:
-        status_msg = f"🔴 **Prejuízo Global:** `{str_res}`"
-    else:
-        status_msg = f"⚪ **Empate Global:** `{str_res}`"
-
-    st.markdown(f"> 🏦 **Banca Disponível:** `{str_banca}` &nbsp;&nbsp;|&nbsp;&nbsp; {status_msg}")
-    st.write("") # Adiciona um espacinho em branco para não colar no código de baixo
-    # =====================================================================
+    exibir_mini_painel_financeiro()
     st.markdown("### 🚀 Engenharia Combinatória por Verba")
     
     # Criando duas colunas para o layout ficar organizado
@@ -1396,6 +1374,7 @@ with tabs[2]:
                     st.rerun()
 # --- TAB 4: FILA DE SORTEIO ---
 with tabs[3]:
+    exibir_mini_painel_financeiro()
     st.markdown("### 🎫 Cartões Ativos e Auditados")
     
     # --- MÉTRICAS DE RESUMO DA FILA ---
@@ -1520,6 +1499,7 @@ with tabs[3]:
 
 # --- TAB 5: SINCRONIZAÇÃO E ENTRADA ---
 with tabs[4]:
+    exibir_mini_painel_financeiro()
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
     
     # =====================================================================
