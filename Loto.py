@@ -551,7 +551,7 @@ def raciocinio_total_ia(historico, memoria):
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
 
     return {
-        "estrategia": estrategia, "cod_estrategia": melhor_est, "motivo_est": motivo_est, "pesos": pesos, "freq": freq_recente, 
+        "estrategia": estrategia, "cod_estrategia": melhor_est, "estrategia_usada": melhor_est, "motivo_est": motivo_est, "pesos": pesos, "freq": freq_recente, 
         "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
         "soma": media_soma, "impares": media_impares, "primos": media_primos, 
         "moldura": media_moldura, "alvo": alvo, "qtd_matriz": qtd_matriz, 
