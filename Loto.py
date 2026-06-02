@@ -11,38 +11,37 @@ import urllib3
 from fpdf import FPDF
 from datetime import datetime
 
-class PDF(FPDF):
-    def header(self):
-        # Carrega a fonte que suporta o símbolo 🧬
-        # CERTIFIQUE-SE QUE O ARQUIVO DejaVuSans.ttf ESTÁ NA PASTA DO PROJETO
-        self.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-        self.set_font("DejaVu", "", 16)
-        self.cell(0, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
-        self.set_font("DejaVu", "", 10)
-        self.cell(0, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
-        self.ln(5)
-
+# Usamos fpdf2 (importado como FPDF)
 def gerar_pdf_jogos(jogos):
-    pdf = PDF()
+    # A classe PDF da fpdf2 é mais robusta
+    pdf = FPDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Define a fonte para o corpo
-    pdf.set_font("DejaVu", "", 12)
-
+    # Cabeçalho
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(200, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Listagem dos Jogos
     for i, j in enumerate(jogos, 1):
-        # Card de Estilo
-        pdf.set_fill_color(240, 240, 240)
-        pdf.cell(0, 10, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True, fill=True)
+        # Usamos uma codificação segura para evitar erros de índice
+        estrategia = j.get('estrategia', 'Padrao').encode('latin-1', 'replace').decode('latin-1')
+        dna = j.get('dna', 'DNA').encode('latin-1', 'replace').decode('latin-1')
         
-        # DNA 🧬 garantido aqui
-        dna_texto = f"🧬 DNA: {j.get('dna', 'DNA Padrao')}"
-        pdf.cell(0, 8, dna_texto, ln=True)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {estrategia}", ln=True)
         
-        # Números (usando uma fonte padrão para alinhamento)
-        # Se quiser que os números fiquem perfeitos, usamos a mesma fonte DejaVu
-        pdf.set_font("DejaVu", "", 12)
+        pdf.set_font("Arial", '', 10)
+        # Se o símbolo 🧬 causar problema, o .encode('latin-1', 'replace') o transforma em '?' 
+        # para evitar o CRASH do seu sistema.
+        pdf.cell(200, 6, f"{dna}", ln=True)
+        
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
-        pdf.cell(0, 10, dezenas, ln=True, border=1, align='C')
+        pdf.set_font("Courier", 'B', 12)
+        pdf.cell(200, 10, dezenas, ln=True, border=1, align='C')
         pdf.ln(5)
     
     return pdf.output(dest='S')
