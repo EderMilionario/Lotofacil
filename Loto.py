@@ -8,6 +8,35 @@ import re
 from collections import Counter
 from datetime import datetime
 import urllib3
+from fpdf import FPDF
+from datetime import datetime
+import io
+
+# --- Função Auxiliar (Cole isto perto das suas outras funções) ---
+def gerar_pdf_jogos(jogos):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Cabeçalho
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(200, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Listagem
+    for i, j in enumerate(jogos, 1):
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True)
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(200, 6, f"DNA: {j.get('dna', '🧬 N/A')}", ln=True)
+        dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
+        pdf.set_font("Courier", 'B', 12)
+        pdf.cell(200, 10, dezenas, ln=True, border=1)
+        pdf.ln(5)
+    
+    return pdf.output(dest='S').encode('latin-1')
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def exibir_mini_painel_financeiro():
@@ -1438,23 +1467,27 @@ with tabs[3]:
         st.info("Gere jogos na Aba 3 para visualizar a matriz de origem.")
 
     # =====================================================================
-    # BOTÕES DE LIMPAR E EXPORTAR
+    # BOTÕES DE LIMPAR E EXPORTAR (VERSÃO PRO PDF)
     # =====================================================================
     if st.session_state.data["jogos_salvos"]:
         col_btn1, col_btn2 = st.columns(2)
+        
         with col_btn1:
-            st.button("🗑️ LIMPAR ABSOLUTAMENTE TODOS OS JOGOS", on_click=cb_excluir_todos, type="secondary", use_container_width=True)
+            st.button("🗑️ LIMPAR TODOS", on_click=cb_excluir_todos, type="secondary", use_container_width=True)
+            
         with col_btn2:
-            linhas_export = []
-            for i, j in enumerate(st.session_state.data["jogos_salvos"], 1):
-                dezenas = j.get('dezenas', [])
-                qtd = len(dezenas)
-                dezenas_formatadas = " - ".join([f"{n:02d}" for n in dezenas])
-                linhas_export.append(f"📌 JOGO {i:02d} • ({qtd} Dezenas)\n{dezenas_formatadas}\n")
-    
-            conteudo_export = "\n".join(linhas_export)   
-            st.download_button("📤 EXPORTAR JOGOS PARA APOSTA (TXT)", data=conteudo_export, file_name="Meus_Jogos_Loto.txt", type="primary", use_container_width=True)
-        st.divider()
+            pdf_bytes = gerar_pdf_jogos(st.session_state.data["jogos_salvos"])
+            st.download_button(
+                label="📤 EXPORTAR RELATÓRIO (PDF)",
+                data=pdf_bytes,
+                file_name="Relatorio_LotoMatrix.pdf",
+                mime="application/pdf",
+                type="primary",
+                use_container_width=True
+            )
+
+        st.markdown("---")
+        # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
         
         for j in st.session_state.data["jogos_salvos"]:
             alvo = j.get('concurso_alvo')
