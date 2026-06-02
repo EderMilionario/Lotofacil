@@ -201,43 +201,50 @@ if not st.session_state.auth:
                     st.rerun()
                 else: st.error("Acesso Negado.")
     st.stop()
-# --- BOTÃO TEMPORÁRIO PARA CARREGAR HISTÓRICO ---
+# --- BOTÃO DE SINCRONIZAÇÃO (HISTÓRICO ATÉ 3641) ---
 with st.sidebar:
     st.markdown("### 📥 Admin: Sincronização")
-    if st.button("Puxar Histórico 1 até 3641"):
-        barra = st.progress(0)
-        status = st.empty()
+    if st.button("☢️ BAIXAR HISTÓRICO (1 ATÉ 3641)"):
+        # Limpa base antiga para evitar conflitos
+        st.session_state.data["historico_dados"] = []
         
-        # Cria a lista se não existir
-        if 'historico_dados' not in st.session_state.data:
-            st.session_state.data['historico_dados'] = []
-            
-        for i in range(1, 3642):
+        with st.spinner("Conectando à Caixa e baixando histórico até 3641..."):
             try:
-                url = f"https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/{i}"
-                response = requests.get(url, verify=False, timeout=5)
+                # 1. Pega os dados da API
+                res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    dezenas = [int(n) for n in data['dezenas']]
+                # 2. Ordena e Filtra estritamente até 3641
+                res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
+                res_todos = [c for c in res_todos if int(c['concurso']) <= 3641]
+                
+                barra = st.progress(0)
+                total = len(res_todos)
+                
+                # 3. Loop de processamento
+                for i, res_conc in enumerate(res_todos):
+                    num = int(res_conc['concurso'])
+                    # Tenta pegar dezenas de formas diferentes para evitar erro
+                    dezenas = res_conc.get('dezenas') or res_conc.get('listaDezenas') or []
                     
-                    st.session_state.data['historico_dados'].append({
-                        'concurso': i,
-                        'dezenas': dezenas,
-                        'data': data.get('dataApuracao', '')
-                    })
+                    if dezenas:
+                        st.session_state.data["historico_dados"].append({
+                            "concurso": num, 
+                            "dezenas": sorted([int(d) for d in dezenas]), 
+                            "data": res_conc.get('data', '')
+                        })
                     
-                if i % 50 == 0:
-                    barra.progress(i / 3641)
-                    status.text(f"Baixando: {i}/3641")
-                    
+                    # Atualiza barra de progresso
+                    if i % 50 == 0:
+                        barra.progress((i + 1) / total)
+                
+                barra.progress(1.0)
+                salvar_dados(st.session_state.data)
+                st.success(f"✅ Histórico carregado até o 3641!")
+                st.balloons()
+                st.rerun() # Recarrega a página para atualizar os dados na tela
+                
             except Exception as e:
-                st.error(f"Erro no sorteio {i}: {e}")
-        
-        salvar_dados(st.session_state.data)
-        st.success("✅ Histórico carregado!")
-        status.empty()
-        barra.empty()
+                st.error(f"Erro ao baixar o histórico: {e}")
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
 # =====================================================================
