@@ -1119,11 +1119,13 @@ with tabs[2]:
         with c_btn:
             if st.button("✅ Depositar"):
                 st.session_state.data['banca'] += valor_aporte
+                
+                # 👇 A LINHA QUE FALTAVA (Sincroniza com o Painel da Aba 1) 👇
+                st.session_state.data["historico_aportes"] = st.session_state.data.get("historico_aportes", 0.0) + valor_aporte
+                
                 salvar_dados(st.session_state.data)
                 st.success("Aporte realizado!")
                 st.rerun()
-
-    st.divider() # Linha divisória elegante para separar o topo do motor gerador
     
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
