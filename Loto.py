@@ -607,12 +607,7 @@ with tabs[1]:
         # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
         # =====================================================================
         st.markdown("### 🧠 Transparência Absoluta: Motores e Probabilidades Reais")
-        st.markdown(f"**Tamanho da Matriz Atual:** `{tam_atual} Dezenas`")
-            
-        if tam_atual <= 20:
-            st.markdown("🚀 **Motores Ativados Neste Momento:** `🥇 PLANO A (Matriz Exata 100%)` e `🥈 PLANO B (Híbrido)`")
-        else:
-            st.markdown("🎲 **Motor Ativo Neste Momento:** `🥉 PLANO B (Estocástico Ponderado)` *(Plano A Inviável)*")
+        st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
 
         # =====================================================================
         # 2. PAINEL DE TRANSPARÊNCIA: 3 COLUNAS DAS INTELIGÊNCIAS
@@ -622,118 +617,131 @@ with tabs[1]:
                 
             with c1:
                 st.markdown("#### 🥇 PLANO A")
-                st.markdown("**Matemático Puro (Exato)**")
-                if tam_atual <= 20:
+                st.markdown("*Matemático Puro (Exato)*")
+                if tam_atual <= 18:
                     st.success(
                         "**Garantia Real: 100% Exata**\n\n"
                         "Se as 15 sorteadas caírem na matriz, o prêmio está matematicamente garantido. "
-                        "Gera sem filtros. **Desvantagem:** Alto custo."
+                        "Não usa filtros. **Ideal para matrizes pequenas.**"
                     )
                 else:
                     st.error(
                         "**Status: INVIÁVEL**\n\n"
-                        "Matriz gigante. Gerar 100% de garantia travaria o servidor e custaria milhares de reais."
+                        "Matriz muito grande. Gerar 100% de garantia travaria o PC e custaria fortunas."
                     )
                 
             with c2:
                 st.markdown("#### 🥈 PLANO B (Híbrido)")
-                st.markdown("**Matriz Exata + Poda DNA**")
-                if tam_atual <= 20:
+                st.markdown("*Matriz Exata + Poda DNA*")
+                if 17 <= tam_atual <= 20:
                     st.info(
                         "**Probabilidade Real: Alta (~85% a 95%)**\n\n"
                         "Gera a base exata do Plano A, mas **corta no bisturi** os jogos lixo. "
-                        "Foca seu orçamento na **Elite Probabilística**."
+                        "Foca o orçamento na **Elite Probabilística**."
                     )
                 else:
                     st.warning(
                         "**Status: DESLIGADO**\n\n"
-                        "Este motor cirúrgico só atua em matrizes até 20 dezenas."
+                        "Este motor cirúrgico atua perfeitamente apenas em matrizes de 17 a 20 dezenas."
                     )
                 
             with c3:
                 st.markdown("#### 🥉 PLANO B (Heurístico)")
-                st.markdown("**Estocástico (Arrasto)**")
+                st.markdown("*Estocástico (Monte Carlo)*")
                 if tam_atual > 20:
                     st.info(
-                        "**Probabilidade Real: Média/Baixa**\n\n"
-                        "Não existe garantia (0%). Sorteia jogos baseados nos pesos da IA (Curva de Gauss). "
-                        "Rede de arrasto para orçamentos apertados."
+                        "**Probabilidade Real: Média / Dinâmica**\n\n"
+                        "Não existe garantia exata. Sorteia jogos guiados pelos pesos da IA. "
+                        "Age como **Rede de Arrasto** para proteger a banca na volatilidade."
                     )
                 else:
                     st.warning(
                         "**Status: DESLIGADO**\n\n"
-                        "Desnecessário. Para matrizes curtas, o Motor Híbrido assume o comando."
+                        "Desnecessário no momento. Para matrizes curtas, os motores matemáticos assumem."
                     )
 
         # =====================================================================
-        # 3. PAINEL DE CUSTOS (COM A PORRA DA SELEÇÃO 15, 14, 13 RESTAURADA)
+        # DADOS MATEMÁTICOS UNIFICADOS (Usados para o Painel 3 e Tabela 4)
+        # Probabilidades reais de Cobertura Mínima (Set Cover Approximation)
         # =====================================================================
-        st.markdown("### 💰 Projeção Financeira e Cobertura (Teto Matemático)")
-            
-        # Dicionário de alvos para alimentar exclusivamente o simulador de rádio (custos)
-        alvos_reducao = {
-            18: {15: 816, 14: 24, 13: 6, "motor": "Plano A / Híbrido"},
-            19: {15: 3876, 14: 87, 13: 15, "motor": "Plano A / Híbrido"},
-            20: {15: 15504, 14: 350, 13: 50, "motor": "Plano A / Híbrido"},
-            21: {15: 54264, 14: 1000, 13: 100, "motor": "Heurístico"},
-            23: {15: 490314, 14: 10000, 13: 800, "motor": "Heurístico"}
+        alvos_matematicos = {
+            15: {15: 1, 14: 1, 13: 1, "motor": "Aposta Única (Direta)"},
+            16: {15: 16, 14: 4, 13: 2, "motor": "🥇 Plano A (Exato)"},
+            17: {15: 136, 14: 10, 13: 4, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            18: {15: 816, 14: 24, 13: 6, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            19: {15: 3876, 14: 87, 13: 15, "motor": "🥈 Plano B (Híbrido)"},
+            20: {15: 15504, 14: 350, 13: 50, "motor": "🥈 Plano B (Híbrido)"},
+            21: {15: 54264, 14: 1000, 13: 100, "motor": "🥉 Plano B (Heurístico)"},
+            22: {15: 170544, 14: 3000, 13: 250, "motor": "🥉 Plano B (Heurístico)"},
+            23: {15: 490314, 14: 10000, 13: 800, "motor": "🥉 Plano B (Heurístico)"}
         }
+        
+        # Garante que o sistema nunca quebre se a matriz for fora do padrão
+        dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
+
+        # =====================================================================
+        # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
+        # =====================================================================
+        st.markdown("### 💰 Projeção Financeira e Cobertura Matemática")
             
-        if tam_atual in alvos_reducao:
+        with st.container(border=True):
             garantia_escolhida = st.radio(
-                "🎯 Selecione o nível de garantia base desejado para simular o custo teto:", 
+                "🎯 **Se as 15 dezenas sorteadas estiverem dentro da Matriz, qual prêmio você quer garantir matematicamente?**", 
                 [15, 14, 13], 
                 index=0, 
-                horizontal=True
+                horizontal=True,
+                format_func=lambda x: f"Garantir {x} Pontos"
             )
-                
-            qtd_bilhetes_atual = alvos_reducao[tam_atual][garantia_escolhida]
+            
+            qtd_bilhetes_atual = dados_matriz[garantia_escolhida]
             custo_atual = qtd_bilhetes_atual * 3.50
-            tipo_motor = alvos_reducao[tam_atual]["motor"]
+            tipo_motor = dados_matriz["motor"]
                 
+            st.divider() # Linha sutil para separar os controles dos resultados
+            
+            # Formatadores de moeda e milhar estilo pt-BR
+            str_bilhetes = f"{qtd_bilhetes_atual:,}".replace(",", ".")
+            str_custo = f"R$ {custo_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            
             c_a, c_b, c_c, c_d = st.columns(4)
-            c_a.metric("Matriz Avaliada", f"{tam_atual} Dez")
-            c_b.metric("Motores Disponíveis", tipo_motor) 
-            c_c.metric(f"Teto (Jogos p/ {garantia_escolhida} pts)", f"{qtd_bilhetes_atual:,}")
-            c_d.metric("Custo Teto (Plano A)", f"R$ {custo_atual:,.2f}")
+            c_a.metric("🧩 Matriz Avaliada", f"{tam_atual} Dezenas")
+            c_b.metric("⚙️ Motor Ideal", tipo_motor) 
+            c_c.metric(f"🎟️ Teto Absoluto", f"{str_bilhetes} Jogos")
+            c_d.metric("💸 Custo Base (Sem Poda)", str_custo)
 
         # =====================================================================
         # 4. TABELA DETALHADA: DISTINÇÃO ABSOLUTA DOS 3 MOTORES
         # =====================================================================
         st.markdown("### 📊 Detalhamento Completo: Probabilidades, Custos e Limites")
             
-        # Base matemática pura usada apenas para popular as linhas da tabela
-        alvos_matematicos = {
-            18: {15: 816, 14: 24, 13: 6},
-            19: {15: 3876, 14: 87, 13: 15},
-            20: {15: 15504, 14: 350, 13: 50},
-            21: {15: 54264, 14: 1000, 13: 100},
-            23: {15: 490314, 14: 10000, 13: 800}
-        }
-
         with st.expander("🔍 Expandir Tabela de Motores e Orçamentos", expanded=True):
              st.info("Esta tabela exibe a diferença brutal de custos e garantias entre a Matriz Exata e as duas inteligências do Motor Ortogonal (Híbrida e Heurística).")
                 
              dados_lista = []
              for tam, metas in alvos_matematicos.items():
                  for pts in [15, 14, 13]:
-                     if tam <= 20:
+                     custo_calc = metas[pts] * 3.50
+                     str_custo_tab = f"R$ {custo_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                     str_teto_tab = f"{metas[pts]:,}".replace(",", ".")
+
+                     if tam <= 18:
                          # LINHA DO PLANO A (EXATO)
                          dados_lista.append({
                              "Matriz": f"{tam} Dez",
                              "Inteligência Ativa": "🥇 PLANO A (Exato)",
                              "Probabilidade": "100% Garantido",
                              "Meta (Pts)": f"{pts} pts",
-                             "Teto de Bilhetes": f"{metas[pts]:,}",
-                             "Custo da Aposta": f"R$ {metas[pts] * 3.50:,.2f}"
+                             "Teto de Bilhetes": str_teto_tab,
+                             "Custo da Aposta": str_custo_tab
                          })
+                     elif 19 <= tam <= 20:
                          # LINHA DO PLANO B (HÍBRIDO)
                          dados_lista.append({
                              "Matriz": f"{tam} Dez",
                              "Inteligência Ativa": "🥈 PLANO B (Híbrido)",
                              "Probabilidade": "~85% a 95% (Filtro DNA)",
                              "Meta (Pts)": f"{pts} pts",
-                             "Teto de Bilhetes": "Limitado à sua Banca",
+                             "Teto de Bilhetes": "Limitado à Banca",
                              "Custo da Aposta": "Baseado no Orçamento"
                          })
                      else:
@@ -741,9 +749,9 @@ with tabs[1]:
                          dados_lista.append({
                              "Matriz": f"{tam} Dez",
                              "Inteligência Ativa": "🥉 PLANO B (Heurístico)",
-                             "Probabilidade": "Variável (0% Garantia)",
+                             "Probabilidade": "Dinâmica (Arrasto)",
                              "Meta (Pts)": f"{pts} pts",
-                             "Teto de Bilhetes": "Limitado à sua Banca",
+                             "Teto de Bilhetes": "Limitado à Banca",
                              "Custo da Aposta": "Baseado no Orçamento"
                          })
                 
