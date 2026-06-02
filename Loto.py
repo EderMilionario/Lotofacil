@@ -108,6 +108,7 @@ def motor_garantia_exata_dinamica(ia, orcamento, conf_calc):
             return True, jogos_reduzidos, msg
             
     return False, [], "Verba insuficiente para o Fechamento 100% Exato. Acionando Plano B (Ortogonal)."
+
 def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
     """
     Calcula matematicamente a temperatura do jogo, define o tamanho ideal 
@@ -141,19 +142,15 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     if pontuacao_estrategias and estrategia_atual in pontuacao_estrategias:
         dado_memoria = pontuacao_estrategias[estrategia_atual]
         
-        # Verifica se o Cofre.json salvou a IA no formato avançado (Dicionário)
         if isinstance(dado_memoria, dict) and "usos" in dado_memoria and dado_memoria["usos"] > 0:
             score_estrategia = dado_memoria["pontos"] / dado_memoria["usos"]
-        
-        # Verifica se o Cofre.json salvou no formato simples antigo (Número Real)
         elif isinstance(dado_memoria, (int, float)):
             score_estrategia = float(dado_memoria)
 
     # -----------------------------------------------------------------
-    # 4. DECISÃO DINÂMICA DO TAMANHO DA MATRIZ (AGORA CASADA COM A ESTRATÉGIA!)
+    # 4. Decisão Dinâmica do Tamanho da Matriz (CÉREBRO CONTEXTUAL)
     # -----------------------------------------------------------------
     if estrategia_atual == "Ciclo":
-        # Ciclo é uma operação cirúrgica. Quanto menos dezenas faltam, MENOR e mais agressiva a matriz!
         if qtd_ausentes <= 4:
             tamanho_matriz = 17
             motivo_tamanho = f"Matriz Hiper-Cirúrgica (17 dezenas): Fechamento de ciclo iminente ({qtd_ausentes} ausentes)."
@@ -165,7 +162,6 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
             motivo_tamanho = f"Matriz Expandida (21 dezenas): Ciclo ainda longo ({qtd_ausentes} ausentes)."
             
     elif estrategia_atual == "Simetria":
-        # Simetria de espelho precisa de espaços PARES para fechar os eixos simétricos (18 ou 20)
         if score_estrategia >= 12.5:
             tamanho_matriz = 18
             motivo_tamanho = f"Matriz Simétrica Otimizada (18 dezenas): Assertividade alta da Simetria ({score_estrategia:.1f} pts)."
@@ -174,12 +170,10 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
             motivo_tamanho = f"Matriz Simétrica de Defesa (20 dezenas): Garantindo o espelhamento de segurança."
             
     elif estrategia_atual == "Reversao":
-        # Reversão joga contra a maré (aposta na zebra). É arriscado, exige matriz grande de proteção.
         tamanho_matriz = 22
         motivo_tamanho = f"Matriz Defensiva (22 dezenas): Reversão exige máxima cobertura para zebras (Alta Volatilidade)."
         
     else: # Tendencia
-        # Surfe na onda. Se a IA tá acertando bem, ela fecha o cerco (barateia a aposta).
         if score_estrategia >= 12.8:
             tamanho_matriz = 18
             motivo_tamanho = f"Matriz de Surfe (18 dezenas): Tendência fortíssima detectada ({score_estrategia:.1f} pts)."
@@ -190,7 +184,23 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
             tamanho_matriz = 19
             motivo_tamanho = f"Matriz Padrão (19 dezenas): Seguindo a tendência em cenário estatístico estável."
 
+    # -----------------------------------------------------------------
     # 5. Cálculo da Taxa de Confiança Global (0.0 a 1.0)
+    # -----------------------------------------------------------------
+    fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
+    fator_ia = min(max((score_estrategia - 11.0) / 4.0, 0.0), 1.0) # Normaliza entre 11 e 15 pontos
+    
+    taxa_confianca = (fator_quentes * 0.4) + (fator_ia * 0.6)
+    taxa_confianca = max(min(taxa_confianca, 1.0), 0.1)
+
+    detalhes = {
+        "dezenas_quentes": len(dezenas_quentes),
+        "ausentes_ciclo": qtd_ausentes,
+        "score_ia": score_estrategia
+    }
+
+    # 🛑 O RETORNO QUE HAVIA SIDO APAGADO ESTÁ AQUI
+    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 
 # =====================================================================
 # CONFIGURAÇÃO E LOGIN
