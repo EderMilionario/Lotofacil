@@ -201,7 +201,43 @@ if not st.session_state.auth:
                     st.rerun()
                 else: st.error("Acesso Negado.")
     st.stop()
-
+# --- BOTÃO TEMPORÁRIO PARA CARREGAR HISTÓRICO ---
+with st.sidebar:
+    st.markdown("### 📥 Admin: Sincronização")
+    if st.button("Puxar Histórico 1 até 3641"):
+        barra = st.progress(0)
+        status = st.empty()
+        
+        # Cria a lista se não existir
+        if 'historico_dados' not in st.session_state.data:
+            st.session_state.data['historico_dados'] = []
+            
+        for i in range(1, 3642):
+            try:
+                url = f"https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/{i}"
+                response = requests.get(url, verify=False, timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    dezenas = [int(n) for n in data['dezenas']]
+                    
+                    st.session_state.data['historico_dados'].append({
+                        'concurso': i,
+                        'dezenas': dezenas,
+                        'data': data.get('dataApuracao', '')
+                    })
+                    
+                if i % 50 == 0:
+                    barra.progress(i / 3641)
+                    status.text(f"Baixando: {i}/3641")
+                    
+            except Exception as e:
+                st.error(f"Erro no sorteio {i}: {e}")
+        
+        salvar_dados(st.session_state.data)
+        st.success("✅ Histórico carregado!")
+        status.empty()
+        barra.empty()
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
 # =====================================================================
