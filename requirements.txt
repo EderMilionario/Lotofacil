@@ -6,7 +6,6 @@ fpdf
 scikit-learn
 streamlit-extras
 numpy
-tensorflow
 scipy
-networkx          # <--- ADICIONADO (Para a lógica de GNN/Conexões de dezenas)
-python-dateutil   # <--- RECOMENDADO (Para tratar as datas dos sorteios sem erro)
+networkx          
+python-dateutil   
