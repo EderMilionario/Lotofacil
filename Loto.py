@@ -14,7 +14,7 @@ import requests
 import os
 
 def gerar_pdf_jogos(jogos):
-    # 1. TRUQUE DE MESTRE: Baixando a IMAGEM REAL e COLORIDA do DNA (Twemoji)
+    # Baixando a IMAGEM do DNA para carimbar no PDF sem causar erro de caractere
     img_path = "dna_icon_pro.png"
     if not os.path.exists(img_path):
         try:
@@ -23,50 +23,49 @@ def gerar_pdf_jogos(jogos):
             with open(img_path, 'wb') as f:
                 f.write(r.content)
         except:
-            pass # Se a net falhar, o PDF gera à mesma sem dar erro
+            pass 
 
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
     # ==========================================
-    # CABEÇALHO PROFISSIONAL (DESIGN ESCURO)
+    # CABEÇALHO CLEAN E CLARO (DESIGN NORMAL)
     # ==========================================
-    pdf.set_fill_color(30, 35, 45) # Azul escuro Premium
-    pdf.rect(0, 0, 210, 45, 'F')
-    
     # Imagem do DNA no cabeçalho
     if os.path.exists(img_path):
-        pdf.image(img_path, 12, 12, 20)
-    
-    # Título
-    pdf.set_text_color(255, 255, 255) # Branco
-    pdf.set_font('Arial', 'B', 24)
-    pdf.set_xy(38, 14)
+        pdf.image(img_path, 10, 10, 16)
+        x_offset = 30
+    else:
+        x_offset = 10
+        
+    # Título Principal
+    pdf.set_text_color(30, 30, 30) # Preto/Cinza escuro
+    pdf.set_font('Arial', 'B', 22)
+    pdf.set_xy(x_offset, 12)
     pdf.cell(0, 10, "LotoMatrix PRO", ln=0)
     
     # Subtítulo
-    pdf.set_font('Arial', '', 11)
-    pdf.set_text_color(180, 190, 200) # Cinza claro
-    pdf.set_xy(38, 25)
-    pdf.cell(0, 10, "Relatorio Oficial de Analise e Estrategia", ln=0)
+    pdf.set_font('Arial', '', 10)
+    pdf.set_text_color(100, 100, 100) # Cinza
+    pdf.set_xy(x_offset, 22)
+    pdf.cell(0, 8, "Relatorio Oficial de Analise e Estrategia", ln=0)
     
-    # Total de Bilhetes (Dourado)
-    pdf.set_font('Arial', 'B', 12)
-    pdf.set_text_color(255, 204, 0) # Dourado
-    pdf.set_xy(10, 14)
+    # Informações no topo direito (Azul e Cinza)
+    pdf.set_font('Arial', 'B', 11)
+    pdf.set_text_color(0, 102, 204) # Azul
+    pdf.set_xy(10, 12)
     pdf.cell(190, 10, f"TOTAL: {len(jogos)} BILHETES", ln=0, align='R')
     
-    # Data de Geração
     pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_xy(10, 25)
-    pdf.cell(190, 10, datetime.now().strftime('%d/%m/%Y %H:%M'), ln=0, align='R')
+    pdf.set_text_color(120, 120, 120)
+    pdf.set_xy(10, 22)
+    pdf.cell(190, 8, datetime.now().strftime('%d/%m/%Y %H:%M'), ln=0, align='R')
     
-    pdf.ln(35) # Espaço para começar os cards
+    pdf.ln(30) # Espaço para começar os cards
     
     # ==========================================
-    # GERADOR DE CARDS BONITOS
+    # GERADOR DE CARDS PROPORCIONAIS
     # ==========================================
     for i, j in enumerate(jogos, 1):
         if pdf.get_y() > 240: # Se a página estiver no fim, cria nova
@@ -76,24 +75,27 @@ def gerar_pdf_jogos(jogos):
         
         # Variáveis do Jogo
         estrategia = str(j.get('estrategia', 'Padrao')).replace("🧬", "").strip()
-        dna_texto = str(j.get('dna', 'DNA')).replace("🧬", "").strip()
+        
+        # AQUI GARANTIMOS O DNA COMPLETO
+        dna_texto = str(j.get('dna', 'DNA Indisponivel')).replace("🧬", "").strip()
+        
         tamanho = j.get('tamanho', 15)
-        alvo = j.get('concurso_alvo', 'N/A') # <--- O SEU CONCURSO ALVO AQUI
+        alvo = j.get('concurso_alvo', 'N/A')
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
         
-        # 1. Fundo do Card (Cinza super claro)
+        # 1. Fundo do Card (Cinza leve)
         pdf.set_fill_color(248, 248, 250)
-        pdf.rect(10, y_start, 190, 42, 'F')
+        pdf.rect(10, y_start, 190, 40, 'F')
         
         # 2. Borda Verde de Status na Esquerda
-        pdf.set_fill_color(0, 168, 89) # Verde Lotofácil
-        pdf.rect(10, y_start, 3, 42, 'F')
+        pdf.set_fill_color(0, 168, 89)
+        pdf.rect(10, y_start, 2, 40, 'F')
         
-        # 3. Textos do Topo do Card (INCLUINDO O ALVO)
+        # 3. Textos do Topo do Card
         pdf.set_text_color(30, 30, 30)
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_xy(18, y_start + 4)
-        pdf.cell(120, 8, f"JOGO {i:02d} | Alvo: {alvo} | Grade: {tamanho} Dezenas", ln=0)
+        pdf.set_font('Arial', 'B', 11)
+        pdf.set_xy(15, y_start + 4)
+        pdf.cell(120, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  Grade: {tamanho} Dezenas", ln=0)
         
         # Estratégia alinhada à direita em Azul
         pdf.set_text_color(0, 102, 204) 
@@ -103,30 +105,33 @@ def gerar_pdf_jogos(jogos):
         
         # 4. Imagem do DNA colorida dentro do Card
         if os.path.exists(img_path):
-            pdf.image(img_path, 18, y_start + 13, 5)
+            pdf.image(img_path, 15, y_start + 14, 4)
+            x_dna = 21 # Espaço depois da imagem
+        else:
+            x_dna = 15
             
-        # 5. Descrição do DNA
-        pdf.set_text_color(100, 100, 100) # Cinza escuro
-        pdf.set_font('Arial', 'I', 10)
-        pdf.set_xy(25, y_start + 12)
-        pdf.cell(170, 6, f"Detalhes: {dna_texto}", ln=0)
+        # 5. Descrição do DNA COMPLETO
+        pdf.set_text_color(80, 80, 80) # Cinza escuro para boa leitura
+        pdf.set_font('Arial', '', 9)
+        pdf.set_xy(x_dna, y_start + 13.5)
+        pdf.cell(170, 5, f"DNA: {dna_texto}", ln=0)
         
         # 6. Caixa Branca para as Dezenas
         pdf.set_fill_color(255, 255, 255)
-        pdf.rect(18, y_start + 21, 178, 15, 'F')
-        pdf.set_draw_color(220, 220, 220) # Borda cinza
-        pdf.rect(18, y_start + 21, 178, 15, 'D')
+        pdf.rect(15, y_start + 22, 180, 12, 'F')
+        pdf.set_draw_color(220, 220, 220)
+        pdf.rect(15, y_start + 22, 180, 12, 'D')
         
-        # 7. As Dezenas Formatadas em Destaque
+        # 7. As Dezenas Formatadas (Fonte 11.5 e Caixa Alargada para NÃO vazar)
         pdf.set_text_color(0, 0, 0)
-        pdf.set_font('Courier', 'B', 14)
-        pdf.set_xy(18, y_start + 25)
-        pdf.cell(178, 8, dezenas, ln=0, align='C')
+        pdf.set_font('Courier', 'B', 11.5)
+        pdf.set_xy(15, y_start + 24)
+        pdf.cell(180, 8, dezenas, ln=0, align='C')
         
         # Avança o cursor para o próximo Card
-        pdf.set_y(y_start + 48)
+        pdf.set_y(y_start + 45)
         
-    # Retorna o arquivo de forma limpa e blindada
+    # Retorna o arquivo formatado com segurança
     resultado = pdf.output(dest='S')
     if isinstance(resultado, str):
         return resultado.encode('latin-1', 'ignore')
