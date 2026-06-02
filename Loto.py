@@ -1080,7 +1080,7 @@ with tabs[1]:
     else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
 
 # --- TAB 3: GERADOR AUTÔNOMO ---
-with tabs[3]:
+with tabs[2]:
     # =====================================================================
     # PAINEL DE STATUS FINANCEIRO (VISUALIZAÇÃO RÁPIDA)
     # =====================================================================
