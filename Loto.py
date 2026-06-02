@@ -13,16 +13,12 @@ from datetime import datetime
 
 class PDF(FPDF):
     def header(self):
-        # Carregamos a fonte DejaVu que suporta emojis
-        # O caminho abaixo é o padrão em ambientes Linux (Streamlit Cloud)
-        try:
-            self.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-            self.set_font("DejaVu", "", 16)
-        except:
-            self.set_font("Arial", 'B', 16) # Fallback se não achar a fonte
-        
+        # Carrega a fonte que suporta o símbolo 🧬
+        # CERTIFIQUE-SE QUE O ARQUIVO DejaVuSans.ttf ESTÁ NA PASTA DO PROJETO
+        self.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+        self.set_font("DejaVu", "", 16)
         self.cell(0, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
-        self.set_font("Arial", '', 10)
+        self.set_font("DejaVu", "", 10)
         self.cell(0, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
         self.ln(5)
 
@@ -30,26 +26,22 @@ def gerar_pdf_jogos(jogos):
     pdf = PDF()
     pdf.add_page()
     
-    # Define a fonte para o corpo do texto
-    try:
-        pdf.set_font("DejaVu", "", 12)
-    except:
-        pdf.set_font("Arial", "", 12)
+    # Define a fonte para o corpo
+    pdf.set_font("DejaVu", "", 12)
 
     for i, j in enumerate(jogos, 1):
-        # Fundo cinza para o cabeçalho do bilhete
+        # Card de Estilo
         pdf.set_fill_color(240, 240, 240)
-        
-        # Título do jogo
         pdf.cell(0, 10, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True, fill=True)
         
-        # O SÍMBOLO DO DNA ESTÁ AQUI 🧬
+        # DNA 🧬 garantido aqui
         dna_texto = f"🧬 DNA: {j.get('dna', 'DNA Padrao')}"
         pdf.cell(0, 8, dna_texto, ln=True)
         
-        # Números
+        # Números (usando uma fonte padrão para alinhamento)
+        # Se quiser que os números fiquem perfeitos, usamos a mesma fonte DejaVu
+        pdf.set_font("DejaVu", "", 12)
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
-        pdf.set_font("Courier", 'B', 12)
         pdf.cell(0, 10, dezenas, ln=True, border=1, align='C')
         pdf.ln(5)
     
