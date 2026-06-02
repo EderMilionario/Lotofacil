@@ -487,15 +487,15 @@ def raciocinio_total_ia(historico, memoria):
         # Ciclo recém resetado, péssimo momento. Punição.
         notas_finais["Ciclo"] -= 2.0 
         
-    # 2. GATILHO DA REVERSÃO E TENDÊNCIA (Sensor de Volatilidade)
+    # 2. GATILHO DA REVERSÃO E TENDÊNCIA (Sensor de Volatilidade e Soma)
     try:
-        # Medimos o caos analisando quantas dezenas repetiram do penúltimo para o último
         repetidas_ultimo = len(set(historico[-1]['dezenas']).intersection(set(historico[-2]['dezenas'])))
         
-        if repetidas_ultimo <= 7 or repetidas_ultimo >= 11:
-            notas_finais["Reversao"] += 1.5 # Sorteio caótico, a Reversão ganha vantagem
-        elif 8 <= repetidas_ultimo <= 10:
-            notas_finais["Tendencia"] += 0.8 # Águas calmas, a Tendência domina
+        # Se repetir pouco/muito OU a média da soma estiver estourada, chama a Reversão
+        if repetidas_ultimo <= 7 or repetidas_ultimo >= 11 or media_soma > 198:
+            notas_finais["Reversao"] += 1.5 
+        elif 8 <= repetidas_ultimo <= 10 and media_soma <= 198:
+            notas_finais["Tendencia"] += 0.8
     except: pass
         
     # 3. GATILHO DA SIMETRIA (Eixo de Borda)
@@ -526,15 +526,18 @@ def raciocinio_total_ia(historico, memoria):
         estrategia = "Simetria de Borda"
         pesos = {}
         for i in range(1, 26):
-            # SIMETRIA REAL (Espelhamento Direcionado): i e (26-i). 
-            # Se o espelho de 'i' está saindo POUCO, a dezena 'i' recebe peso alto para COMPENSAR o eixo.
+            # SIMETRIA MAGNÉTICA: A dezena 'i' absorve a força do seu espelho!
             espelho = 26 - i
-            peso_compensacao = freq_recente_max - freq_recente.get(espelho, 0)
+            peso_espelho = freq_recente.get(espelho, 0)
+            
             bonus_borda = 15 if i in moldura_lista else 0
-            pesos[i] = peso_compensacao + bonus_borda + freq_recente.get(i, 0)
-        motivo_est = "A IA adotou Simetria Analítica. Compensando quadrantes fracos através de espelhamento."
+            
+            # Elas somam as forças (andam de mãos dadas)
+            pesos[i] = freq_recente.get(i, 0) + peso_espelho + bonus_borda
+            
+        motivo_est = "A IA adotou Simetria Analítica. Dezenas e seus espelhos ganharam força magnética conjunta."
         
-    elif melhor_est == "Reversao" or media_soma > 198:
+    elif melhor_est == "Reversao":
         estrategia = "Reversão Estatística"
         # Agora usando ESTRITAMENTE a Janela de Esquecimento para não ser sufocada pelo passado
         pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 5)) for i in range(1, 26)}
