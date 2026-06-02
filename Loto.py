@@ -150,38 +150,47 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
             score_estrategia = float(dado_memoria)
 
     # -----------------------------------------------------------------
-    # 4. Decisão Dinâmica do Tamanho da Matriz
-    # Peso do Ciclo (60%) + Peso da Assertividade da IA (40%)
-    if qtd_ausentes > 8 or score_estrategia < 11.5:
-        tamanho_matriz = 23
-        motivo_tamanho = f"Matriz Expandida (23 dezenas): Alta volatilidade no ciclo ({qtd_ausentes} dezenas ausentes) ou assertividade baixa ({score_estrategia:.2f} pts)."
-    elif qtd_ausentes >= 5:
-        tamanho_matriz = 21
-        motivo_tamanho = f"Matriz Equilibrada (21 dezenas): Ciclo em transição intermediária com {qtd_ausentes} dezenas pendentes."
-    elif score_estrategia >= 13.0:
-        tamanho_matriz = 18
-        motivo_tamanho = f"Matriz Cirúrgica (18 dezenas): Altíssima precisão detectada na estratégia '{estrategia_atual}' ({score_estrategia:.2f} pts)."
-    else:
-        tamanho_matriz = 19
-        motivo_tamanho = f"Matriz Padrão Otimizada (19 dezenas): Condições normais de temperatura e pressão estatística."
+    # 4. DECISÃO DINÂMICA DO TAMANHO DA MATRIZ (AGORA CASADA COM A ESTRATÉGIA!)
+    # -----------------------------------------------------------------
+    if estrategia_atual == "Ciclo":
+        # Ciclo é uma operação cirúrgica. Quanto menos dezenas faltam, MENOR e mais agressiva a matriz!
+        if qtd_ausentes <= 4:
+            tamanho_matriz = 17
+            motivo_tamanho = f"Matriz Hiper-Cirúrgica (17 dezenas): Fechamento de ciclo iminente ({qtd_ausentes} ausentes)."
+        elif qtd_ausentes <= 7:
+            tamanho_matriz = 19
+            motivo_tamanho = f"Matriz Focada (19 dezenas): Ciclo na reta final ({qtd_ausentes} ausentes)."
+        else:
+            tamanho_matriz = 21
+            motivo_tamanho = f"Matriz Expandida (21 dezenas): Ciclo ainda longo ({qtd_ausentes} ausentes)."
+            
+    elif estrategia_atual == "Simetria":
+        # Simetria de espelho precisa de espaços PARES para fechar os eixos simétricos (18 ou 20)
+        if score_estrategia >= 12.5:
+            tamanho_matriz = 18
+            motivo_tamanho = f"Matriz Simétrica Otimizada (18 dezenas): Assertividade alta da Simetria ({score_estrategia:.1f} pts)."
+        else:
+            tamanho_matriz = 20
+            motivo_tamanho = f"Matriz Simétrica de Defesa (20 dezenas): Garantindo o espelhamento de segurança."
+            
+    elif estrategia_atual == "Reversao":
+        # Reversão joga contra a maré (aposta na zebra). É arriscado, exige matriz grande de proteção.
+        tamanho_matriz = 22
+        motivo_tamanho = f"Matriz Defensiva (22 dezenas): Reversão exige máxima cobertura para zebras (Alta Volatilidade)."
+        
+    else: # Tendencia
+        # Surfe na onda. Se a IA tá acertando bem, ela fecha o cerco (barateia a aposta).
+        if score_estrategia >= 12.8:
+            tamanho_matriz = 18
+            motivo_tamanho = f"Matriz de Surfe (18 dezenas): Tendência fortíssima detectada ({score_estrategia:.1f} pts)."
+        elif score_estrategia < 11.2:
+            tamanho_matriz = 21
+            motivo_tamanho = f"Matriz de Recuperação (21 dezenas): Assertividade da Tendência em queda, expandindo a rede."
+        else:
+            tamanho_matriz = 19
+            motivo_tamanho = f"Matriz Padrão (19 dezenas): Seguindo a tendência em cenário estatístico estável."
 
     # 5. Cálculo da Taxa de Confiança Global (0.0 a 1.0)
-    # Fatores: Alinhamento de dezenas quentes + Desempenho histórico da IA
-    fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
-    fator_ia = min(max((score_estrategia - 11.0) / 4.0, 0.0), 1.0) # Normaliza entre 11 e 15 pontos
-    
-    taxa_confianca = (fator_quentes * 0.4) + (fator_ia * 0.6)
-    
-    # Forçar limites seguros
-    taxa_confianca = max(min(taxa_confianca, 1.0), 0.1)
-
-    detalhes = {
-        "dezenas_quentes": len(dezenas_quentes),
-        "ausentes_ciclo": qtd_ausentes,
-        "score_ia": score_estrategia
-    }
-
-    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 
 # =====================================================================
 # CONFIGURAÇÃO E LOGIN
@@ -437,11 +446,9 @@ def raciocinio_total_ia(historico, memoria):
     perf = {}
     for est in ["Tendencia", "Reversao", "Ciclo", "Simetria"]:
         dado_memoria = memoria.get(est, 11.0)
-        # Verifica o formato que está salvo no Cofre.json para evitar quebra do código
         if isinstance(dado_memoria, dict):
             usos = dado_memoria.get("usos", 0)
             pontos = dado_memoria.get("pontos", 0)
-            # Taxa de Decaimento virtual: Mantém a IA ágil em vez de presa ao passado antigo
             if usos > 30: 
                 pontos = (pontos / usos) * 30
                 usos = 30
@@ -449,7 +456,44 @@ def raciocinio_total_ia(historico, memoria):
         else:
             perf[est] = float(dado_memoria)
             
-    melhor_est = max(perf, key=perf.get)
+    # =================================================================
+    # 🌟 O CÉREBRO CONTEXTUAL (ALGORITMO DE BANDIDO CONTEXTUAL) 🌟
+    # Em vez de escolher a maior média cega, a IA aplica "Bônus de Cenário"
+    # =================================================================
+    notas_finais = perf.copy()
+    
+    # 1. GATILHO DO CICLO (A Cereja do Bolo)
+    qtd_faltam = len(faltam_ciclo)
+    if 1 <= qtd_faltam <= 6:
+        # Se faltam poucas, o Ciclo recebe um bônus MASSIVO para ser escolhido!
+        # Exemplo: Faltam 2 -> bônus de +2.3 pontos na média.
+        notas_finais["Ciclo"] += (1.5 + (6 - qtd_faltam) * 0.2)
+    elif qtd_faltam >= 20: 
+        # Ciclo recém resetado, péssimo momento. Punição.
+        notas_finais["Ciclo"] -= 2.0 
+        
+    # 2. GATILHO DA REVERSÃO E TENDÊNCIA (Sensor de Volatilidade)
+    try:
+        # Medimos o caos analisando quantas dezenas repetiram do penúltimo para o último
+        repetidas_ultimo = len(set(historico[-1]['dezenas']).intersection(set(historico[-2]['dezenas'])))
+        
+        if repetidas_ultimo <= 7 or repetidas_ultimo >= 11:
+            notas_finais["Reversao"] += 1.5 # Sorteio caótico, a Reversão ganha vantagem
+        elif 8 <= repetidas_ultimo <= 10:
+            notas_finais["Tendencia"] += 0.8 # Águas calmas, a Tendência domina
+    except: pass
+        
+    # 3. GATILHO DA SIMETRIA (Eixo de Borda)
+    try:
+        moldura_ultimo = sum(1 for n in historico[-1]['dezenas'] if n in moldura_lista)
+        if moldura_ultimo <= 8 or moldura_ultimo >= 12: 
+            # A moldura estourou o padrão (média é 10), Simetria entra para corrigir o eixo
+            notas_finais["Simetria"] += 1.2
+    except: pass
+
+    # A GRANDE DECISÃO: A vencedora é a estratégia que unir o melhor Histórico + Contexto Ideal
+    melhor_est = max(notas_finais, key=notas_finais.get)
+    
 
     # --- TAMANHO DINÂMICO DA MATRIZ (CONECTADO AO NOVO MOTOR!) ---
     # Agora sim! A IA deixou de usar aquela regra dura e chama a nossa 
@@ -1451,30 +1495,36 @@ with tabs[4]:
                                     historico_para_ia = st.session_state.data["historico_dados"][:-1]
                                     if len(historico_para_ia) >= 10:
                                         try:
-                                            ia_temp = raciocinio_total_ia(historico_para_ia)
+                                            # CORREÇÃO
+                                            ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
                                             matriz_base = ia_temp.get('matriz_base', [])
+                                            estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
                                             tamanho_matriz = len(matriz_base)
                                             
-                                            # MESMA LÓGICA DE ORÇAMENTO DINÂMICO
                                             qtd_jogos = 0
-                                            if tamanho_matriz == 15:
-                                                qtd_jogos = 1
-                                            elif tamanho_matriz == 16:
-                                                qtd_jogos = 16
-                                            elif tamanho_matriz == 17:
-                                                qtd_jogos = 30
-                                            elif 18 <= tamanho_matriz <= 20:
-                                                qtd_jogos = 50
-                                            elif tamanho_matriz > 20:
-                                                qtd_jogos = 20
+                                            if tamanho_matriz == 15: qtd_jogos = 1
+                                            elif tamanho_matriz == 16: qtd_jogos = 16
+                                            elif tamanho_matriz == 17: qtd_jogos = 30
+                                            elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
+                                            elif tamanho_matriz > 20: qtd_jogos = 20
                                                 
                                             jogos_simulados = []
                                             if qtd_jogos > 0 and tamanho_matriz >= 15:
                                                 for _ in range(qtd_jogos):
-                                                    jogos_simulados.append(sorted(random.sample(matriz_base, 15)))
+                                                    # CORREÇÃO
+                                                    jogos_simulados.append({
+                                                        "id": str(uuid.uuid4()),
+                                                        "concurso_alvo": num,
+                                                        "dezenas": sorted(random.sample(matriz_base, 15)),
+                                                        "tamanho": 15,
+                                                        "status": "Aguardando Sorteio",
+                                                        "acertos": 0,
+                                                        "estrategia": estrategia_rodada,
+                                                        "justificativa": "Fantasma"
+                                                    })
                                                     
                                             st.session_state.data["jogos_salvos"] = jogos_simulados
-                                        except Exception:
+                                        except Exception as e:
                                             st.session_state.data["jogos_salvos"] = []
                                     else:
                                         st.session_state.data["jogos_salvos"] = []
@@ -1490,9 +1540,9 @@ with tabs[4]:
                             if logs_massa:
                                 st.session_state.ultimo_aprendizado = list(set(logs_massa))
                                 
-                            st.session_state.data["jogos_salvos"] = [] # Limpa a lixeira pós-operação
+                            st.session_state.data["jogos_salvos"] = []
                             salvar_dados(st.session_state.data)
-                            st.success(f"✅ GAPs processados com sucesso! A IA geriu os investimentos e alcançou R$ {lucro_acumulado_massa:.2f}.")
+                            st.success(f"✅ GAPs processados com sucesso! R$ {lucro_acumulado_massa:.2f}.")
                             st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao processar GAPs: {e}")
@@ -1502,7 +1552,12 @@ with tabs[4]:
             if st.button("☢️ INICIAR VIDA REAL (BAIXAR E TREINAR DESDE O 1)", type="secondary", use_container_width=True):
                 # 1. Limpeza total da mente da IA
                 st.session_state.data["historico_dados"] = []
-                st.session_state.data["ia_memoria"] = {} 
+                st.session_state.data["ia_memoria"] = {
+                    "Tendencia": {"usos": 0, "pontos": 0}, 
+                    "Reversao": {"usos": 0, "pontos": 0},
+                    "Ciclo": {"usos": 0, "pontos": 0},
+                    "Simetria": {"usos": 0, "pontos": 0}
+                }
                 st.session_state.data["banca"] = 0.0
                 st.session_state.data["jogos_salvos"] = [] 
                 
@@ -1531,37 +1586,44 @@ with tabs[4]:
                             
                             if len(historico_para_ia) >= 10:
                                 try:
-                                    ia_temp = raciocinio_total_ia(historico_para_ia)
+                                    # CORREÇÃO 1: Passar a memória para a IA não falhar
+                                    ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
                                     matriz_base = ia_temp.get('matriz_base', [])
+                                    # CORREÇÃO 2: Salvar a estratégia escolhida para pontuá-la depois
+                                    estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
                                     tamanho_matriz = len(matriz_base)
                                     
-                                    # LÓGICA DE ORÇAMENTO DINÂMICO (Risco vs Retorno)
                                     qtd_jogos = 0
-                                    if tamanho_matriz == 15:
-                                        qtd_jogos = 1    # Matriz perfeita, aposta seca (R$ 3,50)
-                                    elif tamanho_matriz == 16:
-                                        qtd_jogos = 16   # Investimento cirúrgico Plano A (R$ 56,00)
-                                    elif tamanho_matriz == 17:
-                                        qtd_jogos = 30   # Risco moderado (R$ 105,00)
-                                    elif 18 <= tamanho_matriz <= 20:
-                                        qtd_jogos = 50   # Plano B - Modo de Combate (R$ 175,00)
-                                    elif tamanho_matriz > 20:
-                                        qtd_jogos = 20   # Defensiva (matriz grande demais, investe pouco: R$ 70,00)
+                                    if tamanho_matriz == 15: qtd_jogos = 1
+                                    elif tamanho_matriz == 16: qtd_jogos = 16
+                                    elif tamanho_matriz == 17: qtd_jogos = 30
+                                    elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
+                                    elif tamanho_matriz > 20: qtd_jogos = 20
                                         
                                     jogos_simulados = []
                                     if qtd_jogos > 0 and tamanho_matriz >= 15:
                                         for _ in range(qtd_jogos):
-                                            jogos_simulados.append(sorted(random.sample(matriz_base, 15)))
+                                            # CORREÇÃO 3: Bilhete estruturado perfeitamente para o auditor
+                                            jogos_simulados.append({
+                                                "id": str(uuid.uuid4()),
+                                                "concurso_alvo": num,
+                                                "dezenas": sorted(random.sample(matriz_base, 15)),
+                                                "tamanho": 15,
+                                                "status": "Aguardando Sorteio",
+                                                "acertos": 0,
+                                                "estrategia": estrategia_rodada,
+                                                "justificativa": "Fantasma"
+                                            })
                                             
                                     st.session_state.data["jogos_salvos"] = jogos_simulados
-                                except Exception:
+                                except Exception as e:
                                     st.session_state.data["jogos_salvos"] = []
                             else:
                                 st.session_state.data["jogos_salvos"] = []
                             
                             rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
                             
-                            # O funil confere o volume exato de jogos simulados e calibra os pontos da estratégia
+                            # O funil confere e agora ENCONTRA o bilhete e a estratégia para pontuar!
                             lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
                             lucro_acumulado_massa += lucro_parcial
                             
@@ -1576,10 +1638,10 @@ with tabs[4]:
                         if logs_massa:
                             st.session_state.ultimo_aprendizado = list(set(logs_massa))
                             
-                        st.session_state.data["jogos_salvos"] = [] # Limpa a simulação para deixar a interface limpa
+                        st.session_state.data["jogos_salvos"] = [] 
                         salvar_dados(st.session_state.data)
                         
-                        st.success(f"🚀 Calibração Concluída! A IA adaptou o orçamento jogo a jogo. Saldo Final Simulado: R$ {lucro_acumulado_massa:.2f}")
+                        st.success(f"🚀 Calibração Concluída! Saldo Final Simulado: R$ {lucro_acumulado_massa:.2f}")
                         st.balloons()
                         st.rerun()
                         
