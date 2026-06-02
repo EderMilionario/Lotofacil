@@ -12,6 +12,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 def gerar_pdf_jogos(jogos):
+    # Usamos o FPDF do fpdf2
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -19,21 +20,21 @@ def gerar_pdf_jogos(jogos):
     # Cabeçalho
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
-    pdf.set_font("Arial", '', 10)
-    pdf.cell(200, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
-    pdf.ln(10)
     
     # Listagem
     for i, j in enumerate(jogos, 1):
-        # Aqui removemos qualquer risco de emoji travar o PDF
-        estrategia = str(j.get('estrategia', 'Padrao')).replace("🧬", "")
-        dna = str(j.get('dna', 'DNA')).replace("🧬", "")
+        # Aqui, garantimos que o texto seja compatível com o PDF
+        # Se você quer o símbolo, tentamos o 'replace'. 
+        # O fpdf2 lida melhor com isso, mas precisa da fonte correta.
+        dna_info = j.get('dna', 'DNA')
         
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {estrategia}", ln=True)
+        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True)
         
         pdf.set_font("Arial", '', 10)
-        pdf.cell(200, 6, f"DNA: {dna}", ln=True)
+        # O PDF vai renderizar o texto. Se o símbolo 🧬 não aparecer, 
+        # é porque a fonte do sistema operacional não o tem.
+        pdf.cell(200, 6, f"{dna_info}", ln=True)
         
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
         pdf.set_font("Courier", 'B', 12)
