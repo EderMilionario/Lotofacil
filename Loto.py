@@ -201,6 +201,45 @@ if not st.session_state.auth:
                     st.rerun()
                 else: st.error("Acesso Negado.")
     st.stop()
+# --- BLOCO DE SINCRONIZAÇÃO INICIAL (COLAR NO TOPO, APÓS OS IMPORTS) ---
+with st.sidebar:
+    st.markdown("### 📥 Admin: Sincronização")
+    if st.button("🚀 BAIXAR HISTÓRICO 1-3670"):
+        # Reset da base para garantir integridade
+        st.session_state.data["historico_dados"] = []
+        
+        with st.spinner("Baixando dados..."):
+            try:
+                res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
+                
+                # Filtro: mantemos apenas até o 3670
+                res_todos = sorted([c for c in res_todos if int(c['concurso']) <= 3670], key=lambda k: int(k['concurso']))
+                
+                barra = st.progress(0)
+                total = len(res_todos)
+                
+                for i, res_conc in enumerate(res_todos):
+                    num = int(res_conc['concurso'])
+                    dezenas = sorted([int(d) for d in res_conc['dezenas']])
+                    
+                    st.session_state.data["historico_dados"].append({
+                        "concurso": num, 
+                        "dezenas": dezenas, 
+                        "data": res_conc.get('data', '')
+                    })
+                    
+                    # Processa aprendizado
+                    auditar_e_aprender_unificado(num, dezenas, extrair_rateios_api(res_conc.get('premiacoes', [])))
+                    
+                    if i % 50 == 0:
+                        barra.progress((i + 1) / total)
+                
+                barra.progress(1.0)
+                salvar_dados(st.session_state.data)
+                st.success("✅ Base 1-3670 carregada!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro: {e}")    
 
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
