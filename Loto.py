@@ -11,40 +11,49 @@ import urllib3
 from fpdf import FPDF
 from datetime import datetime
 
-# Usaremos a classe FPDF da biblioteca fpdf2 que suporta UTF-8
 class PDF(FPDF):
     def header(self):
-        # Cabeçalho da página
-        self.set_font("Arial", 'B', 16)
+        # Carregamos a fonte DejaVu que suporta emojis
+        # O caminho abaixo é o padrão em ambientes Linux (Streamlit Cloud)
+        try:
+            self.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+            self.set_font("DejaVu", "", 16)
+        except:
+            self.set_font("Arial", 'B', 16) # Fallback se não achar a fonte
+        
         self.cell(0, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
         self.set_font("Arial", '', 10)
         self.cell(0, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
         self.ln(5)
 
 def gerar_pdf_jogos(jogos):
-    # Inicializa com suporte a UTF-8 (essencial para o DNA 🧬)
     pdf = PDF()
     pdf.add_page()
     
-    # Adicionamos uma fonte que suporte caracteres unicode (Arial padrão costuma funcionar)
-    pdf.set_font("Arial", size=12)
+    # Define a fonte para o corpo do texto
+    try:
+        pdf.set_font("DejaVu", "", 12)
+    except:
+        pdf.set_font("Arial", "", 12)
 
     for i, j in enumerate(jogos, 1):
-        # Card de Estilo (Visual Profissional)
-        pdf.set_fill_color(240, 240, 240) # Fundo cinza claro
+        # Fundo cinza para o cabeçalho do bilhete
+        pdf.set_fill_color(240, 240, 240)
+        
+        # Título do jogo
         pdf.cell(0, 10, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True, fill=True)
         
-        # Símbolo do DNA mantido aqui!
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(0, 8, f"🧬 DNA: {j.get('dna', '🧬 DNA Padrao')}", ln=True)
+        # O SÍMBOLO DO DNA ESTÁ AQUI 🧬
+        dna_texto = f"🧬 DNA: {j.get('dna', 'DNA Padrao')}"
+        pdf.cell(0, 8, dna_texto, ln=True)
         
-        # Números em destaque
+        # Números
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
         pdf.set_font("Courier", 'B', 12)
         pdf.cell(0, 10, dezenas, ln=True, border=1, align='C')
         pdf.ln(5)
     
-    return pdf.output(dest='S') # Retorna os bytes do PDF
+    return pdf.output(dest='S')
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def exibir_mini_painel_financeiro():
     b_atual = st.session_state.data.get("banca", 0.0)
