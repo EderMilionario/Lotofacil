@@ -13,8 +13,11 @@ from datetime import datetime
 import requests
 import os
 
-def gerar_pdf_jogos(jogos):
-    # Baixando a IMAGEM do DNA para carimbar no PDF sem causar erro de caractere
+def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
+    if dezenas_anteriores is None:
+        dezenas_anteriores = []
+        
+    # Baixa o ícone do DNA colorido
     img_path = "dna_icon_pro.png"
     if not os.path.exists(img_path):
         try:
@@ -25,35 +28,58 @@ def gerar_pdf_jogos(jogos):
         except:
             pass 
 
+    # --- CALCULADOR DE DNA COMPLETO (AGORA COM REPETIDAS) ---
+    def calcular_dna_na_hora(dezenas, repetidas_salvas=None):
+        if not dezenas: return ""
+        primos_list = [2, 3, 5, 7, 11, 13, 17, 19, 23]
+        fib_list = [1, 2, 3, 5, 8, 13, 21]
+        moldura_list = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
+        mult3_list = [3, 6, 9, 12, 15, 18, 21, 24]
+        
+        pares = sum(1 for x in dezenas if x % 2 == 0)
+        primos = sum(1 for x in dezenas if x in primos_list)
+        fibs = sum(1 for x in dezenas if x in fib_list)
+        moldura = sum(1 for x in dezenas if x in moldura_list)
+        mult3 = sum(1 for x in dezenas if x in mult3_list)
+        soma = sum(dezenas)
+        
+        # A LÓGICA DAS REPETIDAS:
+        if repetidas_salvas is not None:
+            rep_str = f"{repetidas_salvas} Rep | "
+        elif dezenas_anteriores:
+            # Se recebemos o concurso anterior, fazemos a matemática na hora!
+            repetidas_calc = sum(1 for x in dezenas if x in dezenas_anteriores)
+            rep_str = f"{repetidas_calc} Rep | "
+        else:
+            rep_str = "" # Oculta se não tiver como calcular
+            
+        return f"{moldura} Mol | {pares} Par | {primos} Pri | {fibs} Fib | {mult3} Mlt | {rep_str}Soma {soma}"
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
     # ==========================================
-    # CABEÇALHO CLEAN E CLARO (DESIGN NORMAL)
+    # CABEÇALHO (AZUL LOTOMATRIX)
     # ==========================================
-    # Imagem do DNA no cabeçalho
     if os.path.exists(img_path):
         pdf.image(img_path, 10, 10, 16)
         x_offset = 30
     else:
         x_offset = 10
         
-    # Título Principal
-    pdf.set_text_color(30, 30, 30) # Preto/Cinza escuro
+    pdf.set_text_color(0, 102, 204) # Azul
     pdf.set_font('Arial', 'B', 22)
     pdf.set_xy(x_offset, 12)
     pdf.cell(0, 10, "LotoMatrix PRO", ln=0)
     
-    # Subtítulo
     pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(100, 100, 100) # Cinza
+    pdf.set_text_color(100, 100, 100)
     pdf.set_xy(x_offset, 22)
     pdf.cell(0, 8, "Relatorio Oficial de Analise e Estrategia", ln=0)
     
-    # Informações no topo direito (Azul e Cinza)
     pdf.set_font('Arial', 'B', 11)
-    pdf.set_text_color(0, 102, 204) # Azul
+    pdf.set_text_color(0, 102, 204)
     pdf.set_xy(10, 12)
     pdf.cell(190, 10, f"TOTAL: {len(jogos)} BILHETES", ln=0, align='R')
     
@@ -62,81 +88,81 @@ def gerar_pdf_jogos(jogos):
     pdf.set_xy(10, 22)
     pdf.cell(190, 8, datetime.now().strftime('%d/%m/%Y %H:%M'), ln=0, align='R')
     
-    pdf.ln(30) # Espaço para começar os cards
+    pdf.ln(30)
     
     # ==========================================
-    # GERADOR DE CARDS PROPORCIONAIS
+    # GERADOR DE CARDS
     # ==========================================
     for i, j in enumerate(jogos, 1):
-        if pdf.get_y() > 240: # Se a página estiver no fim, cria nova
+        if pdf.get_y() > 240:
             pdf.add_page()
             
         y_start = pdf.get_y()
         
-        # Variáveis do Jogo
         estrategia = str(j.get('estrategia', 'Padrao')).replace("🧬", "").strip()
+        dna_banco = str(j.get('dna', '')).replace("🧬", "").strip()
+        dezenas = j.get('dezenas', [])
         
-        # AQUI GARANTIMOS O DNA COMPLETO
-        dna_texto = str(j.get('dna', 'DNA Indisponivel')).replace("🧬", "").strip()
+        # Recupera as repetidas se o banco salvou, senão usa None para a IA calcular
+        repetidas_salvas = j.get('repetidas', None)
         
-        tamanho = j.get('tamanho', 15)
+        # Se o DNA gravou "Fechamento", ignoramos e mandamos recalcular tudo perfeitamente
+        if "Par" not in dna_banco and "Pri" not in dna_banco:
+            dna_calculado = calcular_dna_na_hora(dezenas, repetidas_salvas)
+            dna_texto = f"{dna_calculado} ({dna_banco})" 
+        else:
+            dna_texto = dna_banco
+
+        tamanho = j.get('tamanho', len(dezenas))
         alvo = j.get('concurso_alvo', 'N/A')
-        dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
+        dezenas_str = " - ".join([f"{n:02d}" for n in dezenas])
         
-        # 1. Fundo do Card (Cinza leve)
+        # Fundo e Bordas
         pdf.set_fill_color(248, 248, 250)
         pdf.rect(10, y_start, 190, 40, 'F')
-        
-        # 2. Borda Verde de Status na Esquerda
         pdf.set_fill_color(0, 168, 89)
         pdf.rect(10, y_start, 2, 40, 'F')
         
-        # 3. Textos do Topo do Card
+        # Topo
         pdf.set_text_color(30, 30, 30)
         pdf.set_font('Arial', 'B', 11)
         pdf.set_xy(15, y_start + 4)
         pdf.cell(120, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  Grade: {tamanho} Dezenas", ln=0)
         
-        # Estratégia alinhada à direita em Azul
         pdf.set_text_color(0, 102, 204) 
         pdf.set_font('Arial', 'B', 10)
         pdf.set_xy(10, y_start + 4)
         pdf.cell(185, 8, f"{estrategia}", ln=0, align='R')
         
-        # 4. Imagem do DNA colorida dentro do Card
+        # DNA
         if os.path.exists(img_path):
             pdf.image(img_path, 15, y_start + 14, 4)
-            x_dna = 21 # Espaço depois da imagem
+            x_dna = 21 
         else:
             x_dna = 15
             
-        # 5. Descrição do DNA COMPLETO
-        pdf.set_text_color(80, 80, 80) # Cinza escuro para boa leitura
+        pdf.set_text_color(80, 80, 80)
         pdf.set_font('Arial', '', 9)
         pdf.set_xy(x_dna, y_start + 13.5)
         pdf.cell(170, 5, f"DNA: {dna_texto}", ln=0)
         
-        # 6. Caixa Branca para as Dezenas
+        # Dezenas
         pdf.set_fill_color(255, 255, 255)
         pdf.rect(15, y_start + 22, 180, 12, 'F')
         pdf.set_draw_color(220, 220, 220)
         pdf.rect(15, y_start + 22, 180, 12, 'D')
         
-        # 7. As Dezenas Formatadas (Fonte 11.5 e Caixa Alargada para NÃO vazar)
         pdf.set_text_color(0, 0, 0)
         pdf.set_font('Courier', 'B', 11.5)
         pdf.set_xy(15, y_start + 24)
-        pdf.cell(180, 8, dezenas, ln=0, align='C')
+        pdf.cell(180, 8, dezenas_str, ln=0, align='C')
         
-        # Avança o cursor para o próximo Card
         pdf.set_y(y_start + 45)
         
-    # Retorna o arquivo formatado com segurança
     resultado = pdf.output(dest='S')
     if isinstance(resultado, str):
         return resultado.encode('latin-1', 'ignore')
     return bytes(resultado)
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def exibir_mini_painel_financeiro():
     b_atual = st.session_state.data.get("banca", 0.0)
@@ -1575,16 +1601,22 @@ with tabs[3]:
             st.button("🗑️ LIMPAR TODOS", on_click=cb_excluir_todos, type="secondary", use_container_width=True)
             
         with col_btn2:
-            pdf_bytes = gerar_pdf_jogos(st.session_state.data["jogos_salvos"])
-            st.download_button(
-                label="📤 EXPORTAR RELATÓRIO (PDF)",
-                data=pdf_bytes,
-                file_name="Relatorio_LotoMatrix.pdf",
-                mime="application/pdf",
-                type="primary",
-                use_container_width=True
-            )
-
+        # 1. Buscamos as dezenas do concurso anterior da memória do seu sistema
+        ultimas_dezenas = []
+        if 'caixa_latest' in st.session_state and 'dezenas' in st.session_state.caixa_latest:
+            ultimas_dezenas = st.session_state.caixa_latest['dezenas']
+            
+        # 2. Injetamos as últimas dezenas na função para ela calcular as Repetidas!
+        pdf_bytes = gerar_pdf_jogos(st.session_state.data["jogos_salvos"], ultimas_dezenas)
+        
+        st.download_button(
+            label="📤 EXPORTAR RELATÓRIO (PDF)",
+            data=pdf_bytes,
+            file_name="Relatorio_LotoMatrix.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True
+        )
         st.markdown("---")
         # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
         
