@@ -574,29 +574,114 @@ tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "�
 # --- TAB 1: BANCO DE DADOS E BANCA ---
 with tabs[0]:
     st.markdown("### 💾 Central de Dados e Ajuste Financeiro")
+
+    # =====================================================================
+    # 1. INICIALIZAÇÃO DE SEGURANÇA (Garante que as variáveis existam no JSON)
+    # =====================================================================
+    if "historico_aportes" not in st.session_state.data: 
+        st.session_state.data["historico_aportes"] = 0.0
+    if "historico_saques" not in st.session_state.data: 
+        st.session_state.data["historico_saques"] = 0.0
+
+    # Lógica de Cálculo da Fórmula de Ouro
+    banca_atual = st.session_state.data.get("banca", 0.0)
+    t_aportes = st.session_state.data["historico_aportes"]
+    t_saques = st.session_state.data["historico_saques"]
+    resultado_global = (banca_atual + t_saques) - t_aportes
+
+    # =====================================================================
+    # 2. PAINEL DE RESUMO HISTÓRICO (O GRANDE RAIO-X)
+    # =====================================================================
+    with st.container(border=True):
+        st.markdown("#### 📈 Balanço Financeiro Global (ROI)")
+        ind1, ind2, ind3, ind4 = st.columns(4)
+        
+        ind1.metric("💰 Banca Atual", f"R$ {banca_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        ind2.metric("📥 Total Aportado", f"R$ {t_aportes:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        ind3.metric("📤 Total Sacado", f"R$ {t_saques:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+        # Indicador visual de Lucro/Prejuízo
+        str_res = f"R$ {resultado_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        if resultado_global > 0:
+            ind4.metric("📊 Resultado do Projeto", str_res, "Lucro Histórico")
+        elif resultado_global < 0:
+            ind4.metric("📊 Resultado do Projeto", str_res, "Prejuízo Histórico")
+        else:
+            ind4.metric("📊 Resultado do Projeto", "R$ 0,00", "Empate / Ponto Zero")
+
+    # =====================================================================
+    # 3. CONTROLES OPERACIONAIS E BANCO DE DADOS
+    # =====================================================================
     c1, c2 = st.columns(2)
     
     with c1:
         with st.container(border=True):
+            st.markdown("**📂 Gerenciamento do Cofre (Backup)**")
             st.file_uploader("📥 Carregar Arquivo Cofre.json", type="json", key="uploader_cofre", on_change=cb_carregar_cofre)
-            st.info(f"📊 **Concursos Oficiais Salvos:** {len(st.session_state.data['historico_dados'])}.")
+            st.info(f"📊 **Concursos Oficiais Salvos:** {len(st.session_state.data.get('historico_dados', []))}.")
             st.download_button("📤 Baixar Backup Consolidado", json.dumps(st.session_state.data), "Cofre.json", type="primary", use_container_width=True)
             
     with c2:
         with st.container(border=True):
-            st.metric("💰 Saldo na Banca", f"R$ {st.session_state.data['banca']:.2f}")
-            st.number_input("Depositar Valor (R$):", min_value=0.0, step=10.0, key="input_aporte")
-            st.button("AUTORIZAR DEPÓSITO", on_click=cb_depositar, use_container_width=True)
+            st.markdown("**💸 Movimentação de Caixa**")
             
-            # --- NOVO BOTÃO DE ZERAR BANCA ---
-            if st.button("🔄 ZERAR BANCA", use_container_width=True, type="secondary"):
+            # Um único campo de valor para facilitar
+            valor_mov = st.number_input("Digite o Valor (R$):", min_value=0.0, step=10.0, key="input_movimentacao")
+            
+            col_dep, col_sac = st.columns(2)
+            
+            with col_dep:
+                if st.button("📥 DEPOSITAR", use_container_width=True, type="primary"):
+                    if valor_mov > 0:
+                        st.session_state.data["banca"] = st.session_state.data.get("banca", 0.0) + valor_mov
+                        st.session_state.data["historico_aportes"] += valor_mov
+                        salvar_dados(st.session_state.data)
+                        st.rerun()
+                        
+            with col_sac:
+                if st.button("📤 SACAR", use_container_width=True):
+                    if valor_mov > 0:
+                        if valor_mov <= st.session_state.data.get("banca", 0.0):
+                            st.session_state.data["banca"] -= valor_mov
+                            st.session_state.data["historico_saques"] += valor_mov
+                            salvar_dados(st.session_state.data)
+                            st.rerun()
+                        else:
+                            st.error("❌ Saldo insuficiente na banca para este saque.")
+            
+            st.divider()
+            
+            # Botão Mestre de Reset (Zera Banca, Saques e Aportes para começar nova temporada)
+            if st.button("🔄 ZERAR BANCA E HISTÓRICO", use_container_width=True, type="secondary"):
                 st.session_state.data["banca"] = 0.0
-                salvar_dados(st.session_state.data) # Salva no Cofre.json
-                st.rerun() # Atualiza a tela instantaneamente
-            # ---------------------------------
+                st.session_state.data["historico_aportes"] = 0.0
+                st.session_state.data["historico_saques"] = 0.0
+                salvar_dados(st.session_state.data)
+                st.rerun()
 
 # --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
+    # =====================================================================
+    # PAINEL DE STATUS FINANCEIRO (VISUALIZAÇÃO RÁPIDA)
+    # =====================================================================
+    b_atual = st.session_state.data.get("banca", 0.0)
+    t_aportes = st.session_state.data.get("historico_aportes", 0.0)
+    t_saques = st.session_state.data.get("historico_saques", 0.0)
+    res_global = (b_atual + t_saques) - t_aportes
+
+    str_banca = f"R$ {b_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    str_res = f"R$ {res_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    if res_global > 0:
+        status_msg = f"🟢 **Lucro Global:** `{str_res}`"
+    elif res_global < 0:
+        status_msg = f"🔴 **Prejuízo Global:** `{str_res}`"
+    else:
+        status_msg = f"⚪ **Empate Global:** `{str_res}`"
+
+    st.markdown(f"> 🏦 **Banca Disponível:** `{str_banca}` &nbsp;&nbsp;|&nbsp;&nbsp; {status_msg}")
+    st.write("") # Adiciona um espacinho em branco para não colar no código de baixo
+    # =====================================================================
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
         st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
@@ -995,7 +1080,28 @@ with tabs[1]:
     else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
 
 # --- TAB 3: GERADOR AUTÔNOMO ---
-with tabs[2]:
+with tabs[3]:
+    # =====================================================================
+    # PAINEL DE STATUS FINANCEIRO (VISUALIZAÇÃO RÁPIDA)
+    # =====================================================================
+    b_atual = st.session_state.data.get("banca", 0.0)
+    t_aportes = st.session_state.data.get("historico_aportes", 0.0)
+    t_saques = st.session_state.data.get("historico_saques", 0.0)
+    res_global = (b_atual + t_saques) - t_aportes
+
+    str_banca = f"R$ {b_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    str_res = f"R$ {res_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    if res_global > 0:
+        status_msg = f"🟢 **Lucro Global:** `{str_res}`"
+    elif res_global < 0:
+        status_msg = f"🔴 **Prejuízo Global:** `{str_res}`"
+    else:
+        status_msg = f"⚪ **Empate Global:** `{str_res}`"
+
+    st.markdown(f"> 🏦 **Banca Disponível:** `{str_banca}` &nbsp;&nbsp;|&nbsp;&nbsp; {status_msg}")
+    st.write("") # Adiciona um espacinho em branco para não colar no código de baixo
+    # =====================================================================
     st.markdown("### 🚀 Engenharia Combinatória por Verba")
     
     # Criando duas colunas para o layout ficar organizado
