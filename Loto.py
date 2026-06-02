@@ -1416,9 +1416,9 @@ with tabs[4]:
         
         col_massa1, col_massa2 = st.columns(2)
         
-        # --- BOTÃO 1: O SEU ORIGINAL (RECUPERAR GAP DIÁRIO) ---
+        # --- BOTÃO 1: O SEU ORIGINAL (RECUPERAR GAP DIÁRIO COM IA ADAPTATIVA) ---
         with col_massa1:
-            if st.button("🛸 BUSCAR FALTANTES (GAP)", type="primary", use_container_width=True):
+            if st.button("🛸 BUSCAR FALTANTES E APOSTAR (GAP)", type="primary", use_container_width=True):
                 historico = st.session_state.data.get("historico_dados", [])
                 if not historico:
                     st.error("Banco vazio. Use o botão ao lado para baixar tudo do zero.")
@@ -1427,8 +1427,9 @@ with tabs[4]:
                     try:
                         res_latest = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest", verify=False, timeout=10).json()
                         ultimo_oficial = int(res_latest['concurso'])
+                        
                         if ultimo_salvo >= ultimo_oficial:
-                            st.info("Sistema já atualizado.")
+                            st.info("O sistema já está atualizado com o último sorteio.")
                         else:
                             concursos_faltantes = list(range(ultimo_salvo + 1, ultimo_oficial + 1))
                             barra = st.progress(0)
@@ -1446,6 +1447,38 @@ with tabs[4]:
                                         "data": res_conc.get('data', '')
                                     })
                                     
+                                    # --- O FANTASMA ADAPTATIVO DA IA NOS GAPS ---
+                                    historico_para_ia = st.session_state.data["historico_dados"][:-1]
+                                    if len(historico_para_ia) >= 10:
+                                        try:
+                                            ia_temp = raciocinio_total_ia(historico_para_ia)
+                                            matriz_base = ia_temp.get('matriz_base', [])
+                                            tamanho_matriz = len(matriz_base)
+                                            
+                                            # MESMA LÓGICA DE ORÇAMENTO DINÂMICO
+                                            qtd_jogos = 0
+                                            if tamanho_matriz == 15:
+                                                qtd_jogos = 1
+                                            elif tamanho_matriz == 16:
+                                                qtd_jogos = 16
+                                            elif tamanho_matriz == 17:
+                                                qtd_jogos = 30
+                                            elif 18 <= tamanho_matriz <= 20:
+                                                qtd_jogos = 50
+                                            elif tamanho_matriz > 20:
+                                                qtd_jogos = 20
+                                                
+                                            jogos_simulados = []
+                                            if qtd_jogos > 0 and tamanho_matriz >= 15:
+                                                for _ in range(qtd_jogos):
+                                                    jogos_simulados.append(sorted(random.sample(matriz_base, 15)))
+                                                    
+                                            st.session_state.data["jogos_salvos"] = jogos_simulados
+                                        except Exception:
+                                            st.session_state.data["jogos_salvos"] = []
+                                    else:
+                                        st.session_state.data["jogos_salvos"] = []
+                                    
                                     rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
                                     lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
                                     
@@ -1457,27 +1490,25 @@ with tabs[4]:
                             if logs_massa:
                                 st.session_state.ultimo_aprendizado = list(set(logs_massa))
                                 
+                            st.session_state.data["jogos_salvos"] = [] # Limpa a lixeira pós-operação
                             salvar_dados(st.session_state.data)
-                            st.success(f"Sincronização em Massa Concluída! R$ {lucro_acumulado_massa:.2f} creditados na banca.")
+                            st.success(f"✅ GAPs processados com sucesso! A IA geriu os investimentos e alcançou R$ {lucro_acumulado_massa:.2f}.")
                             st.rerun()
                     except Exception as e:
-                        st.error(f"Erro na conexão: {e}")
+                        st.error(f"Erro ao processar GAPs: {e}")
 
-        # --- BOTÃO 2: O NOVO BOTÃO INTELIGENTE (VIDA REAL DO ZERO) ---
+        # --- BOTÃO 2: O NOVO BOTÃO INTELIGENTE (VIDA REAL DO ZERO - ADAPTATIVO) ---
         with col_massa2:
-            if st.button("☢️ INICIAR VIDA REAL (BAIXAR DO CONCURSO 1)", type="secondary", use_container_width=True):
-                # 1. Apaga os testes antigos para limpar a mente da IA
+            if st.button("☢️ INICIAR VIDA REAL (BAIXAR E TREINAR DESDE O 1)", type="secondary", use_container_width=True):
+                # 1. Limpeza total da mente da IA
                 st.session_state.data["historico_dados"] = []
                 st.session_state.data["ia_memoria"] = {} 
                 st.session_state.data["banca"] = 0.0
-                st.session_state.data["jogos_salvos"] = [] # Limpa bilhetes de teste
+                st.session_state.data["jogos_salvos"] = [] 
                 
-                with st.spinner("Conectando à Caixa e baixando histórico completo de uma só vez (Aguarde)..."):
+                with st.spinner("Calibrando a IA (Simulação Dinâmica de Orçamento) desde o 1º sorteio..."):
                     try:
-                        # 2. O Truque: Acessar a rota raiz baixa TODOS de uma vez só!
                         res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
-                        
-                        # Garante que a lista está na ordem correta (do 1 ao atual) para a IA aprender cronologicamente
                         res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
                         
                         barra = st.progress(0)
@@ -1495,31 +1526,65 @@ with tabs[4]:
                                 "data": res_conc.get('data', '')
                             })
                             
+                            # --- O FANTASMA ADAPTATIVO DA IA ---
+                            historico_para_ia = st.session_state.data["historico_dados"][:-1]
+                            
+                            if len(historico_para_ia) >= 10:
+                                try:
+                                    ia_temp = raciocinio_total_ia(historico_para_ia)
+                                    matriz_base = ia_temp.get('matriz_base', [])
+                                    tamanho_matriz = len(matriz_base)
+                                    
+                                    # LÓGICA DE ORÇAMENTO DINÂMICO (Risco vs Retorno)
+                                    qtd_jogos = 0
+                                    if tamanho_matriz == 15:
+                                        qtd_jogos = 1    # Matriz perfeita, aposta seca (R$ 3,50)
+                                    elif tamanho_matriz == 16:
+                                        qtd_jogos = 16   # Investimento cirúrgico Plano A (R$ 56,00)
+                                    elif tamanho_matriz == 17:
+                                        qtd_jogos = 30   # Risco moderado (R$ 105,00)
+                                    elif 18 <= tamanho_matriz <= 20:
+                                        qtd_jogos = 50   # Plano B - Modo de Combate (R$ 175,00)
+                                    elif tamanho_matriz > 20:
+                                        qtd_jogos = 20   # Defensiva (matriz grande demais, investe pouco: R$ 70,00)
+                                        
+                                    jogos_simulados = []
+                                    if qtd_jogos > 0 and tamanho_matriz >= 15:
+                                        for _ in range(qtd_jogos):
+                                            jogos_simulados.append(sorted(random.sample(matriz_base, 15)))
+                                            
+                                    st.session_state.data["jogos_salvos"] = jogos_simulados
+                                except Exception:
+                                    st.session_state.data["jogos_salvos"] = []
+                            else:
+                                st.session_state.data["jogos_salvos"] = []
+                            
                             rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
-                            # 3. Passa pelo SEU funil de aprendizado
+                            
+                            # O funil confere o volume exato de jogos simulados e calibra os pontos da estratégia
                             lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
                             lucro_acumulado_massa += lucro_parcial
                             
-                            # Para não poluir a tela com 3.700 logs, guardamos apenas o relatório do ÚLTIMO concurso
                             if i == total_concursos - 1:
                                 logs_massa.extend(relatorio_parcial)
                                 
-                            # Atualiza a barra de progresso a cada 100 sorteios para ser bem rápido na tela
-                            if i % 100 == 0:
+                            if i % 50 == 0:
                                 barra.progress((i + 1) / total_concursos)
                                 
-                        barra.progress(1.0) # Completa a barra no final
+                        barra.progress(1.0)
                         
                         if logs_massa:
                             st.session_state.ultimo_aprendizado = list(set(logs_massa))
                             
+                        st.session_state.data["jogos_salvos"] = [] # Limpa a simulação para deixar a interface limpa
                         salvar_dados(st.session_state.data)
-                        st.success(f"🚀 Banco recriado com {total_concursos} concursos! IA calibrada e pronta para a Vida Real.")
+                        
+                        st.success(f"🚀 Calibração Concluída! A IA adaptou o orçamento jogo a jogo. Saldo Final Simulado: R$ {lucro_acumulado_massa:.2f}")
                         st.balloons()
                         st.rerun()
                         
                     except Exception as e:
-                        st.error(f"Erro ao baixar o histórico completo: {e}")
+                        st.error(f"Erro ao processar: {e}")
     
     col_sync1, col_sync2 = st.columns(2)
     
