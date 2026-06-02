@@ -10,48 +10,41 @@ from datetime import datetime
 import urllib3
 from fpdf import FPDF
 from datetime import datetime
-import io
-import re
 
-def remover_emojis(texto):
-    """Remove emojis e caracteres que causam erros no PDF."""
-    if not isinstance(texto, str):
-        texto = str(texto)
-    # Remove caracteres que não são comuns (emojis, etc)
-    return texto.encode('ascii', 'ignore').decode('ascii')
+# Usaremos a classe FPDF da biblioteca fpdf2 que suporta UTF-8
+class PDF(FPDF):
+    def header(self):
+        # Cabeçalho da página
+        self.set_font("Arial", 'B', 16)
+        self.cell(0, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
+        self.set_font("Arial", '', 10)
+        self.cell(0, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
+        self.ln(5)
 
 def gerar_pdf_jogos(jogos):
-    pdf = FPDF()
+    # Inicializa com suporte a UTF-8 (essencial para o DNA 🧬)
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Cabeçalho (Limpo)
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "LotoMatrix PRO - Relatorio de Estrategias", ln=True, align='C')
-    
-    pdf.set_font("Arial", '', 10)
-    pdf.cell(200, 10, f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
-    pdf.ln(10)
-    
-    # Listagem dos Jogos
+    # Adicionamos uma fonte que suporte caracteres unicode (Arial padrão costuma funcionar)
+    pdf.set_font("Arial", size=12)
+
     for i, j in enumerate(jogos, 1):
-        # Limpeza dos textos antes de inserir no PDF
-        estrategia = remover_emojis(j.get('estrategia', 'Padrao'))
-        dna = remover_emojis(j.get('dna', 'DNA Padrao'))
+        # Card de Estilo (Visual Profissional)
+        pdf.set_fill_color(240, 240, 240) # Fundo cinza claro
+        pdf.cell(0, 10, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {j.get('estrategia')}", ln=True, fill=True)
         
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 8, f"JOGO {i:02d} | Grade: {j.get('tamanho')} | {estrategia}", ln=True)
+        # Símbolo do DNA mantido aqui!
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(0, 8, f"🧬 DNA: {j.get('dna', '🧬 DNA Padrao')}", ln=True)
         
-        pdf.set_font("Arial", '', 10)
-        pdf.cell(200, 6, f"DNA: {dna}", ln=True)
-        
+        # Números em destaque
         dezenas = " - ".join([f"{n:02d}" for n in j.get('dezenas', [])])
-        
         pdf.set_font("Courier", 'B', 12)
-        pdf.cell(200, 10, dezenas, ln=True, border=1)
+        pdf.cell(0, 10, dezenas, ln=True, border=1, align='C')
         pdf.ln(5)
     
-    return pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S') # Retorna os bytes do PDF
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def exibir_mini_painel_financeiro():
     b_atual = st.session_state.data.get("banca", 0.0)
