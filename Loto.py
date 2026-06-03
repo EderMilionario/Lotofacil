@@ -1784,7 +1784,7 @@ with tabs[4]:
                                             # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
                                             # -----------------------------------------------------
                                             custo_treinamento = qtd_jogos * 3.50
-                                            st.session_state.data["banca"] = -= custo_treinamento
+                                            st.session_state.data["banca"] -= custo_treinamento
                                             lucro_acumulado_massa -= custo_treinamento    
                                                 
                                             # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
@@ -1880,7 +1880,7 @@ with tabs[4]:
                                     # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
                                     # -----------------------------------------------------
                                     custo_treinamento = qtd_jogos * 3.50
-                                    st.session_state.data["banca"] = -= custo_treinamento
+                                    st.session_state.data["banca"] -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
                                         
                                     # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
