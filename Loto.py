@@ -342,8 +342,16 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
             motivo_tamanho = f"Matriz Simétrica de Defesa (20 dezenas): Garantindo o espelhamento de segurança."
             
     elif estrategia_atual == "Reversao":
-        tamanho_matriz = 22
-        motivo_tamanho = f"Matriz Defensiva (22 dezenas): Reversão exige máxima cobertura para zebras (Alta Volatilidade)."
+        # A Reversão agora respira de acordo com o Score da Inteligência
+        if score_estrategia >= 12.0:
+            tamanho_matriz = 19
+            motivo_tamanho = f"Matriz Reversão Otimizada (19 dezenas): Foco cirúrgico nas zebras (Confiança alta: {score_estrategia:.1f} pts)."
+        elif score_estrategia < 10.5:
+            tamanho_matriz = 22
+            motivo_tamanho = f"Matriz Reversão Expandida (22 dezenas): Máxima cobertura defensiva devido à alta volatilidade."
+        else:
+            tamanho_matriz = 21
+            motivo_tamanho = f"Matriz Reversão Padrão (21 dezenas): Cercando as dezenas atrasadas com equilíbrio estatístico."
         
     else: # Tendencia
         if score_estrategia >= 12.8:
@@ -644,41 +652,51 @@ def raciocinio_total_ia(historico, memoria):
             perf[est] = float(dado_memoria)
             
     # =================================================================
-    # 🌟 O CÉREBRO CONTEXTUAL (ALGORITMO DE BANDIDO CONTEXTUAL) 🌟
-    # Em vez de escolher a maior média cega, a IA aplica "Bônus de Cenário"
+    # 🌟 O CÉREBRO CONTEXTUAL (ALGORITMO DE BANDIDO CONTEXTUAL - V2) 🌟
+    # Matemática Estatística Aplicada à Curva Normal da Lotofácil
     # =================================================================
     notas_finais = perf.copy()
     
-    # 1. GATILHO DO CICLO (A Cereja do Bolo)
+    # 1. GATILHO DO CICLO (Maturidade Estatística)
     qtd_faltam = len(faltam_ciclo)
-    if 1 <= qtd_faltam <= 6:
-        # Se faltam poucas, o Ciclo recebe um bônus MASSIVO para ser escolhido!
-        # Exemplo: Faltam 2 -> bônus de +2.3 pontos na média.
-        notas_finais["Ciclo"] += (1.5 + (6 - qtd_faltam) * 0.2)
-    elif qtd_faltam >= 20: 
-        # Ciclo recém resetado, péssimo momento. Punição.
-        notas_finais["Ciclo"] -= 2.0 
+    if qtd_faltam > 0 and qtd_faltam <= 7:
+        if jogos_ciclo >= 3:
+            # CICLO MADURO: É hora de atacar. Bônus agressivo.
+            # Quanto menos faltam E mais velho o ciclo, maior a força.
+            notas_finais["Ciclo"] += 2.0 + ((7 - qtd_faltam) * 0.3) + (jogos_ciclo * 0.2)
+        else:
+            # CICLO IMATURO (Armadilha): 1º ou 2º concurso. 
+            # É suicídio tentar fechar agora. Punição severa.
+            notas_finais["Ciclo"] -= 3.5 
+    elif qtd_faltam >= 18 or jogos_ciclo <= 1: 
+        # Ciclo recém resetado. Fora de cogitação.
+        notas_finais["Ciclo"] -= 4.0 
         
-    # 2. GATILHO DA REVERSÃO E TENDÊNCIA (Sensor de Volatilidade e Soma)
+    # 2. GATILHO DA REVERSÃO E TENDÊNCIA (Volatilidade e Anomalia Gaussiana)
     try:
         repetidas_ultimo = len(set(historico[-1]['dezenas']).intersection(set(historico[-2]['dezenas'])))
         
-        # Se repetir pouco/muito OU a média da soma estiver estourada, chama a Reversão
-        if repetidas_ultimo <= 7 or repetidas_ultimo >= 11 or media_soma > 198:
-            notas_finais["Reversao"] += 1.5 
-        elif 8 <= repetidas_ultimo <= 10 and media_soma <= 198:
-            notas_finais["Tendencia"] += 0.8
+        # Anomalias Reais da Lotofácil (Pontas da Curva de Gauss)
+        # Menos de 7 repetições, mais de 11, Soma abaixo de 175 ou acima de 210.
+        is_anomalia_extrema = (repetidas_ultimo <= 7) or (repetidas_ultimo >= 11) or (media_soma > 210) or (media_soma < 175)
+        
+        if is_anomalia_extrema:
+            # O sistema saiu dos trilhos. Aciona Reversão para buscar zebras.
+            notas_finais["Reversao"] += 2.0 
+        elif 8 <= repetidas_ultimo <= 10 and (180 <= media_soma <= 205):
+            # O rio está calmo. A Tendência é absoluta aqui.
+            notas_finais["Tendencia"] += 1.5
     except: pass
         
-    # 3. GATILHO DA SIMETRIA (Eixo de Borda)
+    # 3. GATILHO DA SIMETRIA (Distorção de Borda e Centro)
     try:
         moldura_ultimo = sum(1 for n in historico[-1]['dezenas'] if n in moldura_lista)
+        # O normal da moldura é de 9 a 11. Estourou isso? Aciona o ímã da Simetria.
         if moldura_ultimo <= 8 or moldura_ultimo >= 12: 
-            # A moldura estourou o padrão (média é 10), Simetria entra para corrigir o eixo
-            notas_finais["Simetria"] += 1.2
+            notas_finais["Simetria"] += 1.8
     except: pass
 
-    # A GRANDE DECISÃO: A vencedora é a estratégia que unir o melhor Histórico + Contexto Ideal
+    # A GRANDE DECISÃO
     melhor_est = max(notas_finais, key=notas_finais.get)
     
 
@@ -1705,18 +1723,19 @@ with tabs[4]:
                 j['acertos'] = pontos
                 j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
                 
-                # --- O CÉREBRO APRENDE AQUI (Idêntico para Manual e API) ---
+                # --- O CÉREBRO APRENDE AQUI (Matemática Cumulativa Perfeita) ---
                 est_raw = j.get('estrategia', '')
                 est_usada = mapa_estrategias.get(est_raw, est_raw)
                 
+                # Garante que a memória é SEMPRE um dicionário de usos e pontos
                 if est_usada in st.session_state.data.get("ia_memoria", {}):
-                    # Se o seu dicionário usar a estrutura de pontos e usos
-                    if isinstance(st.session_state.data["ia_memoria"][est_usada], dict):
+                    memoria_est = st.session_state.data["ia_memoria"][est_usada]
+                    if isinstance(memoria_est, dict):
                         st.session_state.data["ia_memoria"][est_usada]["pontos"] += pontos
                         st.session_state.data["ia_memoria"][est_usada]["usos"] += 1
-                    else: # Se for um número flutuante simples
-                        score_atual = st.session_state.data["ia_memoria"][est_usada]
-                        st.session_state.data["ia_memoria"][est_usada] = (score_atual + pontos) / 2
+                    else:
+                        # Se por acaso estiver corrompido como float, recria a estrutura
+                        st.session_state.data["ia_memoria"][est_usada] = {"usos": 1, "pontos": pontos}
                         
                     relatorio.append(f"A métrica para **{est_usada}** calibrou pesos (Concurso {concurso}: {pontos} pts).")
                 
@@ -1794,21 +1813,25 @@ with tabs[4]:
                                             elif tamanho_matriz == 17: qtd_jogos = 30
                                             elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
                                             elif tamanho_matriz > 20: qtd_jogos = 20
+                                            # -----------------------------------------------------
+                                            # CORREÇÃO FINANCEIRA: A IA PAGA PELO TREINAMENTO
+                                            # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
+                                            # -----------------------------------------------------
+                                            custo_treinamento = qtd_jogos * 3.50
+                                            st.session_state.data["banca"] = 300.00
+                                            lucro_acumulado_massa -= custo_treinamento    
                                                 
-                                            jogos_simulados = []
-                                            if qtd_jogos > 0 and tamanho_matriz >= 15:
-                                                for _ in range(qtd_jogos):
-                                                    # CORREÇÃO
-                                                    jogos_simulados.append({
-                                                        "id": str(uuid.uuid4()),
-                                                        "concurso_alvo": num,
-                                                        "dezenas": sorted(random.sample(matriz_base, 15)),
-                                                        "tamanho": 15,
-                                                        "status": "Aguardando Sorteio",
-                                                        "acertos": 0,
-                                                        "estrategia": estrategia_rodada,
-                                                        "justificativa": "Fantasma"
-                                                    })
+                                            # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
+                                            jogos_simulados.append({
+                                                "id": str(uuid.uuid4()),
+                                                "concurso_alvo": num,
+                                                "dezenas": sorted(matriz_base[:15]),
+                                                "tamanho": 15,
+                                                "status": "Aguardando Sorteio",
+                                                "acertos": 0,
+                                                "estrategia": estrategia_rodada,
+                                                "justificativa": "Fantasma (Elite da Matriz)"
+                                            })
                                                     
                                             st.session_state.data["jogos_salvos"] = jogos_simulados
                                         except Exception as e:
@@ -1886,21 +1909,25 @@ with tabs[4]:
                                     elif tamanho_matriz == 17: qtd_jogos = 30
                                     elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
                                     elif tamanho_matriz > 20: qtd_jogos = 20
+                                    # -----------------------------------------------------
+                                    # CORREÇÃO FINANCEIRA: A IA PAGA PELO TREINAMENTO
+                                    # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
+                                    # -----------------------------------------------------
+                                    custo_treinamento = qtd_jogos * 3.50
+                                    st.session_state.data["banca"] = 300.00
+                                    lucro_acumulado_massa -= custo_treinamento    
                                         
-                                    jogos_simulados = []
-                                    if qtd_jogos > 0 and tamanho_matriz >= 15:
-                                        for _ in range(qtd_jogos):
-                                            # CORREÇÃO 3: Bilhete estruturado perfeitamente para o auditor
-                                            jogos_simulados.append({
-                                                "id": str(uuid.uuid4()),
-                                                "concurso_alvo": num,
-                                                "dezenas": sorted(random.sample(matriz_base, 15)),
-                                                "tamanho": 15,
-                                                "status": "Aguardando Sorteio",
-                                                "acertos": 0,
-                                                "estrategia": estrategia_rodada,
-                                                "justificativa": "Fantasma"
-                                            })
+                                    # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
+                                    jogos_simulados.append({
+                                        "id": str(uuid.uuid4()),
+                                        "concurso_alvo": num,
+                                        "dezenas": sorted(matriz_base[:15]),
+                                        "tamanho": 15,
+                                        "status": "Aguardando Sorteio",
+                                        "acertos": 0,
+                                        "estrategia": estrategia_rodada,
+                                        "justificativa": "Fantasma (Elite da Matriz)"
+                                    })
                                             
                                     st.session_state.data["jogos_salvos"] = jogos_simulados
                                 except Exception as e:
