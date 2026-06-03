@@ -578,21 +578,17 @@ def cb_carregar_cofre():
 def raciocinio_total_ia(historico, memoria):
     if not historico: return None
     
-    # 🧠 JANELA DE ESQUECIMENTO (A base para curar a Inércia Estatística)
-    # A IA agora enxerga a frequência global para fins de log, mas usa o horizonte recente para decisão.
+    # 🧠 LEITURA DE CENÁRIO (Parâmetros validados e otimizados)
     historico_recente = historico[-50:] if len(historico) >= 50 else historico
     todas_dezenas_recentes = [n for h in historico_recente for n in h['dezenas']]
     freq_recente = Counter(todas_dezenas_recentes)
     freq_recente_max = max(freq_recente.values()) if freq_recente else 1
     
-    # Frequência Absoluta (Mantida para não quebrar outras leituras do painel)
-    todas_dezenas = [n for h in historico for n in h['dezenas']]
-    freq = Counter(todas_dezenas)
+    freq = Counter([n for h in historico for n in h['dezenas']])
     
     primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
     moldura_lista = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
     
-    # Fragmentação Temporal para o Viés Direcional
     ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
     penultimos_10 = historico[-20:-10] if len(historico) >= 20 else historico[-10:]
     
@@ -600,6 +596,7 @@ def raciocinio_total_ia(historico, memoria):
     freq_pen_10 = Counter([n for h in penultimos_10 for n in h['dezenas']])
 
     media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10)
+    soma_ultimo = sum(historico[-1]['dezenas'])
     media_impares = sum([sum(1 for n in h['dezenas'] if n % 2 != 0) for h in ultimos_10]) / len(ultimos_10)
     media_primos = sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_10]) / len(ultimos_10)
     media_moldura = sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10)
@@ -614,101 +611,73 @@ def raciocinio_total_ia(historico, memoria):
             elif not dezena_encontrada[n]:
                 atrasos[n] += 1
 
-    # --- CÉREBRO DE CICLO INTELIGENTE (CÁLCULO PROGRESSIVO PERFEITO) ---
+    # --- CÉREBRO DE CICLO INTELIGENTE (Matemática Absoluta) ---
     ciclo_atual = set()
     jogos_ciclo = 0
     
-    # A IA varre a história do concurso 1 até hoje. Sempre que dá 25, ela reseta.
     for h in historico:
         ciclo_atual.update(h['dezenas'])
         jogos_ciclo += 1
         if len(ciclo_atual) == 25:
-            ciclo_atual = set() # O Ciclo fechou! Reseta para o próximo.
+            ciclo_atual = set() 
             jogos_ciclo = 0
             
-    # O que sobrar na variável é o estado real e absoluto do ciclo hoje.
     faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
     
-    # Se faltam_ciclo tem 25 dezenas (len == 25), a IA vai ativar o Modo Caos e Matriz 23.
-    # Inteligência de Reset: Se o ciclo fechou (faltam 0), iniciamos um novo agora
-    if len(faltam_ciclo) == 0:
-        ciclo = set(historico[-1]['dezenas'])
-        faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo))
-        jogos_ciclo = 1
-    # [FIM DA SUBSTITUIÇÃO]
-
-    # --- AVALIAÇÃO DE DESEMPENHO (MEMÓRIA BLINDADA CONTRA OVERFITTING) ---
+    # --- AVALIAÇÃO DE DESEMPENHO (Leitura Direta da Memória) ---
     perf = {}
     for est in ["Tendencia", "Reversao", "Ciclo", "Simetria"]:
         dado_memoria = memoria.get(est, 11.0)
         if isinstance(dado_memoria, dict):
             usos = dado_memoria.get("usos", 0)
             pontos = dado_memoria.get("pontos", 0)
-            if usos > 30: 
-                pontos = (pontos / usos) * 30
-                usos = 30
+            # Lê a média limpa. A IA já ajusta a inércia na Aba 5.
             perf[est] = pontos / usos if usos > 0 else 11.0 
         else:
             perf[est] = float(dado_memoria)
             
     # =================================================================
     # 🌟 O CÉREBRO CONTEXTUAL (ALGORITMO DE BANDIDO CONTEXTUAL - V2) 🌟
-    # Matemática Estatística Aplicada à Curva Normal da Lotofácil
     # =================================================================
     notas_finais = perf.copy()
     
-    # 1. GATILHO DO CICLO (Maturidade Estatística)
+    # 1. GATILHO DO CICLO
     qtd_faltam = len(faltam_ciclo)
     if qtd_faltam > 0 and qtd_faltam <= 7:
         if jogos_ciclo >= 3:
-            # CICLO MADURO: É hora de atacar. Bônus agressivo.
-            # Quanto menos faltam E mais velho o ciclo, maior a força.
             notas_finais["Ciclo"] += 2.0 + ((7 - qtd_faltam) * 0.3) + (jogos_ciclo * 0.2)
         else:
-            # CICLO IMATURO (Armadilha): 1º ou 2º concurso. 
-            # É suicídio tentar fechar agora. Punição severa.
             notas_finais["Ciclo"] -= 3.5 
     elif qtd_faltam >= 18 or jogos_ciclo <= 1: 
-        # Ciclo recém resetado. Fora de cogitação.
         notas_finais["Ciclo"] -= 4.0 
         
-    # 2. GATILHO DA REVERSÃO E TENDÊNCIA (Volatilidade e Anomalia Gaussiana)
+    # 2. GATILHO DA REVERSÃO E TENDÊNCIA
     try:
-        repetidas_ultimo = len(set(historico[-1]['dezenas']).intersection(set(historico[-2]['dezenas'])))
-        
-        # Anomalias Reais da Lotofácil (Pontas da Curva de Gauss)
-        # Menos de 7 repetições, mais de 11, Soma abaixo de 175 ou acima de 210.
-        is_anomalia_extrema = (repetidas_ultimo <= 7) or (repetidas_ultimo >= 11) or (media_soma > 210) or (media_soma < 175)
-        
-        if is_anomalia_extrema:
-            # O sistema saiu dos trilhos. Aciona Reversão para buscar zebras.
-            notas_finais["Reversao"] += 2.0 
-        elif 8 <= repetidas_ultimo <= 10 and (180 <= media_soma <= 205):
-            # O rio está calmo. A Tendência é absoluta aqui.
-            notas_finais["Tendencia"] += 1.5
+        if len(historico) >= 2:
+            repetidas_ultimo = len(set(historico[-1]['dezenas']).intersection(set(historico[-2]['dezenas'])))
+            is_anomalia_extrema = (repetidas_ultimo <= 7) or (repetidas_ultimo >= 11) or (soma_ultimo > 210) or (soma_ultimo < 175)
+            
+            if is_anomalia_extrema:
+                notas_finais["Reversao"] += 2.0 
+            elif 8 <= repetidas_ultimo <= 10 and (180 <= media_soma <= 205):
+                notas_finais["Tendencia"] += 1.5
     except: pass
         
-    # 3. GATILHO DA SIMETRIA (Distorção de Borda e Centro)
+    # 3. GATILHO DA SIMETRIA
     try:
         moldura_ultimo = sum(1 for n in historico[-1]['dezenas'] if n in moldura_lista)
-        # O normal da moldura é de 9 a 11. Estourou isso? Aciona o ímã da Simetria.
         if moldura_ultimo <= 8 or moldura_ultimo >= 12: 
             notas_finais["Simetria"] += 1.8
     except: pass
 
-    # A GRANDE DECISÃO
     melhor_est = max(notas_finais, key=notas_finais.get)
     
-
-    # --- TAMANHO DINÂMICO DA MATRIZ (CONECTADO AO NOVO MOTOR!) ---
-    # Agora sim! A IA deixou de usar aquela regra dura e chama a nossa 
-    # matemática de confiança e volatilidade para definir o tamanho da matriz da rodada.
+    # --- TAMANHO DA MATRIZ ---
     qtd_matriz, _, _, _ = calcular_temperatura_e_confianca(historico, melhor_est, perf)
 
-    # --- MUTAÇÃO DE PESOS DA IA CONFORME DECISÃO (CORE ATUALIZADO) ---
+    # --- MUTAÇÃO DE PESOS DA IA (O Bote Otimizado) ---
     if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
         estrategia = "Ciclo Otimizado"
-        # Ciclo usa freq_recente como base secundária
         pesos = {i: 100 if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
         motivo_est = "A IA priorizou o Fechamento de Ciclo. Dezenas ausentes receberam força máxima."
         
@@ -716,20 +685,14 @@ def raciocinio_total_ia(historico, memoria):
         estrategia = "Simetria de Borda"
         pesos = {}
         for i in range(1, 26):
-            # SIMETRIA MAGNÉTICA: A dezena 'i' absorve a força do seu espelho!
             espelho = 26 - i
             peso_espelho = freq_recente.get(espelho, 0)
-            
             bonus_borda = 15 if i in moldura_lista else 0
-            
-            # Elas somam as forças (andam de mãos dadas)
             pesos[i] = freq_recente.get(i, 0) + peso_espelho + bonus_borda
-            
         motivo_est = "A IA adotou Simetria Analítica. Dezenas e seus espelhos ganharam força magnética conjunta."
         
     elif melhor_est == "Reversao":
         estrategia = "Reversão Estatística"
-        # Agora usando ESTRITAMENTE a Janela de Esquecimento para não ser sufocada pelo passado
         pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 5)) for i in range(1, 26)}
         motivo_est = "A IA ativou Reversão Estatística focada no curto prazo (Janela de Esquecimento)."
         
@@ -737,7 +700,6 @@ def raciocinio_total_ia(historico, memoria):
         estrategia = "Tendência de Frequência"
         pesos = {}
         for i in range(1, 26):
-            # VIÉS DIRECIONAL (Momentum de Aceleração vs Desaceleração)
             aceleracao = freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0) 
             peso_base = freq_recente.get(i, 0)
             pesos[i] = max(1, peso_base + (aceleracao * 3))
@@ -745,7 +707,6 @@ def raciocinio_total_ia(historico, memoria):
 
     dezenas_ordenadas = sorted(range(1, 26), key=lambda x: pesos[x], reverse=True)
     matriz_base = sorted(dezenas_ordenadas[:qtd_matriz])
-    
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
 
     return {
@@ -1723,18 +1684,23 @@ with tabs[4]:
                 j['acertos'] = pontos
                 j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
                 
-                # --- O CÉREBRO APRENDE AQUI (Matemática Cumulativa Perfeita) ---
+                # --- O CÉREBRO APRENDE AQUI (Matemática Deslizante Anticongelamento) ---
                 est_raw = j.get('estrategia', '')
                 est_usada = mapa_estrategias.get(est_raw, est_raw)
                 
-                # Garante que a memória é SEMPRE um dicionário de usos e pontos
                 if est_usada in st.session_state.data.get("ia_memoria", {}):
-                    memoria_est = st.session_state.data["ia_memoria"][est_usada]
-                    if isinstance(memoria_est, dict):
-                        st.session_state.data["ia_memoria"][est_usada]["pontos"] += pontos
-                        st.session_state.data["ia_memoria"][est_usada]["usos"] += 1
+                    mem_ia = st.session_state.data["ia_memoria"][est_usada]
+                    
+                    if isinstance(mem_ia, dict):
+                        if mem_ia["usos"] >= 30:
+                            # 🌟 Efeito Janela Deslizante: Impede que a IA fique teimosa no longo prazo
+                            media_atual = mem_ia["pontos"] / 30.0
+                            mem_ia["pontos"] = (media_atual * 29.0) + pontos
+                            mem_ia["usos"] = 30
+                        else:
+                            mem_ia["pontos"] += pontos
+                            mem_ia["usos"] += 1
                     else:
-                        # Se por acaso estiver corrompido como float, recria a estrutura
                         st.session_state.data["ia_memoria"][est_usada] = {"usos": 1, "pontos": pontos}
                         
                     relatorio.append(f"A métrica para **{est_usada}** calibrou pesos (Concurso {concurso}: {pontos} pts).")
@@ -1818,7 +1784,7 @@ with tabs[4]:
                                             # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
                                             # -----------------------------------------------------
                                             custo_treinamento = qtd_jogos * 3.50
-                                            st.session_state.data["banca"] = 300.00
+                                            st.session_state.data["banca"] = -= custo_treinamento
                                             lucro_acumulado_massa -= custo_treinamento    
                                                 
                                             # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
@@ -1868,7 +1834,7 @@ with tabs[4]:
                     "Ciclo": {"usos": 0, "pontos": 0},
                     "Simetria": {"usos": 0, "pontos": 0}
                 }
-                st.session_state.data["banca"] = 0.0
+                st.session_state.data["banca"] = 10000.00
                 st.session_state.data["jogos_salvos"] = [] 
                 
                 with st.spinner("Calibrando a IA (Simulação Dinâmica de Orçamento) desde o 1º sorteio..."):
@@ -1914,7 +1880,7 @@ with tabs[4]:
                                     # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
                                     # -----------------------------------------------------
                                     custo_treinamento = qtd_jogos * 3.50
-                                    st.session_state.data["banca"] = 300.00
+                                    st.session_state.data["banca"] = -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
                                         
                                     # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
