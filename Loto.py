@@ -1653,29 +1653,25 @@ with tabs[4]:
     # e que o dinheiro sempre retorne para a banca.
     def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
         if rateios is None: rateios = {}
-        # Valores de fallback padrão caso a API não envie ou seja manual
-        v11 = rateios.get(11, 7.0)
-        v12 = rateios.get(12, 14.0)
-        v13 = rateios.get(13, 35.0)
-        v14 = rateios.get(14, 1500.0)
-        v15 = rateios.get(15, 1500000.0)
+        v11, v12, v13, v14, v15 = rateios.get(11, 7.0), rateios.get(12, 14.0), rateios.get(13, 35.0), rateios.get(14, 1500.0), rateios.get(15, 1500000.0)
         
         lucro_total = 0.0
         relatorio = []
         sorteio_set = set(dezenas_sorteadas)
         
         mapa_estrategias = {
-            "Ciclo Otimizado": "Ciclo",
-            "Tendência de Frequência": "Tendencia",
-            "Reversão Estatística": "Reversao",
-            "Simetria de Borda": "Simetria"
+            "Ciclo Otimizado": "Ciclo", "Tendência de Frequência": "Tendencia", 
+            "Reversão Estatística": "Reversao", "Simetria de Borda": "Simetria"
         }
+        
+        # 🧠 Variáveis para a Matemática do Lote (Evita Amnésia na IA)
+        soma_pontos_est = {}
+        qtd_jogos_est = {}
         
         for j in st.session_state.data.get("jogos_salvos", []):
             alvo_do_jogo = j.get('concurso_alvo')
             pode_auditar = False
             
-            # Verifica se o bilhete é elegível para auditoria
             if str(alvo_do_jogo) == str(concurso) or (isinstance(alvo_do_jogo, int) and alvo_do_jogo <= concurso) or str(alvo_do_jogo) == "Legado":
                 pode_auditar = True
                 
@@ -1684,35 +1680,37 @@ with tabs[4]:
                 j['acertos'] = pontos
                 j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
                 
-                # --- O CÉREBRO APRENDE AQUI (Matemática Deslizante Anticongelamento) ---
                 est_raw = j.get('estrategia', '')
                 est_usada = mapa_estrategias.get(est_raw, est_raw)
                 
-                if est_usada in st.session_state.data.get("ia_memoria", {}):
-                    mem_ia = st.session_state.data["ia_memoria"][est_usada]
-                    
-                    if isinstance(mem_ia, dict):
-                        if mem_ia["usos"] >= 30:
-                            # 🌟 Efeito Janela Deslizante: Impede que a IA fique teimosa no longo prazo
-                            media_atual = mem_ia["pontos"] / 30.0
-                            mem_ia["pontos"] = (media_atual * 29.0) + pontos
-                            mem_ia["usos"] = 30
-                        else:
-                            mem_ia["pontos"] += pontos
-                            mem_ia["usos"] += 1
-                    else:
-                        st.session_state.data["ia_memoria"][est_usada] = {"usos": 1, "pontos": pontos}
-                        
-                    relatorio.append(f"A métrica para **{est_usada}** calibrou pesos (Concurso {concurso}: {pontos} pts).")
+                # Acumula os pontos do lote inteiro
+                soma_pontos_est[est_usada] = soma_pontos_est.get(est_usada, 0) + pontos
+                qtd_jogos_est[est_usada] = qtd_jogos_est.get(est_usada, 0) + 1
                 
                 if pontos >= 11:
                     j['status'] = "Premiado"
                     lucro_total += j['premio_valor']
-                    # ESTORNO PARA A BANCA: Resolve Ponto 4 e 5 perfeitamente
                     st.session_state.data["banca"] += j['premio_valor']
                 else:
                     j['status'] = "Não Premiado"
-                    
+        
+        # --- O CÉREBRO APRENDE AQUI (Uma única vez por sorteio!) ---
+        for est, soma_pts in soma_pontos_est.items():
+            media_lote = soma_pts / qtd_jogos_est[est]
+            
+            if est in st.session_state.data.get("ia_memoria", {}):
+                mem_ia = st.session_state.data["ia_memoria"][est]
+                if isinstance(mem_ia, dict):
+                    if mem_ia["usos"] >= 30:
+                        media_atual = mem_ia["pontos"] / 30.0
+                        mem_ia["pontos"] = (media_atual * 29.0) + media_lote
+                        mem_ia["usos"] = 30
+                    else:
+                        mem_ia["pontos"] += media_lote
+                        mem_ia["usos"] += 1
+                        
+                relatorio.append(f"A métrica para **{est}** calibrou pesos (Concurso {concurso}: Média do lote {media_lote:.2f} pts).")
+                
         return lucro_total, relatorio
 
     # Função auxiliar para mapear prêmios da API
@@ -1767,7 +1765,6 @@ with tabs[4]:
                                     historico_para_ia = st.session_state.data["historico_dados"][:-1]
                                     if len(historico_para_ia) >= 10:
                                         try:
-                                            # CORREÇÃO
                                             ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
                                             matriz_base = ia_temp.get('matriz_base', [])
                                             estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
@@ -1779,25 +1776,26 @@ with tabs[4]:
                                             elif tamanho_matriz == 17: qtd_jogos = 30
                                             elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
                                             elif tamanho_matriz > 20: qtd_jogos = 20
-                                            # -----------------------------------------------------
-                                            # CORREÇÃO FINANCEIRA: A IA PAGA PELO TREINAMENTO
-                                            # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
-                                            # -----------------------------------------------------
+                                            
+                                            # CORREÇÃO FINANCEIRA
                                             custo_treinamento = qtd_jogos * 3.50
                                             st.session_state.data["banca"] -= custo_treinamento
                                             lucro_acumulado_massa -= custo_treinamento    
-                                                
-                                            # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
-                                            jogos_simulados.append({
-                                                "id": str(uuid.uuid4()),
-                                                "concurso_alvo": num,
-                                                "dezenas": sorted(matriz_base[:15]),
-                                                "tamanho": 15,
-                                                "status": "Aguardando Sorteio",
-                                                "acertos": 0,
-                                                "estrategia": estrategia_rodada,
-                                                "justificativa": "Fantasma (Elite da Matriz)"
-                                            })
+                                            
+                                            # 🚨 A SOLUÇÃO DO BUG: INICIALIZAR A LISTA E CRIAR O LOOP!
+                                            jogos_simulados = []
+                                            
+                                            for _ in range(qtd_jogos):
+                                                jogos_simulados.append({
+                                                    "id": str(uuid.uuid4()),
+                                                    "concurso_alvo": num,
+                                                    "dezenas": sorted(random.sample(matriz_base, 15)) if len(matriz_base) >= 15 else matriz_base,
+                                                    "tamanho": 15,
+                                                    "status": "Aguardando Sorteio",
+                                                    "acertos": 0,
+                                                    "estrategia": estrategia_rodada,
+                                                    "justificativa": "Fantasma (Monte Carlo)"
+                                                })
                                                     
                                             st.session_state.data["jogos_salvos"] = jogos_simulados
                                         except Exception as e:
@@ -1862,39 +1860,38 @@ with tabs[4]:
                             
                             if len(historico_para_ia) >= 10:
                                 try:
-                                    # CORREÇÃO 1: Passar a memória para a IA não falhar
                                     ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
                                     matriz_base = ia_temp.get('matriz_base', [])
-                                    # CORREÇÃO 2: Salvar a estratégia escolhida para pontuá-la depois
                                     estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
                                     tamanho_matriz = len(matriz_base)
-                                    
+                                            
                                     qtd_jogos = 0
                                     if tamanho_matriz == 15: qtd_jogos = 1
                                     elif tamanho_matriz == 16: qtd_jogos = 16
                                     elif tamanho_matriz == 17: qtd_jogos = 30
                                     elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
                                     elif tamanho_matriz > 20: qtd_jogos = 20
-                                    # -----------------------------------------------------
-                                    # CORREÇÃO FINANCEIRA: A IA PAGA PELO TREINAMENTO
-                                    # Se a banca quebrar no treinamento, o lucro final refletirá a realidade.
-                                    # -----------------------------------------------------
+                                            
+                                    # CORREÇÃO FINANCEIRA
                                     custo_treinamento = qtd_jogos * 3.50
                                     st.session_state.data["banca"] -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
-                                        
-                                    # CORREÇÃO DE AMOSTRAGEM: A IA escolhe a elite da própria matriz
-                                    jogos_simulados.append({
-                                        "id": str(uuid.uuid4()),
-                                        "concurso_alvo": num,
-                                        "dezenas": sorted(matriz_base[:15]),
-                                        "tamanho": 15,
-                                        "status": "Aguardando Sorteio",
-                                        "acertos": 0,
-                                        "estrategia": estrategia_rodada,
-                                        "justificativa": "Fantasma (Elite da Matriz)"
-                                    })
                                             
+                                    # 🚨 A SOLUÇÃO DO BUG: INICIALIZAR A LISTA E CRIAR O LOOP!
+                                    jogos_simulados = []
+                                            
+                                    for _ in range(qtd_jogos):
+                                        jogos_simulados.append({
+                                            "id": str(uuid.uuid4()),
+                                            "concurso_alvo": num,
+                                            "dezenas": sorted(random.sample(matriz_base, 15)) if len(matriz_base) >= 15 else matriz_base,
+                                            "tamanho": 15,
+                                            "status": "Aguardando Sorteio",
+                                            "acertos": 0,
+                                            "estrategia": estrategia_rodada,
+                                            "justificativa": "Fantasma (Monte Carlo)"
+                                        })
+                                                    
                                     st.session_state.data["jogos_salvos"] = jogos_simulados
                                 except Exception as e:
                                     st.session_state.data["jogos_salvos"] = []
