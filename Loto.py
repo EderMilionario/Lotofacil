@@ -819,6 +819,49 @@ with tabs[1]:
             
         tam_atual = len(ia['matriz_base'])
 
+        # ==========================================================
+        # BÚSSOLA DE APORTE INSTITUCIONAL (O "Ponto Doce" da Matemática)
+        # ==========================================================
+        tam_atual = len(ia['matriz_base'])
+        banca_atual = st.session_state.data.get('banca', 0.0)
+        
+        # O Perito define o "Ponto Doce" ideal para cada tamanho de matriz
+        if tam_atual <= 16:
+            jogos_ideal = 1 if tam_atual == 15 else 3
+            texto_bussola = "Ataque Sniper."
+        elif tam_atual == 17:
+            jogos_ideal = 8
+            texto_bussola = "Fechamento Absoluto de 17. Exige cobertura mínima para garantir 14 pontos."
+        elif tam_atual == 18:
+            jogos_ideal = 24
+            texto_bussola = "Fechamento Avançado. Distribuição ortogonal ideal para cercar as zebras."
+        elif tam_atual == 19:
+            jogos_ideal = 71
+            texto_bussola = "Rede Larga. Ponto de saturação matemática ideal antes da explosão de custo."
+        elif tam_atual == 20:
+            jogos_ideal = 210
+            texto_bussola = "Limite Máximo do Motor Exato. Cercamento de altíssima complexidade."
+        else:
+            jogos_ideal = 50 # Para 21, 22 ou 23, o ideal de amostragem Monte Carlo é 50 jogos
+            texto_bussola = "Matriz Gigante (Caos Aleatório). O motor Heurístico exige uma rede de arrasto estatística."
+
+        custo_ideal = jogos_ideal * 3.50
+        
+        # Exibe o Painel de Recomendação
+        st.markdown("---")
+        st.markdown("#### 🧭 Bússola de Operação (Recomendação do Sistema)")
+        
+        if banca_atual >= custo_ideal:
+            st.success(f"✅ **Banca Suficiente:** O seu saldo (R$ {banca_atual:.2f}) cobre o **Lote Ideal de {jogos_ideal} jogos** (R$ {custo_ideal:.2f}) para a Matriz de {tam_atual}. A IA operará com força máxima estatística.")
+        else:
+            falta = custo_ideal - banca_atual
+            st.warning(f"""
+            ⚠️ **Orçamento Defensivo Detectado:** Para extrair 100% do poder dessa Matriz de {tam_atual} ({texto_bussola}), a quantidade matemática ideal é de **{jogos_ideal} bilhetes** (Custo: **R$ {custo_ideal:.2f}**).  
+            
+            *Como o seu saldo atual é R$ {banca_atual:.2f}, o Motor Ortogonal fará um Downgrade e extrairá apenas a nata probabilística. Caso queira a cobertura matemática total, o aporte recomendado é de R$ {falta:.2f}.*
+            """)
+
+
         # =====================================================================
         # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
         # =====================================================================
@@ -876,74 +919,54 @@ with tabs[1]:
                         "Desnecessário no momento. Para matrizes curtas, os motores matemáticos assumem."
                     )
 
-        # ==========================================================
-        # TABELA INSTITUCIONAL DE COBERTURA E CUSTOS (15 a 23 Dezenas)
-        # ==========================================================
-        with st.expander("📊 Ver Tabela Institucional de Probabilidades e Limites", expanded=False):
-            st.markdown("""
-            <style>
-            .tabela-pro { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; font-family: sans-serif; }
-            .tabela-pro th { background-color: #0066cc; color: white; padding: 8px; border: 1px solid #ddd; }
-            .tabela-pro td { padding: 6px; border: 1px solid #ddd; color: #333;}
-            .tabela-pro tr:nth-child(even) { background-color: #f8f9fa; }
-            .tag-verde { background: #d4edda; color: #155724; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
-            .tag-amarela { background: #fff3cd; color: #856404; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
-            .tag-vermelha { background: #f8d7da; color: #721c24; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
-            </style>
-            <table class="tabela-pro">
-                <tr><th>Matriz</th><th>Combinações Possíveis</th><th>Garantia Exata (14 pts)</th><th>Motor Recomendado</th></tr>
-                <tr><td>15</td><td>1</td><td><span class="tag-verde">1 Jogo</span></td><td>Plano A (Puro)</td></tr>
-                <tr><td>16</td><td>16</td><td><span class="tag-verde">~ 3 Jogos</span></td><td>Plano A (Puro)</td></tr>
-                <tr><td>17</td><td>136</td><td><span class="tag-verde">~ 8 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
-                <tr><td>18</td><td>816</td><td><span class="tag-verde">~ 24 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
-                <tr><td>19</td><td>3.876</td><td><span class="tag-amarela">~ 71 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
-                <tr><td>20</td><td>15.504</td><td><span class="tag-amarela">~ 210 Jogos</span></td><td>Híbrido (Limite Exato)</td></tr>
-                <tr><td>21</td><td>54.264</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
-                <tr><td>22</td><td>170.544</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
-                <tr><td>23</td><td>490.314</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
-            </table>
-            """, unsafe_allow_html=True)
-        # ==========================================================
-        # BÚSSOLA DE APORTE INSTITUCIONAL (O "Ponto Doce" da Matemática)
-        # ==========================================================
-        tam_atual = len(ia['matriz_base'])
-        banca_atual = st.session_state.data.get('banca', 0.0)
+        # =====================================================================
+        # DADOS MATEMÁTICOS UNIFICADOS (Usados para o Painel 3 e Tabela 4)
+        # Probabilidades reais de Cobertura Mínima (Set Cover Approximation)
+        # =====================================================================
+        alvos_matematicos = {
+            15: {15: 1, 14: 1, 13: 1, "motor": "Aposta Única (Direta)"},
+            16: {15: 16, 14: 4, 13: 2, "motor": "🥇 Plano A (Exato)"},
+            17: {15: 136, 14: 10, 13: 4, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            18: {15: 816, 14: 24, 13: 6, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            19: {15: 3876, 14: 87, 13: 15, "motor": "🥈 Plano B (Híbrido)"},
+            20: {15: 15504, 14: 350, 13: 50, "motor": "🥈 Plano B (Híbrido)"},
+            21: {15: 54264, 14: 1000, 13: 100, "motor": "🥉 Plano B (Heurístico)"},
+            22: {15: 170544, 14: 3000, 13: 250, "motor": "🥉 Plano B (Heurístico)"},
+            23: {15: 490314, 14: 10000, 13: 800, "motor": "🥉 Plano B (Heurístico)"}
+        }
         
-        # O Perito define o "Ponto Doce" ideal para cada tamanho de matriz
-        if tam_atual <= 16:
-            jogos_ideal = 1 if tam_atual == 15 else 3
-            texto_bussola = "Ataque Sniper."
-        elif tam_atual == 17:
-            jogos_ideal = 8
-            texto_bussola = "Fechamento Absoluto de 17. Exige cobertura mínima para garantir 14 pontos."
-        elif tam_atual == 18:
-            jogos_ideal = 24
-            texto_bussola = "Fechamento Avançado. Distribuição ortogonal ideal para cercar as zebras."
-        elif tam_atual == 19:
-            jogos_ideal = 71
-            texto_bussola = "Rede Larga. Ponto de saturação matemática ideal antes da explosão de custo."
-        elif tam_atual == 20:
-            jogos_ideal = 210
-            texto_bussola = "Limite Máximo do Motor Exato. Cercamento de altíssima complexidade."
-        else:
-            jogos_ideal = 50 # Para 21, 22 ou 23, o ideal de amostragem Monte Carlo é 50 jogos
-            texto_bussola = "Matriz Gigante (Caos Aleatório). O motor Heurístico exige uma rede de arrasto estatística."
+        # Garante que o sistema nunca quebre se a matriz for fora do padrão
+        dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
 
-        custo_ideal = jogos_ideal * 3.50
-        
-        # Exibe o Painel de Recomendação
-        st.markdown("---")
-        st.markdown("#### 🧭 Bússola de Operação (Recomendação do Sistema)")
-        
-        if banca_atual >= custo_ideal:
-            st.success(f"✅ **Banca Suficiente:** O seu saldo (R$ {banca_atual:.2f}) cobre o **Lote Ideal de {jogos_ideal} jogos** (R$ {custo_ideal:.2f}) para a Matriz de {tam_atual}. A IA operará com força máxima estatística.")
-        else:
-            falta = custo_ideal - banca_atual
-            st.warning(f"""
-            ⚠️ **Orçamento Defensivo Detectado:** Para extrair 100% do poder dessa Matriz de {tam_atual} ({texto_bussola}), a quantidade matemática ideal é de **{jogos_ideal} bilhetes** (Custo: **R$ {custo_ideal:.2f}**).  
+        # =====================================================================
+        # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
+        # =====================================================================
+        st.markdown("### 💰 Projeção Financeira e Cobertura Matemática")
             
-            *Como o seu saldo atual é R$ {banca_atual:.2f}, o Motor Ortogonal fará um Downgrade e extrairá apenas a nata probabilística. Caso queira a cobertura matemática total, o aporte recomendado é de R$ {falta:.2f}.*
-            """)                           
+        with st.container(border=True):
+            garantia_escolhida = st.radio(
+                "🎯 **Se as 15 dezenas sorteadas estiverem dentro da Matriz, qual prêmio você quer garantir matematicamente?**", 
+                [15, 14, 13], 
+                index=0, 
+                horizontal=True,
+                format_func=lambda x: f"Garantir {x} Pontos"
+            )
+            
+            qtd_bilhetes_atual = dados_matriz[garantia_escolhida]
+            custo_atual = qtd_bilhetes_atual * 3.50
+            tipo_motor = dados_matriz["motor"]
+                
+            st.divider() # Linha sutil para separar os controles dos resultados
+            
+            # Formatadores de moeda e milhar estilo pt-BR
+            str_bilhetes = f"{qtd_bilhetes_atual:,}".replace(",", ".")
+            str_custo = f"R$ {custo_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            
+            c_a, c_b, c_c, c_d = st.columns(4)
+            c_a.metric("🧩 Matriz Avaliada", f"{tam_atual} Dezenas")
+            c_b.metric("⚙️ Motor Ideal", tipo_motor) 
+            c_c.metric(f"🎟️ Teto Absoluto", f"{str_bilhetes} Jogos")
+            c_d.metric("💸 Custo Base (Sem Poda)", str_custo)
 
         # =====================================================================
         # 4. TABELA DETALHADA: DISTINÇÃO ABSOLUTA DOS 3 MOTORES
@@ -1232,6 +1255,7 @@ with tabs[1]:
 
     else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
 
+
 # --- TAB 3: GERADOR AUTÔNOMO ---
 with tabs[2]:
     exibir_mini_painel_financeiro()
@@ -1282,6 +1306,7 @@ with tabs[2]:
                     historico_painel, estrategia_selecionada, memoria_ia
                 )
 
+                
                 # =====================================================================
                 # 🛡️ PLANO A: GARANTIA MATEMÁTICA REDUZIDA E HÍBRIDA (100% EXATA)
                 # Aqui o sistema já passa a inteligência, o dinheiro e a confiança!
