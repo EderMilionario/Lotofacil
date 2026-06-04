@@ -1042,7 +1042,7 @@ with tabs[1]:
                      st.info(f"""
                      🌪️ **Rede de Arrasto Estatística:** Para matrizes gigantes como esta ({tam_atual} Dz), o sistema obriga o uso do **{motor_selecionado}**.
                      O computador definiu um **Lote Otimizado de {qtd_exibicao} bilhetes** para fazer a rede de proteção (Custo: **R$ {custo_exibicao:,.2f}**).
-                     
+                     *💡 Nota do Motor:* O volume estimado é de **{qtd_exibicao} jogos** de 15 dezenas. Porém, se o sistema detectar **Alta Confiança** na rodada, ele fará um upgrade automático: usará esse mesmo orçamento de R$ {custo_exibicao:,.2f} para comprar jogos de **16 dezenas**, reduzindo o número de bilhetes físicos, mas multiplicando o poder de acerto.
                      *Como seu saldo atual é R$ {banca_atual:,.2f}, injete um aporte de **R$ {falta:,.2f}** para autorizar o motor estocástico.*
                      """)
 
