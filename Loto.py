@@ -17,6 +17,11 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     if dezenas_anteriores is None:
         dezenas_anteriores = []
         
+    # === 🛡️ O ESCUDO DE PROTEÇÃO DO PDF ===
+    def limpar_latin1(texto):
+        # Remove emojis, bolinhas (•) e caracteres (⚠️) que derrubam o FPDF antigo
+        return str(texto).encode('latin-1', 'ignore').decode('latin-1')
+        
     # Baixa o ícone do DNA colorido
     img_path = "dna_icon_pro.png"
     if not os.path.exists(img_path):
@@ -28,7 +33,7 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
         except:
             pass 
 
-    # --- CALCULADOR DE DNA COMPLETO (AGORA COM REPETIDAS) ---
+    # --- CALCULADOR DE DNA COMPLETO ---
     def calcular_dna_na_hora(dezenas, repetidas_salvas=None):
         if not dezenas: return ""
         primos_list = [2, 3, 5, 7, 11, 13, 17, 19, 23]
@@ -43,15 +48,13 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
         mult3 = sum(1 for x in dezenas if x in mult3_list)
         soma = sum(dezenas)
         
-        # A LÓGICA DAS REPETIDAS:
         if repetidas_salvas is not None:
             rep_str = f"{repetidas_salvas} Rep | "
         elif dezenas_anteriores:
-            # Se recebemos o concurso anterior, fazemos a matemática na hora!
             repetidas_calc = sum(1 for x in dezenas if x in dezenas_anteriores)
             rep_str = f"{repetidas_calc} Rep | "
         else:
-            rep_str = "" # Oculta se não tiver como calcular
+            rep_str = "" 
             
         return f"{moldura} Mol | {pares} Par | {primos} Pri | {fibs} Fib | {mult3} Mlt | {rep_str}Soma {soma}"
 
@@ -59,16 +62,14 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # ==========================================
-    # CABEÇALHO (AZUL LOTOMATRIX)
-    # ==========================================
+    # CABEÇALHO 
     if os.path.exists(img_path):
         pdf.image(img_path, 10, 10, 16)
         x_offset = 30
     else:
         x_offset = 10
         
-    pdf.set_text_color(0, 102, 204) # Azul
+    pdf.set_text_color(0, 102, 204)
     pdf.set_font('Arial', 'B', 22)
     pdf.set_xy(x_offset, 12)
     pdf.cell(0, 10, "LotoMatrix PRO", ln=0)
@@ -90,32 +91,30 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     
     pdf.ln(30)
     
-    # ==========================================
     # GERADOR DE CARDS
-    # ==========================================
     for i, j in enumerate(jogos, 1):
         if pdf.get_y() > 240:
             pdf.add_page()
             
         y_start = pdf.get_y()
         
-        estrategia = str(j.get('estrategia', 'Padrao')).replace("🧬", "").strip()
-        dna_banco = str(j.get('dna', '')).replace("🧬", "").strip()
+        # AQUI APLICAMOS O ESCUDO PARA NÃO DERRUBAR O APP
+        estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')).replace("🧬", "").strip())
+        dna_banco = limpar_latin1(str(j.get('dna', '')).replace("🧬", "").strip())
         dezenas = j.get('dezenas', [])
         
-        # Recupera as repetidas se o banco salvou, senão usa None para a IA calcular
         repetidas_salvas = j.get('repetidas', None)
         
-        # Se o DNA gravou "Fechamento", ignoramos e mandamos recalcular tudo perfeitamente
         if "Par" not in dna_banco and "Pri" not in dna_banco:
             dna_calculado = calcular_dna_na_hora(dezenas, repetidas_salvas)
             dna_texto = f"{dna_calculado} ({dna_banco})" 
         else:
             dna_texto = dna_banco
-
-        tamanho = j.get('tamanho', len(dezenas))
-        alvo = j.get('concurso_alvo', 'N/A')
-        dezenas_str = " - ".join([f"{n:02d}" for n in dezenas])
+            
+        # Protege o texto do DNA final
+        dna_texto = limpar_latin1(dna_texto)
+        alvo = limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
+        dezenas_str = limpar_latin1(" - ".join([f"{n:02d}" for n in dezenas]))
         
         # Fundo e Bordas
         pdf.set_fill_color(248, 248, 250)
@@ -127,7 +126,7 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
         pdf.set_text_color(30, 30, 30)
         pdf.set_font('Arial', 'B', 11)
         pdf.set_xy(15, y_start + 4)
-        pdf.cell(120, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  Grade: {tamanho} Dezenas", ln=0)
+        pdf.cell(120, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  Grade: {len(dezenas)} Dezenas", ln=0)
         
         pdf.set_text_color(0, 102, 204) 
         pdf.set_font('Arial', 'B', 10)
