@@ -905,6 +905,14 @@ with tabs[1]:
                 horizontal=True,
                 format_func=lambda x: f"Foco em {x} Pontos"
             )
+        # ... (seu código anterior de escolha de garantia e motor) ...
+            
+            # --- CHAVE DE FORÇAR O GERADOR ---
+            st.divider()
+            forcar_motor = st.checkbox("🚀 Forçar uso do Motor Selecionado (Ignorar Plano A)", 
+                                       help="Se marcado, o sistema ignorará o Plano A (Exato) mesmo que você tenha verba, forçando o uso do Plano B Híbrido ou Heurístico.")
+            
+            st.divider()    
             
             # --- DESCOBRE QUAIS MOTORES SÃO POSSÍVEIS PARA ESTE TAMANHO DE MATRIZ ---
             motores_disponiveis = []
@@ -1319,8 +1327,14 @@ with tabs[2]:
 
                     # =====================================================================
                     # 🛡️ PLANO A: GARANTIA MATEMÁTICA ABSOLUTA
-                    # =====================================================================
-                    sucesso_matematico, matriz_reduzida, msg_status = motor_garantia_exata_dinamica(ia, orcamento, conf_calc)
+                    # =====================================================================                    
+                    # CHAVE DE FORÇAR: Se a chave estiver ligada, pulamos o Plano A
+                    if st.session_state.get('forcar_motor', False):
+                        sucesso_matematico = False
+                        msg_status = "Modo Forçado: Motor Exato (Plano A) ignorado pelo usuário."
+                    else:
+                        sucesso_matematico, matriz_reduzida, msg_status = motor_garantia_exata_dinamica(ia, orcamento, conf_calc)
+                
 
                     if sucesso_matematico:
                         gasto = 0.0
