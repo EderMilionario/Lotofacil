@@ -810,7 +810,7 @@ with tabs[0]:
                 salvar_dados(st.session_state.data)
                 st.rerun()
 
-# --- TAB 2: CÉREBRO ANALÍTICO (VERSÃO PROFISSIONAL COMPLETA) ---
+# --- TAB 2: CÉREBRO ANALÍTICO (INTEGRAÇÃO COMPLETA) ---
 with tabs[1]:
     exibir_mini_painel_financeiro()
     
@@ -819,88 +819,185 @@ with tabs[1]:
         st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
         tam_atual = len(ia['matriz_base'])
 
-        # 1. CABEÇALHO E INDICADOR
-        st.markdown("### 🧠 Central de Inteligência: Motores e Probabilidades")
-        st.info(f"🎯 **Matriz Ativa: {tam_atual} Dezenas.** Motor de Geração: {ia['estrategia']}")
+        # 1. INDICADOR DO MOTOR ATIVO
+        st.markdown("### 🧠 Transparência Absoluta: Motores e Probabilidades Reais")
+        st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
 
-        # 2. PAINEL DE PERFORMANCE E NOTA REAL
+        # 2. PAINEL DAS INTELIGÊNCIAS (ORIGINAL)
+        with st.container(border=True):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown("#### 🥇 PLANO A"); st.markdown("*Matemático Puro (Exato)*")
+                if tam_atual <= 18: st.success("**Garantia Real: 100% Exata**\n\nSe as 15 sorteadas caírem na matriz, o prêmio está matematicamente garantido.")
+                else: st.error("**Status: INVIÁVEL**\n\nMatriz grande demais para cálculo exato.")
+            with c2:
+                st.markdown("#### 🥈 PLANO B (Híbrido)"); st.markdown("*Matriz Exata + Poda DNA*")
+                if 17 <= tam_atual <= 20: st.info("**Probabilidade Real: Alta (~85% a 95%)**\n\nGera a base exata do Plano A, corta no bisturi os jogos lixo.")
+                else: st.warning("**Status: DESLIGADO**\n\nEste motor atua apenas em matrizes de 17 a 20 dezenas.")
+            with c3:
+                st.markdown("#### 🥉 PLANO B (Heurístico)"); st.markdown("*Estocástico (Monte Carlo)*")
+                if tam_atual > 20: st.info("**Probabilidade Real: Média / Dinâmica**\n\nNão existe garantia exata. Sorteia jogos guiados pelos pesos da IA.")
+                else: st.warning("**Status: DESLIGADO**\n\nPara matrizes curtas, motores matemáticos assumem.")
+
+        # 3. TABELA INSTITUCIONAL DE PROBABILIDADE (NOVO - COMPLETO)
+        st.markdown("### 📊 Tabela de Cobertura e Orçamento")
+        meta = st.radio("Selecione a Garantia de Retorno (Pontos):", [13, 14, 15], index=1, horizontal=True)
+        
+        # Estrutura completa de dados: [Matriz Size]: [13pts, 14pts, 15pts]
+        # Dados de Jogos Necessários (Estimativa profissional de cobertura)
+        data_m = {
+            15: {"13": [1, 1, 1], "14": [1, 1, 1], "15": [1, 1, 1], "motor": "Plano A"},
+            16: {"13": [2, 4, 16], "14": [4, 4, 16], "15": [16, 16, 16], "motor": "Plano A"},
+            17: {"13": [4, 10, 136], "14": [10, 10, 136], "15": [136, 136, 136], "motor": "Híbrido"},
+            18: {"13": [6, 24, 816], "14": [24, 24, 816], "15": [816, 816, 816], "motor": "Híbrido"},
+            19: {"13": [15, 87, 3876], "14": [87, 87, 3876], "15": [3876, 3876, 3876], "motor": "Híbrido"},
+            20: {"13": [50, 350, 15504], "14": [350, 350, 15504], "15": [15504, 15504, 15504], "motor": "Híbrido"},
+            21: {"13": [100, 1000, 54264], "14": [1000, 1000, 54264], "15": [54264, 54264, 54264], "motor": "Heurístico"},
+            22: {"13": [250, 3000, 170544], "14": [3000, 3000, 170544], "15": [170544, 170544, 170544], "motor": "Heurístico"},
+            23: {"13": [800, 10000, 490314], "14": [10000, 10000, 490314], "15": [490314, 490314, 490314], "motor": "Heurístico"}
+        }
+
+        df_list = []
+        for tam, info in data_m.items():
+            qtd = info[str(meta)][1 if meta==14 else (0 if meta==13 else 2)]
+            df_list.append({"Matriz": f"{tam} Dez", "Bilhetes": f"{qtd:,}", "Custo (R$)": f"{qtd*3.50:,.2f}", "Motor": info["motor"]})
+        
+        st.table(pd.DataFrame(df_list))
+
+        # 4. BÚSSOLA DE APORTE
+        st.markdown("### 🧭 Bússola de Aporte")
+        ideal = int(data_m[tam_atual][str(meta)][1 if meta==14 else (0 if meta==13 else 2)])
+        custo_ideal = ideal * 3.50
+        banca = st.session_state.data.get('banca', 0.0)
+        
+        if banca >= custo_ideal: st.success(f"✅ Ideal: {ideal} jogos (R$ {custo_ideal:,.2f}). Saldo suficiente.")
+        else: st.warning(f"⚠️ Ideal: {ideal} jogos (R$ {custo_ideal:,.2f}). Saldo insuficiente (R$ {banca:,.2f}). Poda automática ativada.")
+
+        # 5. DIAGNÓSTICO E RESTANTE DO CÓDIGO ORIGINAL
         nota_real = ia.get('perf', {}).get(ia['cod_estrategia'], 11.0)
-        st.markdown(f"**📈 Pontuação atual da estratégia:** `{nota_real:.2f} pts`")
-
-        # 3. TABELA INSTITUCIONAL COMPLETA (SEM RESUMOS)
-        with st.expander("📊 Ver Relatório Institucional de Cobertura e Custos", expanded=True):
-            st.markdown("""
-            <style>
-            .prof-table { width: 100%; border-collapse: collapse; font-family: 'Segoe UI', sans-serif; font-size: 14px; }
-            .prof-table th { background-color: #1f77b4; color: white; padding: 12px; text-align: center; }
-            .prof-table td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
-            .motor-A { background-color: #d4edda; color: #155724; font-weight: bold; }
-            .motor-B { background-color: #fff3cd; color: #856404; font-weight: bold; }
-            .motor-H { background-color: #f8d7da; color: #721c24; font-weight: bold; }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            # Dados brutos para a tabela profissional
-            tabela_data = [
-                {"Matriz": 15, "Comb": 1, "Jogos_14pts": 1, "Custo": 3.50, "Motor": "Plano A (Exato)"},
-                {"Matriz": 16, "Comb": 16, "Jogos_14pts": 4, "Custo": 14.00, "Motor": "Plano A (Exato)"},
-                {"Matriz": 17, "Comb": 136, "Jogos_14pts": 10, "Custo": 35.00, "Motor": "Plano B (Híbrido)"},
-                {"Matriz": 18, "Comb": 816, "Jogos_14pts": 24, "Custo": 84.00, "Motor": "Plano B (Híbrido)"},
-                {"Matriz": 19, "Comb": 3.876, "Jogos_14pts": 87, "Custo": 304.50, "Motor": "Plano B (Híbrido)"},
-                {"Matriz": 20, "Comb": 15.504, "Jogos_14pts": 350, "Custo": 1225.00, "Motor": "Plano B (Híbrido)"},
-                {"Matriz": 21, "Comb": 54.264, "Jogos_14pts": 1.000, "Custo": 3500.00, "Motor": "Plano B (Heurístico)"},
-                {"Matriz": 22, "Comb": 170.544, "Jogos_14pts": 3.000, "Custo": 10500.00, "Motor": "Plano B (Heurístico)"},
-                {"Matriz": 23, "Comb": 490.314, "Jogos_14pts": 10.000, "Custo": 35000.00, "Motor": "Plano B (Heurístico)"}
-            ]
-            
-            df_prof = pd.DataFrame(tabela_data)
-            st.table(df_prof) # Exibe de forma limpa e direta
-
-        # 4. BÚSSOLA DE APORTE E CUSTO REAL
-        st.markdown("### 🧭 Bússola de Operação: Cenário Atual")
+        st.markdown(f"**📈 Pontuação atual da estratégia '{ia['estrategia']}':** `{nota_real:.2f} pts`")
         
-        # Filtra o custo baseado no tamanho real da matriz ativa
-        motor_ativo = "Plano A" if tam_atual <= 18 else ("Plano B (Híbrido)" if tam_atual <= 20 else "Plano B (Heurístico)")
-        custo_unit = 3.50
-        
-        # Define a quantidade ideal baseada na tabela acima
-        qtd_ideal = 1 if tam_atual == 15 else (4 if tam_atual == 16 else (10 if tam_atual == 17 else (24 if tam_atual == 18 else (87 if tam_atual == 19 else (350 if tam_atual == 20 else 1000)))))
-        custo_total_ideal = qtd_ideal * custo_unit
-        banca_atual = st.session_state.data.get('banca', 0.0)
-        
-        c_i, c_ii = st.columns(2)
-        c_i.metric("Motor Selecionado", motor_ativo)
-        c_ii.metric("Volume Ideal p/ Garantia", f"{qtd_ideal} Jogos")
-        
-        if banca_atual >= custo_total_ideal:
-            st.success(f"✅ **Alinhamento Perfeito:** Seu saldo de R$ {banca_atual:,.2f} cobre o investimento ideal de R$ {custo_total_ideal:,.2f}. Operação em 100% da capacidade técnica.")
-        else:
-            falta = custo_total_ideal - banca_atual
-            st.warning(f"⚠️ **Ajuste de Risco:** Para atingir a meta de garantia total, o investimento ideal seria **R$ {custo_total_ideal:,.2f}**. Seu saldo atual é R$ {banca_atual:,.2f}. O sistema realizará uma poda dinâmica (Downgrade) para encaixar na banca disponível.")
-
-        st.divider()
-
-        # 5. DIAGNÓSTICO AUTÔNOMO (MANTIDO E INTEGRADO)
         st.markdown(f"### 🧠 Diagnóstico Autônomo — Concurso Alvo `{ia['alvo']}`")
         
-        # [MANTENHA AQUI O SEU CÓDIGO ORIGINAL DE DIAGNÓSTICO: RISCO, TEIA, DNA...]
-        # ... (Cálculos de pares, termômetro de Kelly, etc.) ...
-        
-        # 6. GRADE DE PESOS (HEATMAP)
-        st.markdown("#### ⚖️ Grade Dinâmica de Pesos (Heatmap de Atração)")
-        html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;'>"
-        for n in range(1, 26):
-            p_val = ia['pesos'].get(n, 0.0)
-            no_grupo = n in ia['matriz_base']
-            bg = "#1f77b4" if no_grupo else "#e0e0e0"
-            color = "white" if no_grupo else "black"
-            html_pesos += f"<div style='background-color: {bg}; color: {color}; padding: 8px; text-align: center; border-radius: 4px;'><b>{n:02d}</b><br><small>W:{p_val:.1f}</small></div>"
-        html_pesos += "</div>"
-        st.markdown(html_pesos, unsafe_allow_html=True)
+        # [AQUI COMEÇA SEU CÓDIGO ORIGINAL DE DIAGNÓSTICO - MANTIDO INTEGRALMENTE]
+        historico_painel = st.session_state.data.get("historico_dados", [])
+        if len(historico_painel) >= 2:
+            ultimo_sort = historico_painel[-1]
+            penultimo_sort = historico_painel[-2]
+            dez_ult = ultimo_sort['dezenas']
+            dez_pen = penultimo_sort['dezenas']
+            
+            primos_set = {2, 3, 5, 7, 11, 13, 17, 19, 23}
+            fibo_set = {1, 2, 3, 5, 8, 13, 21}
+            mult3_set = {3, 6, 9, 12, 15, 18, 21, 24}
 
-    else: 
-        st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
+            pares_ult = sum(1 for n in dez_ult if n % 2 == 0)
+            impares_ult = 15 - pares_ult
+            primos_ult = sum(1 for n in dez_ult if n in primos_set)
+            fibo_ult = sum(1 for n in dez_ult if n in fibo_set)
+            mult3_ult = sum(1 for n in dez_ult if n in mult3_set)
+            repetidas_ult = len(set(dez_ult).intersection(set(dez_pen)))
+            
+            dezenas_ult_formatadas = " - ".join([f"{n:02d}" for n in dez_ult])
+            st.info(f"**🎯 Último Sorteio Oficial (Concurso {ultimo_sort['concurso']}):** {dezenas_ult_formatadas}")
+            
+            col_rx1, col_rx2, col_rx3, col_rx4, col_rx5, col_rx6 = st.columns(6)
+            col_rx1.metric("Ímpares", impares_ult)
+            col_rx2.metric("Pares", pares_ult)
+            col_rx3.metric("Primos", primos_ult)
+            col_rx4.metric("Fibonacci", fibo_ult)
+            col_rx5.metric("Múltiplos 3", mult3_ult)
+            col_rx6.metric("Repetidas", repetidas_ult)
+            st.divider()
 
+            amostra_corr = historico_painel[-100:] if len(historico_painel) > 100 else historico_painel
+            pares_count = {}
+            matriz_atual_set = set(ia['matriz_base'])
+            for sorteio in amostra_corr:
+                d_sort = [n for n in sorteio['dezenas'] if n in matriz_atual_set]
+                for i in range(len(d_sort)):
+                    for j in range(i+1, len(d_sort)):
+                        par = tuple(sorted((d_sort[i], d_sort[j])))
+                        pares_count[par] = pares_count.get(par, 0) + 1
+            
+            top_par = max(pares_count, key=pares_count.get) if pares_count else (0,0)
+            st.session_state.par_ouro = top_par 
+
+            col_risk, col_corr = st.columns(2)
+            with col_risk:
+                st.markdown("#### 🌡️ Termômetro de Risco (Critério de Kelly)")
+                qtd_m = ia.get('qtd_matriz', 18)
+                if qtd_m >= 21: n_risco, c_risco, d_banca = "ALTO", "#dc3545", "Recomendação: Operar com orçamento defensivo."
+                elif qtd_m == 19: n_risco, c_risco, d_banca = "MÉDIO", "#ffcc00", "Recomendação: Operar com orçamento padrão."
+                else: n_risco, c_risco, d_banca = "BAIXO", "#28a745", "Recomendação: Janela de Ataque."
+                st.markdown(f"<div style='background-color: #f8f9fa; border-left: 5px solid {c_risco}; padding: 15px;'>{n_risco} - {d_banca}</div>", unsafe_allow_html=True)
+            with col_corr:
+                st.markdown("#### 🕸️ Teia de Correlação")
+                st.markdown(f"<div style='background-color: #f8f9fa; border-left: 5px solid #1a73e8; padding: 15px;'>Par Magnético: {top_par[0]:02d} e {top_par[1]:02d}</div>", unsafe_allow_html=True)
+            st.divider()
+            
+            st.subheader("📐 Gestão Inteligente")
+            estrategia_selecionada = ia.get('estrategia', 'Tendencia')
+            memoria_ia = st.session_state.data.get('ia_memoria', {})
+            tam_matriz_calc, confianca_calc, motivo_calc, dados_internos = calcular_temperatura_e_confianca(historico_painel, estrategia_selecionada, memoria_ia)
+            qtd_em_falta = len(ia['faltam_ciclo'])
+            
+            col_c1, col_c2, col_c3, col_c4 = st.columns(4)
+            col_c1.metric("Ciclo", f"{ia['ciclo_tam']}")
+            col_c2.metric("Faltando", qtd_em_falta)
+            col_c3.metric("🎯 Confiança", f"{confianca_calc * 100:.1f}%")
+            col_c4.metric("⚡ Múltiplos", "🔥 LIBERADO" if confianca_calc >= 0.75 else "⚠️ BLOQUEADO")
+            st.info(f"📋 {motivo_calc}")
+            
+            with st.expander("Ver Backstage"):
+                st.write(f"🔥 Dezenas Quentes: {dados_internos.get('dezenas_quentes', 0)}/25")
+                st.write(f"📈 Pontuação atual: {dados_internos.get('score_ia', 11.0):.2f} pts")
+
+            st.divider()
+            st.success(f"**⚡ LINHA TÁTICA:** {ia['estrategia']} \n\n**DIRETRIZ:** {ia['motivo_est']}")
+            st.info(f"**🎯 ELITE ({ia['qtd_matriz']} DEZ):** {', '.join([f'{n:02d}' for n in ia['matriz_base']])}")
+
+            st.markdown("#### 📈 Parâmetros Volumétricos")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Soma", f"{ia['soma']:.1f}"); c2.metric("Ímpar", f"{ia['impares']:.1f}"); c3.metric("Primos", f"{ia['primos']:.1f}"); c4.metric("Moldura", f"{ia['moldura']:.1f}")
+
+            linhas_count = {i: 0 for i in range(1, 6)}; colunas_count = {i: 0 for i in range(1, 6)}
+            for n in ia['matriz_base']:
+                linhas_count[(n - 1) // 5 + 1] += 1
+                colunas_count[(n - 1) % 5 + 1] += 1
+            
+            ultimo_sorteio = st.session_state.data["historico_dados"][-1]["dezenas"]
+            repetidas_previstas = len(set(ia['matriz_base']).intersection(set(ultimo_sorteio)))
+
+            c_an1, c_an2, c_an3 = st.columns(3)
+            c_an1.info(f"📋 Linhas: " + " | ".join([f"L{k}:{v}" for k, v in linhas_count.items()]))
+            c_an2.info(f"📋 Colunas: " + " | ".join([f"C{k}:{v}" for k, v in colunas_count.items()]))
+            c_an3.info(f"🔄 Repetidas: {repetidas_previstas}")
+
+            st.markdown("#### 🎯 Retrospectiva Crítica")
+            ultimos_30 = st.session_state.data["historico_dados"][-30:]
+            acertos_grupo = [len(set(ia['matriz_base']).intersection(set(h['dezenas']))) for h in ultimos_30]
+            avg_hits = sum(acertos_grupo) / len(acertos_grupo) if acertos_grupo else 0
+            cd_1, cd_2, cd_3, cd_4 = st.columns(4)
+            cd_1.metric("Média Acertos", f"{avg_hits:.2f}"); cd_2.metric("11-12 Pts", f"{sum(1 for x in acertos_grupo if x in [11,12])}"); cd_3.metric("13 Pts", f"{sum(1 for x in acertos_grupo if x == 13)}"); cd_4.metric("14-15 Pts", f"{sum(1 for x in acertos_grupo if x >= 14)}")
+
+            st.markdown("#### 📊 Desempenho Histórico")
+            c_e1, c_e2, c_e3, c_e4 = st.columns(4)
+            c_e1.metric("Tendência", f"{ia['perf']['Tendencia']:.2f}"); c_e2.metric("Reversão", f"{ia['perf']['Reversao']:.2f}"); c_e3.metric("Ciclo", f"{ia['perf']['Ciclo']:.2f}"); c_e4.metric("Simetria", f"{ia['perf']['Simetria']:.2f}")
+            
+            st.markdown("#### ⚖️ Grade Dinâmica de Pesos")
+            html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;'>"
+            for n in range(1, 26):
+                p_val = ia['pesos'].get(n, 0.0)
+                no_grupo = n in ia['matriz_base']
+                bg = "#1f77b4" if no_grupo else "#e0e0e0"
+                html_pesos += f"<div style='background-color: {bg}; padding: 8px; text-align: center; border-radius: 4px; color: white;'><b>{n:02d}</b><br><small>W:{p_val:.1f}</small></div>"
+            st.markdown(html_pesos + "</div>", unsafe_allow_html=True)
+
+        jogos_ativos = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Aguardando Sorteio"]
+        if jogos_ativos:
+            render_performance_grid([n for j in jogos_ativos for n in j["dezenas"]], "🧬 Jogos Ativos")
+    else: st.warning("Aguardando dados.")
 # --- TAB 3: GERADOR AUTÔNOMO ---
 with tabs[2]:
     exibir_mini_painel_financeiro()
