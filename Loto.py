@@ -948,36 +948,7 @@ with tabs[1]:
             """, unsafe_allow_html=True)
         
 
-        # =====================================================================
-        # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
-        # =====================================================================
-        st.markdown("### 💰 Projeção Financeira e Cobertura Matemática")
-            
-        with st.container(border=True):
-            garantia_escolhida = st.radio(
-                "🎯 **Se as 15 dezenas sorteadas estiverem dentro da Matriz, qual prêmio você quer garantir matematicamente?**", 
-                [15, 14, 13], 
-                index=0, 
-                horizontal=True,
-                format_func=lambda x: f"Garantir {x} Pontos"
-            )
-            
-            qtd_bilhetes_atual = dados_matriz[garantia_escolhida]
-            custo_atual = qtd_bilhetes_atual * 3.50
-            tipo_motor = dados_matriz["motor"]
-                
-            st.divider() # Linha sutil para separar os controles dos resultados
-            
-            # Formatadores de moeda e milhar estilo pt-BR
-            str_bilhetes = f"{qtd_bilhetes_atual:,}".replace(",", ".")
-            str_custo = f"R$ {custo_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            
-            c_a, c_b, c_c, c_d = st.columns(4)
-            c_a.metric("🧩 Matriz Avaliada", f"{tam_atual} Dezenas")
-            c_b.metric("⚙️ Motor Ideal", tipo_motor) 
-            c_c.metric(f"🎟️ Teto Absoluto", f"{str_bilhetes} Jogos")
-            c_d.metric("💸 Custo Base (Sem Poda)", str_custo)
-
+        
         # =====================================================================
         # 4. TABELA DETALHADA: DISTINÇÃO ABSOLUTA DOS 3 MOTORES
         # =====================================================================
