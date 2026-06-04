@@ -947,63 +947,7 @@ with tabs[1]:
             </table>
             """, unsafe_allow_html=True)
         
-
         
-        # =====================================================================
-        # 4. TABELA DETALHADA: DISTINÇÃO ABSOLUTA DOS 3 MOTORES
-        # =====================================================================
-        st.markdown("### 📊 Detalhamento Completo: Probabilidades, Custos e Limites")
-            
-        with st.expander("🔍 Expandir Tabela de Motores e Orçamentos", expanded=True):
-             st.info("Esta tabela exibe a diferença brutal de custos e garantias entre a Matriz Exata e as duas inteligências do Motor Ortogonal (Híbrida e Heurística).")
-                
-             dados_lista = []
-             for tam, metas in alvos_matematicos.items():
-                 for pts in [15, 14, 13]:
-                     custo_calc = metas[pts] * 3.50
-                     str_custo_tab = f"R$ {custo_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                     str_teto_tab = f"{metas[pts]:,}".replace(",", ".")
-
-                     if tam <= 18:
-                         # LINHA DO PLANO A (EXATO)
-                         dados_lista.append({
-                             "Matriz": f"{tam} Dez",
-                             "Inteligência Ativa": "🥇 PLANO A (Exato)",
-                             "Probabilidade": "100% Garantido",
-                             "Meta (Pts)": f"{pts} pts",
-                             "Teto de Bilhetes": str_teto_tab,
-                             "Custo da Aposta": str_custo_tab
-                         })
-                     elif 19 <= tam <= 20:
-                         # LINHA DO PLANO B (HÍBRIDO)
-                         dados_lista.append({
-                             "Matriz": f"{tam} Dez",
-                             "Inteligência Ativa": "🥈 PLANO B (Híbrido)",
-                             "Probabilidade": "~85% a 95% (Filtro DNA)",
-                             "Meta (Pts)": f"{pts} pts",
-                             "Teto de Bilhetes": "Limitado à Banca",
-                             "Custo da Aposta": "Baseado no Orçamento"
-                         })
-                     else:
-                         # LINHA DO PLANO B (HEURÍSTICO)
-                         dados_lista.append({
-                             "Matriz": f"{tam} Dez",
-                             "Inteligência Ativa": "🥉 PLANO B (Heurístico)",
-                             "Probabilidade": "Dinâmica (Arrasto)",
-                             "Meta (Pts)": f"{pts} pts",
-                             "Teto de Bilhetes": "Limitado à Banca",
-                             "Custo da Aposta": "Baseado no Orçamento"
-                         })
-                
-             df_custos = pd.DataFrame(dados_lista)
-                
-             st.dataframe(
-                 df_custos,
-                 use_container_width=True,
-                 hide_index=True
-             )
-
-        st.divider()
         
         st.markdown(f"### 🧠 Diagnóstico Autônomo — Concurso Alvo `{ia['alvo']}`")
 
