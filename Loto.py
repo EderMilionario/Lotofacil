@@ -943,37 +943,7 @@ with tabs[1]:
             ⚠️ **Orçamento Defensivo Detectado:** Para extrair 100% do poder dessa Matriz de {tam_atual} ({texto_bussola}), a quantidade matemática ideal é de **{jogos_ideal} bilhetes** (Custo: **R$ {custo_ideal:.2f}**).  
             
             *Como o seu saldo atual é R$ {banca_atual:.2f}, o Motor Ortogonal fará um Downgrade e extrairá apenas a nata probabilística. Caso queira a cobertura matemática total, o aporte recomendado é de R$ {falta:.2f}.*
-            """)    
-
-        # =====================================================================
-        # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
-        # =====================================================================
-        st.markdown("### 💰 Projeção Financeira e Cobertura Matemática")
-            
-        with st.container(border=True):
-            garantia_escolhida = st.radio(
-                "🎯 **Se as 15 dezenas sorteadas estiverem dentro da Matriz, qual prêmio você quer garantir matematicamente?**", 
-                [15, 14, 13], 
-                index=0, 
-                horizontal=True,
-                format_func=lambda x: f"Garantir {x} Pontos"
-            )
-            
-            qtd_bilhetes_atual = dados_matriz[garantia_escolhida]
-            custo_atual = qtd_bilhetes_atual * 3.50
-            tipo_motor = dados_matriz["motor"]
-                
-            st.divider() # Linha sutil para separar os controles dos resultados
-            
-            # Formatadores de moeda e milhar estilo pt-BR
-            str_bilhetes = f"{qtd_bilhetes_atual:,}".replace(",", ".")
-            str_custo = f"R$ {custo_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            
-            c_a, c_b, c_c, c_d = st.columns(4)
-            c_a.metric("🧩 Matriz Avaliada", f"{tam_atual} Dezenas")
-            c_b.metric("⚙️ Motor Ideal", tipo_motor) 
-            c_c.metric(f"🎟️ Teto Absoluto", f"{str_bilhetes} Jogos")
-            c_d.metric("💸 Custo Base (Sem Poda)", str_custo)
+            """)                           
 
         # =====================================================================
         # 4. TABELA DETALHADA: DISTINÇÃO ABSOLUTA DOS 3 MOTORES
