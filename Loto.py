@@ -952,39 +952,51 @@ with tabs[1]:
             st.dataframe(df_institucional, use_container_width=True, hide_index=True)
 
         # ==========================================================
-        # BÚSSOLA DE APORTE INSTITUCIONAL (SINCRONIZADA COM A SUA ESCOLHA)
+        # BÚSSOLA DE APORTE INSTITUCIONAL (COM FRONTEIRA DE EFICIÊNCIA)
         # ==========================================================
         banca_atual = st.session_state.data.get('banca', 0.0)
         
-        # Agora a bússola respeita exatamente o que você escolheu no botão (15, 14 ou 13)
-        jogos_ideal = qtd_bilhetes_atual
-        custo_ideal = custo_atual
+        jogos_100_pct = qtd_bilhetes_atual
+        custo_100_pct = custo_atual
         
+        # 🧠 O CÁLCULO DA FRONTEIRA DE EFICIÊNCIA (O "Ponto Doce" Probabilístico)
+        # Quanto maior a matriz, menor a porcentagem necessária para extrair a nata com o Motor Ortogonal
+        fator_otimizacao = {
+            15: 1.0, 16: 1.0, 17: 0.50, 18: 0.40, 
+            19: 0.35, 20: 0.25, 21: 0.10, 22: 0.05, 23: 0.03
+        }
+        
+        # Calcula o Lote Otimizado Realista
+        fator = fator_otimizacao.get(tam_atual, 0.05)
+        jogos_otimizados = max(1, int(jogos_100_pct * fator))
+        custo_otimizado = jogos_otimizados * 3.50
+        
+        # Textos de Contexto
         if tam_atual <= 16:
             texto_bussola = "Ataque Sniper direto na Matriz."
-        elif tam_atual == 17:
-            texto_bussola = f"Fechamento Absoluto de 17 otimizado para garantir {garantia_escolhida} pontos."
-        elif tam_atual == 18:
-            texto_bussola = f"Fechamento Avançado de 18 focado na garantia de {garantia_escolhida} pontos."
-        elif tam_atual == 19:
-            texto_bussola = f"Rede Larga. Ponto de saturação focado em {garantia_escolhida} pontos."
-        elif tam_atual == 20:
-            texto_bussola = f"Limite Máximo de complexidade focado em {garantia_escolhida} pontos."
+        elif tam_atual <= 18:
+            texto_bussola = f"Fechamento de {tam_atual} focado na garantia de {garantia_escolhida} pontos."
         else:
-            texto_bussola = "Matriz Gigante (Caos Aleatório). Rede de arrasto estatística."
+            texto_bussola = f"Rede Expandida de {tam_atual} dezenas focada em {garantia_escolhida} pontos."
         
         st.markdown("---")
         st.markdown("#### 🧭 Bússola de Operação (Recomendação do Sistema)")
         
         with st.container(border=True):
-            if banca_atual >= custo_ideal:
-                st.success(f"✅ **Banca Suficiente:** O seu saldo (R$ {banca_atual:,.2f}) cobre o **Lote Exato de {jogos_ideal} jogos** (R$ {custo_ideal:,.2f}) para cravar os {garantia_escolhida} pontos na Matriz de {tam_atual}. O Motor trabalhará com Garantia 100% Exata.")
+            if banca_atual >= custo_100_pct:
+                st.success(f"✅ **Banca Suficiente (Cobertura Total):** O seu saldo (R$ {banca_atual:,.2f}) cobre o **Lote Absoluto de {jogos_100_pct} jogos** (R$ {custo_100_pct:,.2f}) para cravar {garantia_escolhida} pontos na Matriz de {tam_atual}. O Motor trabalhará com Garantia 100% Exata.")
+            
+            elif banca_atual >= custo_otimizado:
+                st.success(f"⚡ **Banca Eficiente (Lote Otimizado):** O fechamento 100% exigiria R$ {custo_100_pct:,.2f}, mas o seu saldo atual (R$ {banca_atual:,.2f}) permite a execução da **Fronteira de Eficiência**. O Motor Ortogonal extrairá a nata matemática com apenas **{jogos_otimizados} bilhetes** (Custo Ideal: **R$ {custo_otimizado:,.2f}**). Pode disparar a máquina.")
+            
             else:
-                falta = custo_ideal - banca_atual
+                falta_para_otimizado = custo_otimizado - banca_atual
                 st.warning(f"""
-                ⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática dessa Matriz de {tam_atual} ({texto_bussola}), o exigido são **{jogos_ideal} bilhetes** (Custo: **R$ {custo_ideal:,.2f}**).  
+                ⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática dessa Matriz de {tam_atual} ({texto_bussola}), o exigido seria R$ {custo_100_pct:,.2f} ({jogos_100_pct} jogos).  
                 
-                *Como o seu saldo atual é R$ {banca_atual:,.2f}, o Motor mudará a rota para o **Plano B (Ortogonal Híbrido)**, fazendo um Downgrade para comprar apenas a nata probabilística. Caso queira a cobertura matemática inquebrável, o aporte recomendado é de R$ {falta:,.2f}.*
+                No entanto, a **Fronteira de Eficiência** calculou que um **Lote Otimizado de {jogos_otimizados} bilhetes** (Custo: **R$ {custo_otimizado:,.2f}**) é o suficiente para extrair a nata probabilística usando o Motor Híbrido Ortogonal. 
+                
+                *Como o seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de pelo menos **R$ {falta_para_otimizado:,.2f}** para rodar a operação otimizada.*
                 """)
 
         st.markdown(f"### 🧠 Diagnóstico Autônomo — Concurso Alvo `{ia['alvo']}`")
