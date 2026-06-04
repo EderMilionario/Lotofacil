@@ -1769,35 +1769,58 @@ with tabs[4]:
                                             matriz_base = ia_temp.get('matriz_base', [])
                                             estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
                                             tamanho_matriz = len(matriz_base)
+                                            jogos_simulados = []
                                             
-                                            qtd_jogos = 0
-                                            if tamanho_matriz == 15: qtd_jogos = 1
-                                            elif tamanho_matriz == 16: qtd_jogos = 16
-                                            elif tamanho_matriz == 17: qtd_jogos = 30
-                                            elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
-                                            elif tamanho_matriz > 20: qtd_jogos = 20
+                                            # ==========================================================
+                                            # 🧠 SIMULAÇÃO REALISTA: O ESPELHO DA VIDA REAL (PLANO A e B)
+                                            # ==========================================================
+                                            if tamanho_matriz <= 20:
+                                                # A IA TREINA USANDO O PLANO A / HÍBRIDO (Garantia de 14 pts)
+                                                jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
+                                                
+                                                # Limite financeiro do backtest para não sangrar a banca fantasma (simulando a poda)
+                                                limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
+                                                
+                                                if len(jogos_reduzidos) > limite_jogos:
+                                                    jogos_reduzidos = random.sample(jogos_reduzidos, limite_jogos)
+                                                    
+                                                for j_dez in jogos_reduzidos:
+                                                    jogos_simulados.append({
+                                                        "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(j_dez),
+                                                        "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                                        "estrategia": estrategia_rodada, "justificativa": "Fantasma (Plano Exato/Híbrido)"
+                                                    })
+                                            else:
+                                                # A IA TREINA USANDO O PLANO B HEURÍSTICO (Arrasto nas Gigantes)
+                                                qtd_jogos = 30 # Orçamento defensivo para matrizes caóticas
+                                                pesos = ia_temp.get('pesos', {})
+                                                
+                                                for _ in range(qtd_jogos):
+                                                    candidato = []
+                                                    dez_temp = list(matriz_base)
+                                                    pesos_temp = [pesos.get(d, 1) for d in dez_temp]
+                                                    
+                                                    # Roleta estocástica puxando as mais quentes
+                                                    for _ in range(15):
+                                                        escolhida = random.choices(dez_temp, weights=pesos_temp, k=1)[0]
+                                                        candidato.append(escolhida)
+                                                        idx = dez_temp.index(escolhida)
+                                                        dez_temp.pop(idx)
+                                                        pesos_temp.pop(idx)
+                                                        
+                                                    jogos_simulados.append({
+                                                        "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
+                                                        "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                                        "estrategia": estrategia_rodada, "justificativa": "Fantasma (Heurístico)"
+                                                    })
                                             
-                                            # CORREÇÃO FINANCEIRA
-                                            custo_treinamento = qtd_jogos * 3.50
+                                            # CORREÇÃO FINANCEIRA ABSOLUTA E AUTOMÁTICA
+                                            custo_treinamento = len(jogos_simulados) * 3.50
                                             st.session_state.data["banca"] -= custo_treinamento
                                             lucro_acumulado_massa -= custo_treinamento    
                                             
-                                            # 🚨 A SOLUÇÃO DO BUG: INICIALIZAR A LISTA E CRIAR O LOOP!
-                                            jogos_simulados = []
-                                            
-                                            for _ in range(qtd_jogos):
-                                                jogos_simulados.append({
-                                                    "id": str(uuid.uuid4()),
-                                                    "concurso_alvo": num,
-                                                    "dezenas": sorted(random.sample(matriz_base, 15)) if len(matriz_base) >= 15 else matriz_base,
-                                                    "tamanho": 15,
-                                                    "status": "Aguardando Sorteio",
-                                                    "acertos": 0,
-                                                    "estrategia": estrategia_rodada,
-                                                    "justificativa": "Fantasma (Monte Carlo)"
-                                                })
-                                                    
                                             st.session_state.data["jogos_salvos"] = jogos_simulados
+                                            
                                         except Exception as e:
                                             st.session_state.data["jogos_salvos"] = []
                                     else:
@@ -1864,35 +1887,58 @@ with tabs[4]:
                                     matriz_base = ia_temp.get('matriz_base', [])
                                     estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
                                     tamanho_matriz = len(matriz_base)
+                                    jogos_simulados = []
                                             
-                                    qtd_jogos = 0
-                                    if tamanho_matriz == 15: qtd_jogos = 1
-                                    elif tamanho_matriz == 16: qtd_jogos = 16
-                                    elif tamanho_matriz == 17: qtd_jogos = 30
-                                    elif 18 <= tamanho_matriz <= 20: qtd_jogos = 50
-                                    elif tamanho_matriz > 20: qtd_jogos = 20
+                                    # ==========================================================
+                                    # 🧠 SIMULAÇÃO REALISTA: O ESPELHO DA VIDA REAL (PLANO A e B)
+                                    # ==========================================================
+                                    if tamanho_matriz <= 20:
+                                        # A IA TREINA USANDO O PLANO A / HÍBRIDO (Garantia de 14 pts)
+                                        jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
+                                                
+                                        # Limite financeiro do backtest para não sangrar a banca fantasma (simulando a poda)
+                                        limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
+                                                
+                                        if len(jogos_reduzidos) > limite_jogos:
+                                            jogos_reduzidos = random.sample(jogos_reduzidos, limite_jogos)
+                                                    
+                                        for j_dez in jogos_reduzidos:
+                                            jogos_simulados.append({
+                                                "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(j_dez),
+                                                "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                                "estrategia": estrategia_rodada, "justificativa": "Fantasma (Plano Exato/Híbrido)"
+                                            })
+                                    else:
+                                        # A IA TREINA USANDO O PLANO B HEURÍSTICO (Arrasto nas Gigantes)
+                                        qtd_jogos = 30 # Orçamento defensivo para matrizes caóticas
+                                        pesos = ia_temp.get('pesos', {})
+                                                
+                                        for _ in range(qtd_jogos):
+                                            candidato = []
+                                            dez_temp = list(matriz_base)
+                                            pesos_temp = [pesos.get(d, 1) for d in dez_temp]
+                                                    
+                                            # Roleta estocástica puxando as mais quentes
+                                            for _ in range(15):
+                                                escolhida = random.choices(dez_temp, weights=pesos_temp, k=1)[0]
+                                                candidato.append(escolhida)
+                                                idx = dez_temp.index(escolhida)
+                                                dez_temp.pop(idx)
+                                                pesos_temp.pop(idx)
+                                                        
+                                            jogos_simulados.append({
+                                                "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
+                                                "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                                "estrategia": estrategia_rodada, "justificativa": "Fantasma (Heurístico)"
+                                            })
                                             
-                                    # CORREÇÃO FINANCEIRA
-                                    custo_treinamento = qtd_jogos * 3.50
+                                    # CORREÇÃO FINANCEIRA ABSOLUTA E AUTOMÁTICA
+                                    custo_treinamento = len(jogos_simulados) * 3.50
                                     st.session_state.data["banca"] -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
                                             
-                                    # 🚨 A SOLUÇÃO DO BUG: INICIALIZAR A LISTA E CRIAR O LOOP!
-                                    jogos_simulados = []
-                                            
-                                    for _ in range(qtd_jogos):
-                                        jogos_simulados.append({
-                                            "id": str(uuid.uuid4()),
-                                            "concurso_alvo": num,
-                                            "dezenas": sorted(random.sample(matriz_base, 15)) if len(matriz_base) >= 15 else matriz_base,
-                                            "tamanho": 15,
-                                            "status": "Aguardando Sorteio",
-                                            "acertos": 0,
-                                            "estrategia": estrategia_rodada,
-                                            "justificativa": "Fantasma (Monte Carlo)"
-                                        })
-                                                    
                                     st.session_state.data["jogos_salvos"] = jogos_simulados
+                                            
                                 except Exception as e:
                                     st.session_state.data["jogos_salvos"] = []
                             else:
