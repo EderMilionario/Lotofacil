@@ -905,11 +905,11 @@ with tabs[1]:
                 horizontal=True,
                 format_func=lambda x: f"Foco em {x} Pontos"
             )
-        # ... (seu código anterior de escolha de garantia e motor) ...
-            
+        
             # --- CHAVE DE FORÇAR O GERADOR ---
             st.divider()
-            forcar_motor = st.checkbox("🚀 Forçar uso do Motor Selecionado (Ignorar Plano A)", 
+            forcar_motor = st.checkbox("🚀 Forçar uso do Motor Selecionado (Ignorar Plano A)",
+                                       key='forcar_motor',
                                        help="Se marcado, o sistema ignorará o Plano A (Exato) mesmo que você tenha verba, forçando o uso do Plano B Híbrido ou Heurístico.")
             
             st.divider()    
