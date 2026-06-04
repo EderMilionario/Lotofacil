@@ -893,117 +893,150 @@ with tabs[1]:
         dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
 
         # =====================================================================
-        # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
+        # 3. PAINEL DE CUSTOS, SELEÇÃO DE MOTOR E SIMULAÇÃO
         # =====================================================================
-        st.markdown("### 💰 Projeção Financeira e Cobertura Matemática")
+        st.markdown("### 💰 Projeção Financeira e Análise de Motores")
             
         with st.container(border=True):
             garantia_escolhida = st.radio(
-                "🎯 **Se as 15 dezenas sorteadas estiverem dentro da Matriz, qual prêmio você quer garantir matematicamente?**", 
+                "🎯 **Qual prêmio você quer garantir matematicamente (se as 15 sorteadas estiverem na Matriz)?**", 
                 [15, 14, 13], 
                 index=1, 
                 horizontal=True,
-                format_func=lambda x: f"Garantir {x} Pontos"
+                format_func=lambda x: f"Foco em {x} Pontos"
             )
             
-            qtd_bilhetes_atual = dados_matriz[garantia_escolhida]
-            custo_atual = qtd_bilhetes_atual * 3.50
-            
-            # --- CORREÇÃO DE COERÊNCIA APLICADA AQUI ---
-            # O Motor na tela agora lê a verdade: Se a meta for pouca quantidade, é Plano A absoluto.
-            if qtd_bilhetes_atual <= 24: 
-                motor_exibicao = "🥇 Plano A (Exato)"
-            elif tam_atual <= 20: 
-                motor_exibicao = "🥈 Plano B (Híbrido)"
-            else: 
-                motor_exibicao = "🥉 P. B (Heurístico)"
+            # --- DESCOBRE QUAIS MOTORES SÃO POSSÍVEIS PARA ESTE TAMANHO DE MATRIZ ---
+            motores_disponiveis = []
+            if tam_atual <= 20:
+                motores_disponiveis.append("🥇 Plano A (Exato / 100%)")
+            if 17 <= tam_atual <= 20:
+                motores_disponiveis.append("🥈 Plano B (Híbrido Ortogonal / Fronteira)")
+            if tam_atual > 20:
+                motores_disponiveis.append("🥉 Plano B (Heurístico / Arrasto)")
                 
+            motor_selecionado = st.radio(
+                "⚙️ **Selecione o Motor Operacional para simulação:**",
+                motores_disponiveis,
+                index=0 if len(motores_disponiveis) == 1 else 1, # Foca no Híbrido se ele estiver disponível
+                horizontal=True
+            )
+            
+            # --- CÁLCULOS MATEMÁTICOS BASEADOS NO MOTOR SELECIONADO ---
+            jogos_100_pct = dados_matriz[garantia_escolhida]
+            custo_100_pct = jogos_100_pct * 3.50
+            
+            fator_otimizacao = {
+                15: 1.0, 16: 1.0, 17: 0.50, 18: 0.40, 
+                19: 0.35, 20: 0.25, 21: 0.10, 22: 0.05, 23: 0.03, 24: 0.02, 25: 0.01
+            }
+            fator = fator_otimizacao.get(tam_atual, 0.05)
+            jogos_otimizados = max(1, int(jogos_100_pct * fator))
+            
+            if "🥇" in motor_selecionado:
+                qtd_exibicao = jogos_100_pct
+                prob_exibicao = "100% Exata"
+            elif "🥈" in motor_selecionado:
+                qtd_exibicao = jogos_otimizados
+                prob_exibicao = "~85% a 95% (Otimizada)"
+            else:
+                qtd_exibicao = jogos_otimizados
+                prob_exibicao = "~70% a 85% (Arrasto)"
+                
+            custo_exibicao = qtd_exibicao * 3.50
+            
             st.divider() 
             
-            str_bilhetes = f"{qtd_bilhetes_atual:,}".replace(",", ".")
-            str_custo = f"R$ {custo_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            
-            c_a, c_b, c_c, c_d = st.columns([1.2, 1.8, 1.2, 1.2])
+            c_a, c_b, c_c, c_d = st.columns(4)
             c_a.metric("🧩 Matriz", f"{tam_atual} Dezenas")
-            c_b.metric("⚙️ Motor Ideal", motor_exibicao) 
-            c_c.metric(f"🎟️ Teto Absoluto", f"{str_bilhetes} Jogos")
-            c_d.metric("💸 Custo (S/ Poda)", str_custo)
+            c_b.metric("📊 Cobertura Média", prob_exibicao) 
+            c_c.metric("🎟️ Volume Físico", f"{qtd_exibicao:,}".replace(",", ".") + " Jogos")
+            c_d.metric("💸 Investimento", f"R$ {custo_exibicao:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
         # ==========================================================
-        # TABELA INSTITUCIONAL DE COBERTURA (Dinâmica de 15 a 23 Dezenas)
+        # TABELA INSTITUCIONAL DE COBERTURA (Completa e Profissional)
         # ==========================================================
-        with st.expander("📊 Ver Tabela Institucional Completa de Probabilidades e Limites", expanded=False):
-            st.info(f"Esta tabela está mapeando dinamicamente as métricas para fechar **{garantia_escolhida} Pontos** (selecionado no painel acima) em todas as faixas operacionais.")
+        with st.expander("📊 Tabela Institucional Completa: Motores, Limites e Custos (15 a 23 Dezenas)", expanded=False):
+            st.info(f"A tabela mapeia todos os cenários operacionais possíveis para a meta de **{garantia_escolhida} Pontos**. Compare o custo do Fechamento Exato contra a Fronteira de Eficiência (Planos B).")
             
             tabela_dados = []
             for m_tam, m_data in alvos_matematicos.items():
-                bilhetes_calc = m_data[garantia_escolhida]
-                custo_calc = bilhetes_calc * 3.50
+                if m_tam > 23: continue # Evita estourar a tela com matrizes surreais
                 
-                tabela_dados.append({
-                    "Tamanho da Matriz": f"{m_tam} Dezenas",
-                    "Garantia Alvo": f"{garantia_escolhida} Pts",
-                    "Bilhetes Necessários": f"{bilhetes_calc:,}".replace(",", "."),
-                    "Valor do Fechamento": f"R$ {custo_calc:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                    "Motor Designado": m_data["motor"]
-                })
-            
+                j_100 = m_data[garantia_escolhida]
+                c_100 = j_100 * 3.50
+                f_opt = fator_otimizacao.get(m_tam, 0.05)
+                j_opt = max(1, int(j_100 * f_opt))
+                c_opt = j_opt * 3.50
+                
+                # Regra de inserção do Plano A
+                if m_tam <= 20:
+                    tabela_dados.append({
+                        "Matriz": f"{m_tam} Dz", "Motor": "🥇 Plano A (Exato)",
+                        "Prob.": "100%", "Bilhetes": j_100, "Custo (R$)": c_100
+                    })
+                # Regra de inserção do Plano B Híbrido
+                if 17 <= m_tam <= 20:
+                    tabela_dados.append({
+                        "Matriz": f"{m_tam} Dz", "Motor": "🥈 Plano B (Híbrido)",
+                        "Prob.": "~90%", "Bilhetes": j_opt, "Custo (R$)": c_opt
+                    })
+                # Regra de inserção do Plano B Heurístico
+                if m_tam > 20:
+                    tabela_dados.append({
+                        "Matriz": f"{m_tam} Dz", "Motor": "🥉 Plano B (Heurístico)",
+                        "Prob.": "~80%", "Bilhetes": j_opt, "Custo (R$)": c_opt
+                    })
+                    
             df_institucional = pd.DataFrame(tabela_dados)
-            st.dataframe(df_institucional, use_container_width=True, hide_index=True)
+            
+            # Formatação Profissional do Pandas no Streamlit
+            st.dataframe(
+                df_institucional,
+                column_config={
+                    "Matriz": st.column_config.TextColumn("🧩 Matriz"),
+                    "Motor": st.column_config.TextColumn("⚙️ Motor Aplicado"),
+                    "Prob.": st.column_config.TextColumn("🎯 Cobertura Real"),
+                    "Bilhetes": st.column_config.NumberColumn("🎟️ Bilhetes", format="%d"),
+                    "Custo (R$)": st.column_config.NumberColumn("💸 Custo Estimado", format="R$ %.2f")
+                },
+                hide_index=True,
+                use_container_width=True
+            )
 
         # ==========================================================
-        # BÚSSOLA DE APORTE INSTITUCIONAL (COESÃO TOTAL DE MOTOR)
+        # BÚSSOLA DE APORTE FINANCEIRO (Sincronizada com o Motor Escolhido)
         # ==========================================================
         banca_atual = st.session_state.data.get('banca', 0.0)
-        
-        jogos_100_pct = qtd_bilhetes_atual
-        custo_100_pct = custo_atual
-        
-        # 🧠 O CÁLCULO DA FRONTEIRA DE EFICIÊNCIA
-        fator_otimizacao = {
-            15: 1.0, 16: 1.0, 17: 0.50, 18: 0.40, 
-            19: 0.35, 20: 0.25, 21: 0.10, 22: 0.05, 23: 0.03
-        }
-        
-        fator = fator_otimizacao.get(tam_atual, 0.05)
-        jogos_otimizados = max(1, int(jogos_100_pct * fator))
-        custo_otimizado = jogos_otimizados * 3.50
-        
-        # 🔥 AQUI ESTÁ A CORREÇÃO: O Nome dinâmico do motor real que será usado!
-        if tam_atual <= 18 and qtd_bilhetes_atual <= 24:
-            nome_motor_real = "Motor Matemático Exato (Plano A)"
-        elif tam_atual <= 20:
-            nome_motor_real = "Motor Híbrido Ortogonal"
-        else:
-            nome_motor_real = "Motor Heurístico (Arrasto Estocástico)"
-        
-        # Textos de Contexto
-        if tam_atual <= 16:
-            texto_bussola = "Ataque Sniper direto na Matriz."
-        elif tam_atual <= 18:
-            texto_bussola = f"Fechamento de {tam_atual} focado na garantia de {garantia_escolhida} pontos."
-        else:
-            texto_bussola = f"Rede Expandida de {tam_atual} dezenas focada em {garantia_escolhida} pontos."
+        falta = custo_exibicao - banca_atual
         
         st.markdown("---")
-        st.markdown("#### 🧭 Bússola de Operação (Recomendação do Sistema)")
+        st.markdown("#### 🧭 Bússola de Operação Financeira")
         
         with st.container(border=True):
-            if banca_atual >= custo_100_pct:
-                st.success(f"✅ **Banca Suficiente (Cobertura Total):** O seu saldo (R$ {banca_atual:,.2f}) cobre o **Lote Absoluto de {jogos_100_pct} jogos** (R$ {custo_100_pct:,.2f}) para cravar {garantia_escolhida} pontos na Matriz de {tam_atual}. O Motor trabalhará com Garantia 100% Exata.")
-            
-            elif banca_atual >= custo_otimizado:
-                st.success(f"⚡ **Banca Eficiente (Lote Otimizado):** O fechamento 100% exigiria R$ {custo_100_pct:,.2f}, mas o seu saldo atual (R$ {banca_atual:,.2f}) permite a execução da **Fronteira de Eficiência**. O sistema extrairá a nata probabilística com apenas **{jogos_otimizados} bilhetes** usando o **{nome_motor_real}** (Custo Ideal: **R$ {custo_otimizado:,.2f}**). Pode disparar a máquina.")
-            
+            if banca_atual >= custo_exibicao:
+                st.success(f"✅ **Banca Suficiente:** O seu saldo atual (R$ {banca_atual:,.2f}) cobre o investimento total da operação via **{motor_selecionado}** (Custo: **R$ {custo_exibicao:,.2f}**). Pode seguir para a Tab 3 e disparar o sistema.")
             else:
-                falta_para_otimizado = custo_otimizado - banca_atual
-                st.warning(f"""
-                ⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática dessa Matriz de {tam_atual} ({texto_bussola}), o exigido seria R$ {custo_100_pct:,.2f} ({jogos_100_pct} jogos).  
-                
-                No entanto, a **Fronteira de Eficiência** calculou que um **Lote Otimizado de {jogos_otimizados} bilhetes** (Custo: **R$ {custo_otimizado:,.2f}**) é o suficiente para extrair a melhor probabilidade usando o **{nome_motor_real}**. 
-                
-                *Como o seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de pelo menos **R$ {falta_para_otimizado:,.2f}** para rodar a operação otimizada.*
-                """)
+                if "🥇" in motor_selecionado:
+                    st.warning(f"""
+                    ⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática com o **{motor_selecionado}**, o exigido é **R$ {custo_exibicao:,.2f}** ({qtd_exibicao} jogos).  
+                    
+                    Como o seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de pelo menos **R$ {falta:,.2f}** ou altere o simulador acima para o *Plano B (Híbrido)* para verificar o custo da operação com redução otimizada.
+                    """)
+                elif "🥈" in motor_selecionado:
+                     st.info(f"""
+                     ⚡ **Fronteira de Eficiência:** Você optou por ligar o **{motor_selecionado}**. 
+                     Ele corta o custo irreal do fechamento exato (que seria de R$ {custo_100_pct:,.2f}) e cria um **Lote Otimizado de {qtd_exibicao} bilhetes** focado na elite probabilística (Custo Realista: **R$ {custo_exibicao:,.2f}**).
+                     
+                     *Como seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de **R$ {falta:,.2f}** para disparar esta matriz otimizada.*
+                     """)
+                else:
+                     st.info(f"""
+                     🌪️ **Rede de Arrasto Estatística:** Para matrizes gigantes como esta ({tam_atual} Dz), o sistema obriga o uso do **{motor_selecionado}**.
+                     O computador definiu um **Lote Otimizado de {qtd_exibicao} bilhetes** para fazer a rede de proteção (Custo: **R$ {custo_exibicao:,.2f}**).
+                     
+                     *Como seu saldo atual é R$ {banca_atual:,.2f}, injete um aporte de **R$ {falta:,.2f}** para autorizar o motor estocástico.*
+                     """)
 
         st.markdown(f"### 🧠 Diagnóstico Autônomo — Concurso Alvo `{ia['alvo']}`")
         # =====================================================================
