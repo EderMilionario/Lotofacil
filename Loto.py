@@ -919,21 +919,33 @@ with tabs[1]:
                         "Desnecessário no momento. Para matrizes curtas, os motores matemáticos assumem."
                     )
 
-        # =====================================================================
-        # DADOS MATEMÁTICOS UNIFICADOS (Usados para o Painel 3 e Tabela 4)
-        # Probabilidades reais de Cobertura Mínima (Set Cover Approximation)
-        # =====================================================================
-        alvos_matematicos = {
-            15: {15: 1, 14: 1, 13: 1, "motor": "Aposta Única (Direta)"},
-            16: {15: 16, 14: 4, 13: 2, "motor": "🥇 Plano A (Exato)"},
-            17: {15: 136, 14: 10, 13: 4, "motor": "🥇 Plano A / 🥈 Híbrido"},
-            18: {15: 816, 14: 24, 13: 6, "motor": "🥇 Plano A / 🥈 Híbrido"},
-            19: {15: 3876, 14: 87, 13: 15, "motor": "🥈 Plano B (Híbrido)"},
-            20: {15: 15504, 14: 350, 13: 50, "motor": "🥈 Plano B (Híbrido)"},
-            21: {15: 54264, 14: 1000, 13: 100, "motor": "🥉 Plano B (Heurístico)"},
-            22: {15: 170544, 14: 3000, 13: 250, "motor": "🥉 Plano B (Heurístico)"},
-            23: {15: 490314, 14: 10000, 13: 800, "motor": "🥉 Plano B (Heurístico)"}
-        }
+        # ==========================================================
+        # TABELA INSTITUCIONAL DE COBERTURA E CUSTOS (15 a 23 Dezenas)
+        # ==========================================================
+        with st.expander("📊 Ver Tabela Institucional de Probabilidades e Limites", expanded=False):
+            st.markdown("""
+            <style>
+            .tabela-pro { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; font-family: sans-serif; }
+            .tabela-pro th { background-color: #0066cc; color: white; padding: 8px; border: 1px solid #ddd; }
+            .tabela-pro td { padding: 6px; border: 1px solid #ddd; color: #333;}
+            .tabela-pro tr:nth-child(even) { background-color: #f8f9fa; }
+            .tag-verde { background: #d4edda; color: #155724; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
+            .tag-amarela { background: #fff3cd; color: #856404; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
+            .tag-vermelha { background: #f8d7da; color: #721c24; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
+            </style>
+            <table class="tabela-pro">
+                <tr><th>Matriz</th><th>Combinações Possíveis</th><th>Garantia Exata (14 pts)</th><th>Motor Recomendado</th></tr>
+                <tr><td>15</td><td>1</td><td><span class="tag-verde">1 Jogo</span></td><td>Plano A (Puro)</td></tr>
+                <tr><td>16</td><td>16</td><td><span class="tag-verde">~ 3 Jogos</span></td><td>Plano A (Puro)</td></tr>
+                <tr><td>17</td><td>136</td><td><span class="tag-verde">~ 8 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
+                <tr><td>18</td><td>816</td><td><span class="tag-verde">~ 24 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
+                <tr><td>19</td><td>3.876</td><td><span class="tag-amarela">~ 71 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
+                <tr><td>20</td><td>15.504</td><td><span class="tag-amarela">~ 210 Jogos</span></td><td>Híbrido (Limite Exato)</td></tr>
+                <tr><td>21</td><td>54.264</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
+                <tr><td>22</td><td>170.544</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
+                <tr><td>23</td><td>490.314</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
+            </table>
+            """, unsafe_allow_html=True)
         
         # Garante que o sistema nunca quebre se a matriz for fora do padrão
         dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
