@@ -810,76 +810,196 @@ with tabs[0]:
                 salvar_dados(st.session_state.data)
                 st.rerun()
 
-# --- TAB 2: CÉREBRO ANALÍTICO (INTEGRAÇÃO COMPLETA) ---
+# --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
     exibir_mini_painel_financeiro()
-    
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
         st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
+            
         tam_atual = len(ia['matriz_base'])
 
-        # 1. INDICADOR DO MOTOR ATIVO
+        # ==========================================================
+        # BÚSSOLA DE APORTE INSTITUCIONAL (O "Ponto Doce" da Matemática)
+        # ==========================================================
+        tam_atual = len(ia['matriz_base'])
+        banca_atual = st.session_state.data.get('banca', 0.0)
+        
+        # O Perito define o "Ponto Doce" ideal para cada tamanho de matriz
+        if tam_atual <= 16:
+            jogos_ideal = 1 if tam_atual == 15 else 3
+            texto_bussola = "Ataque Sniper."
+        elif tam_atual == 17:
+            jogos_ideal = 8
+            texto_bussola = "Fechamento Absoluto de 17. Exige cobertura mínima para garantir 14 pontos."
+        elif tam_atual == 18:
+            jogos_ideal = 24
+            texto_bussola = "Fechamento Avançado. Distribuição ortogonal ideal para cercar as zebras."
+        elif tam_atual == 19:
+            jogos_ideal = 71
+            texto_bussola = "Rede Larga. Ponto de saturação matemática ideal antes da explosão de custo."
+        elif tam_atual == 20:
+            jogos_ideal = 210
+            texto_bussola = "Limite Máximo do Motor Exato. Cercamento de altíssima complexidade."
+        else:
+            jogos_ideal = 50 # Para 21, 22 ou 23, o ideal de amostragem Monte Carlo é 50 jogos
+            texto_bussola = "Matriz Gigante (Caos Aleatório). O motor Heurístico exige uma rede de arrasto estatística."
+
+        custo_ideal = jogos_ideal * 3.50
+        
+        # Exibe o Painel de Recomendação
+        st.markdown("---")
+        st.markdown("#### 🧭 Bússola de Operação (Recomendação do Sistema)")
+        
+        if banca_atual >= custo_ideal:
+            st.success(f"✅ **Banca Suficiente:** O seu saldo (R$ {banca_atual:.2f}) cobre o **Lote Ideal de {jogos_ideal} jogos** (R$ {custo_ideal:.2f}) para a Matriz de {tam_atual}. A IA operará com força máxima estatística.")
+        else:
+            falta = custo_ideal - banca_atual
+            st.warning(f"""
+            ⚠️ **Orçamento Defensivo Detectado:** Para extrair 100% do poder dessa Matriz de {tam_atual} ({texto_bussola}), a quantidade matemática ideal é de **{jogos_ideal} bilhetes** (Custo: **R$ {custo_ideal:.2f}**).  
+            
+            *Como o seu saldo atual é R$ {banca_atual:.2f}, o Motor Ortogonal fará um Downgrade e extrairá apenas a nata probabilística. Caso queira a cobertura matemática total, o aporte recomendado é de R$ {falta:.2f}.*
+            """)
+
+        # =====================================================================
+        # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
+        # =====================================================================
         st.markdown("### 🧠 Transparência Absoluta: Motores e Probabilidades Reais")
         st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
 
-        # 2. PAINEL DAS INTELIGÊNCIAS (ORIGINAL)
+        # =====================================================================
+        # 2. PAINEL DE TRANSPARÊNCIA: 3 COLUNAS DAS INTELIGÊNCIAS
+        # =====================================================================
         with st.container(border=True):
             c1, c2, c3 = st.columns(3)
+                
             with c1:
-                st.markdown("#### 🥇 PLANO A"); st.markdown("*Matemático Puro (Exato)*")
-                if tam_atual <= 18: st.success("**Garantia Real: 100% Exata**\n\nSe as 15 sorteadas caírem na matriz, o prêmio está matematicamente garantido.")
-                else: st.error("**Status: INVIÁVEL**\n\nMatriz grande demais para cálculo exato.")
+                st.markdown("#### 🥇 PLANO A")
+                st.markdown("*Matemático Puro (Exato)*")
+                if tam_atual <= 18:
+                    st.success(
+                        "**Garantia Real: 100% Exata**\n\n"
+                        "Se as 15 sorteadas caírem na matriz, o prêmio está matematicamente garantido. "
+                        "Não usa filtros. **Ideal para matrizes pequenas.**"
+                    )
+                else:
+                    st.error(
+                        "**Status: INVIÁVEL**\n\n"
+                        "Matriz muito grande. Gerar 100% de garantia travaria o PC e custaria fortunas."
+                    )
+                
             with c2:
-                st.markdown("#### 🥈 PLANO B (Híbrido)"); st.markdown("*Matriz Exata + Poda DNA*")
-                if 17 <= tam_atual <= 20: st.info("**Probabilidade Real: Alta (~85% a 95%)**\n\nGera a base exata do Plano A, corta no bisturi os jogos lixo.")
-                else: st.warning("**Status: DESLIGADO**\n\nEste motor atua apenas em matrizes de 17 a 20 dezenas.")
+                st.markdown("#### 🥈 PLANO B (Híbrido)")
+                st.markdown("*Matriz Exata + Poda DNA*")
+                if 17 <= tam_atual <= 20:
+                    st.info(
+                        "**Probabilidade Real: Alta (~85% a 95%)**\n\n"
+                        "Gera a base exata do Plano A, mas **corta no bisturi** os jogos lixo. "
+                        "Foca o orçamento na **Elite Probabilística**."
+                    )
+                else:
+                    st.warning(
+                        "**Status: DESLIGADO**\n\n"
+                        "Este motor cirúrgico atua perfeitamente apenas em matrizes de 17 a 20 dezenas."
+                    )
+                
             with c3:
-                st.markdown("#### 🥉 PLANO B (Heurístico)"); st.markdown("*Estocástico (Monte Carlo)*")
-                if tam_atual > 20: st.info("**Probabilidade Real: Média / Dinâmica**\n\nNão existe garantia exata. Sorteia jogos guiados pelos pesos da IA.")
-                else: st.warning("**Status: DESLIGADO**\n\nPara matrizes curtas, motores matemáticos assumem.")
+                st.markdown("#### 🥉 PLANO B (Heurístico)")
+                st.markdown("*Estocástico (Monte Carlo)*")
+                if tam_atual > 20:
+                    st.info(
+                        "**Probabilidade Real: Média / Dinâmica**\n\n"
+                        "Não existe garantia exata. Sorteia jogos guiados pelos pesos da IA. "
+                        "Age como **Rede de Arrasto** para proteger a banca na volatilidade."
+                    )
+                else:
+                    st.warning(
+                        "**Status: DESLIGADO**\n\n"
+                        "Desnecessário no momento. Para matrizes curtas, os motores matemáticos assumem."
+                    )
 
-        # 3. TABELA INSTITUCIONAL DE PROBABILIDADE (NOVO - COMPLETO)
-        st.markdown("### 📊 Tabela de Cobertura e Orçamento")
-        meta = st.radio("Selecione a Garantia de Retorno (Pontos):", [13, 14, 15], index=1, horizontal=True)
-        
-        # Estrutura completa de dados: [Matriz Size]: [13pts, 14pts, 15pts]
-        # Dados de Jogos Necessários (Estimativa profissional de cobertura)
-        data_m = {
-            15: {"13": [1, 1, 1], "14": [1, 1, 1], "15": [1, 1, 1], "motor": "Plano A"},
-            16: {"13": [2, 4, 16], "14": [4, 4, 16], "15": [16, 16, 16], "motor": "Plano A"},
-            17: {"13": [4, 10, 136], "14": [10, 10, 136], "15": [136, 136, 136], "motor": "Híbrido"},
-            18: {"13": [6, 24, 816], "14": [24, 24, 816], "15": [816, 816, 816], "motor": "Híbrido"},
-            19: {"13": [15, 87, 3876], "14": [87, 87, 3876], "15": [3876, 3876, 3876], "motor": "Híbrido"},
-            20: {"13": [50, 350, 15504], "14": [350, 350, 15504], "15": [15504, 15504, 15504], "motor": "Híbrido"},
-            21: {"13": [100, 1000, 54264], "14": [1000, 1000, 54264], "15": [54264, 54264, 54264], "motor": "Heurístico"},
-            22: {"13": [250, 3000, 170544], "14": [3000, 3000, 170544], "15": [170544, 170544, 170544], "motor": "Heurístico"},
-            23: {"13": [800, 10000, 490314], "14": [10000, 10000, 490314], "15": [490314, 490314, 490314], "motor": "Heurístico"}
+        # =====================================================================
+        # DADOS MATEMÁTICOS UNIFICADOS (Usados para o Painel 3 e Tabela 4)
+        # Probabilidades reais de Cobertura Mínima (Set Cover Approximation)
+        # =====================================================================
+        alvos_matematicos = {
+            15: {15: 1, 14: 1, 13: 1, "motor": "Aposta Única (Direta)"},
+            16: {15: 16, 14: 4, 13: 2, "motor": "🥇 Plano A (Exato)"},
+            17: {15: 136, 14: 10, 13: 4, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            18: {15: 816, 14: 24, 13: 6, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            19: {15: 3876, 14: 87, 13: 15, "motor": "🥈 Plano B (Híbrido)"},
+            20: {15: 15504, 14: 350, 13: 50, "motor": "🥈 Plano B (Híbrido)"},
+            21: {15: 54264, 14: 1000, 13: 100, "motor": "🥉 Plano B (Heurístico)"},
+            22: {15: 170544, 14: 3000, 13: 250, "motor": "🥉 Plano B (Heurístico)"},
+            23: {15: 490314, 14: 10000, 13: 800, "motor": "🥉 Plano B (Heurístico)"}
         }
-
-        df_list = []
-        for tam, info in data_m.items():
-            qtd = info[str(meta)][1 if meta==14 else (0 if meta==13 else 2)]
-            df_list.append({"Matriz": f"{tam} Dez", "Bilhetes": f"{qtd:,}", "Custo (R$)": f"{qtd*3.50:,.2f}", "Motor": info["motor"]})
         
-        st.table(pd.DataFrame(df_list))
+        # Garante que o sistema nunca quebre se a matriz for fora do padrão
+        dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
 
-        # 4. BÚSSOLA DE APORTE
-        st.markdown("### 🧭 Bússola de Aporte")
-        ideal = int(data_m[tam_atual][str(meta)][1 if meta==14 else (0 if meta==13 else 2)])
-        custo_ideal = ideal * 3.50
-        banca = st.session_state.data.get('banca', 0.0)
-        
-        if banca >= custo_ideal: st.success(f"✅ Ideal: {ideal} jogos (R$ {custo_ideal:,.2f}). Saldo suficiente.")
-        else: st.warning(f"⚠️ Ideal: {ideal} jogos (R$ {custo_ideal:,.2f}). Saldo insuficiente (R$ {banca:,.2f}). Poda automática ativada.")
+        # =====================================================================
+        # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
+        # =====================================================================
+        st.markdown("### 💰 Projeção Financeira e Cobertura Matemática")
+            
+        with st.container(border=True):
+            garantia_escolhida = st.radio(
+                "🎯 **Se as 15 dezenas sorteadas estiverem dentro da Matriz, qual prêmio você quer garantir matematicamente?**", 
+                [15, 14, 13], 
+                index=0, 
+                horizontal=True,
+                format_func=lambda x: f"Garantir {x} Pontos"
+            )
+            
+            qtd_bilhetes_atual = dados_matriz[garantia_escolhida]
+            custo_atual = qtd_bilhetes_atual * 3.50
+            tipo_motor = dados_matriz["motor"]
+                
+            st.divider() # Linha sutil para separar os controles dos resultados
+            
+            # Formatadores de moeda e milhar estilo pt-BR
+            str_bilhetes = f"{qtd_bilhetes_atual:,}".replace(",", ".")
+            str_custo = f"R$ {custo_atual:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            
+            c_a, c_b, c_c, c_d = st.columns(4)
+            c_a.metric("🧩 Matriz Avaliada", f"{tam_atual} Dezenas")
+            c_b.metric("⚙️ Motor Ideal", tipo_motor) 
+            c_c.metric(f"🎟️ Teto Absoluto", f"{str_bilhetes} Jogos")
+            c_d.metric("💸 Custo Base (Sem Poda)", str_custo)
 
-        # 5. DIAGNÓSTICO E RESTANTE DO CÓDIGO ORIGINAL
-        nota_real = ia.get('perf', {}).get(ia['cod_estrategia'], 11.0)
-        st.markdown(f"**📈 Pontuação atual da estratégia '{ia['estrategia']}':** `{nota_real:.2f} pts`")
+       # ==========================================================
+        # TABELA INSTITUCIONAL DE COBERTURA E CUSTOS (15 a 23 Dezenas)
+        # ==========================================================
+        with st.expander("📊 Ver Tabela Institucional de Probabilidades e Limites", expanded=False):
+            st.markdown("""
+            <style>
+            .tabela-pro { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; font-family: sans-serif; }
+            .tabela-pro th { background-color: #0066cc; color: white; padding: 8px; border: 1px solid #ddd; }
+            .tabela-pro td { padding: 6px; border: 1px solid #ddd; color: #333;}
+            .tabela-pro tr:nth-child(even) { background-color: #f8f9fa; }
+            .tag-verde { background: #d4edda; color: #155724; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
+            .tag-amarela { background: #fff3cd; color: #856404; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
+            .tag-vermelha { background: #f8d7da; color: #721c24; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
+            </style>
+            <table class="tabela-pro">
+                <tr><th>Matriz</th><th>Combinações Possíveis</th><th>Garantia Exata (14 pts)</th><th>Motor Recomendado</th></tr>
+                <tr><td>15</td><td>1</td><td><span class="tag-verde">1 Jogo</span></td><td>Plano A (Puro)</td></tr>
+                <tr><td>16</td><td>16</td><td><span class="tag-verde">~ 3 Jogos</span></td><td>Plano A (Puro)</td></tr>
+                <tr><td>17</td><td>136</td><td><span class="tag-verde">~ 8 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
+                <tr><td>18</td><td>816</td><td><span class="tag-verde">~ 24 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
+                <tr><td>19</td><td>3.876</td><td><span class="tag-amarela">~ 71 Jogos</span></td><td>Híbrido (Poda DNA)</td></tr>
+                <tr><td>20</td><td>15.504</td><td><span class="tag-amarela">~ 210 Jogos</span></td><td>Híbrido (Limite Exato)</td></tr>
+                <tr><td>21</td><td>54.264</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
+                <tr><td>22</td><td>170.544</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
+                <tr><td>23</td><td>490.314</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico (Estocástico)</td></tr>
+            </table>
+            """, unsafe_allow_html=True) 
         
         st.markdown(f"### 🧠 Diagnóstico Autônomo — Concurso Alvo `{ia['alvo']}`")
-        
-        # [AQUI COMEÇA SEU CÓDIGO ORIGINAL DE DIAGNÓSTICO - MANTIDO INTEGRALMENTE]
+
+        # =====================================================================
+        # SUPER PAINEL INSTITUCIONAL: RAIO-X, RISCO E CORRELAÇÃO
+        # =====================================================================
         historico_painel = st.session_state.data.get("historico_dados", [])
         if len(historico_painel) >= 2:
             ultimo_sort = historico_painel[-1]
@@ -887,6 +1007,7 @@ with tabs[1]:
             dez_ult = ultimo_sort['dezenas']
             dez_pen = penultimo_sort['dezenas']
             
+            # 1. EXPANSÃO BIOMÉTRICA (DNA do Sorteio)
             primos_set = {2, 3, 5, 7, 11, 13, 17, 19, 23}
             fibo_set = {1, 2, 3, 5, 8, 13, 21}
             mult3_set = {3, 6, 9, 12, 15, 18, 21, 24}
@@ -901,6 +1022,7 @@ with tabs[1]:
             dezenas_ult_formatadas = " - ".join([f"{n:02d}" for n in dez_ult])
             st.info(f"**🎯 Último Sorteio Oficial (Concurso {ultimo_sort['concurso']}):** {dezenas_ult_formatadas}")
             
+            # 6 Cartões com a nova leitura do Universo Lotofácil
             col_rx1, col_rx2, col_rx3, col_rx4, col_rx5, col_rx6 = st.columns(6)
             col_rx1.metric("Ímpares", impares_ult)
             col_rx2.metric("Pares", pares_ult)
@@ -908,12 +1030,16 @@ with tabs[1]:
             col_rx4.metric("Fibonacci", fibo_ult)
             col_rx5.metric("Múltiplos 3", mult3_ult)
             col_rx6.metric("Repetidas", repetidas_ult)
+            
             st.divider()
 
+            # 2. MOTOR APRIORI (Cálculo Restrito à Matriz de Elite - Rota A)
             amostra_corr = historico_painel[-100:] if len(historico_painel) > 100 else historico_painel
             pares_count = {}
-            matriz_atual_set = set(ia['matriz_base'])
+            matriz_atual_set = set(ia['matriz_base']) # O filtro matemático que você percebeu faltar
+
             for sorteio in amostra_corr:
+                # Intersecção: cruza a história oficial com a matriz eleita pela IA
                 d_sort = [n for n in sorteio['dezenas'] if n in matriz_atual_set]
                 for i in range(len(d_sort)):
                     for j in range(i+1, len(d_sort)):
@@ -921,83 +1047,185 @@ with tabs[1]:
                         pares_count[par] = pares_count.get(par, 0) + 1
             
             top_par = max(pares_count, key=pares_count.get) if pares_count else (0,0)
-            st.session_state.par_ouro = top_par 
+            st.session_state.par_ouro = top_par # Salva a dupla magnética real para o DNA!
 
+            # 3. TERMÔMETRO DE RISCO E CORRELAÇÃO
             col_risk, col_corr = st.columns(2)
+            
             with col_risk:
                 st.markdown("#### 🌡️ Termômetro de Risco (Critério de Kelly)")
                 qtd_m = ia.get('qtd_matriz', 18)
-                if qtd_m >= 21: n_risco, c_risco, d_banca = "ALTO", "#dc3545", "Recomendação: Operar com orçamento defensivo."
-                elif qtd_m == 19: n_risco, c_risco, d_banca = "MÉDIO", "#ffcc00", "Recomendação: Operar com orçamento padrão."
-                else: n_risco, c_risco, d_banca = "BAIXO", "#28a745", "Recomendação: Janela de Ataque."
-                st.markdown(f"<div style='background-color: #f8f9fa; border-left: 5px solid {c_risco}; padding: 15px;'>{n_risco} - {d_banca}</div>", unsafe_allow_html=True)
+                if qtd_m >= 21:
+                    n_risco = "ALTO (Início de Ciclo / Caos Aleatório)"
+                    c_risco = "#dc3545"; d_banca = "Recomendação: Operar com orçamento defensivo."
+                elif qtd_m == 19:
+                    n_risco = "MÉDIO (Meio de Ciclo / Transição)"
+                    c_risco = "#ffcc00"; d_banca = "Recomendação: Operar com orçamento padrão."
+                else:
+                    n_risco = "BAIXO (Fim de Ciclo / Alta Previsibilidade)"
+                    c_risco = "#28a745"; d_banca = "Recomendação: Janela de Ataque. Risco Mínimo."
+
+                st.markdown(f"""
+                <div style='background-color: #f8f9fa; border-left: 5px solid {c_risco}; padding: 15px; border-radius: 6px;'>
+                    <span style='color: {c_risco}; font-weight: bold; font-size: 15px;'>Nível Atual: {n_risco}</span><br>
+                    <span style='color: #4d5156; font-size: 13px;'><b>Diretriz Institucional:</b> {d_banca}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
             with col_corr:
-                st.markdown("#### 🕸️ Teia de Correlação")
-                st.markdown(f"<div style='background-color: #f8f9fa; border-left: 5px solid #1a73e8; padding: 15px;'>Par Magnético: {top_par[0]:02d} e {top_par[1]:02d}</div>", unsafe_allow_html=True)
+                st.markdown("#### 🕸️ Teia de Correlação (Matriz Filtrada)")
+                st.markdown(f"""
+                <div style='background-color: #f8f9fa; border-left: 5px solid #1a73e8; padding: 15px; border-radius: 6px;'>
+                    <span style='color: #1a73e8; font-weight: bold; font-size: 15px;'>Par Magnético da Elite: {top_par[0]:02d} e {top_par[1]:02d}</span><br>
+                    <span style='color: #4d5156; font-size: 13px;'>Esta é a dupla mais quente <b>possível de ser gerada</b> pela matriz atual. O Motor DNA vai garantir a recompensa quântica por agrupá-las.</span>
+                </div>
+                """, unsafe_allow_html=True)
+
             st.divider()
             
-            st.subheader("📐 Gestão Inteligente")
+            # =====================================================================
+            # PAINEL DE GESTÃO DE CICLO, CONFIANÇA E APOSTAS MÚLTIPLAS (PONTOS 6, 7 e 13)
+            # =====================================================================
+            st.subheader("📐 Gestão Inteligente: Matriz, Confiança e Orçamento")
+            
+            # Instancia o novo motor de análise profunda que resolve a "cegueira" da IA
             estrategia_selecionada = ia.get('estrategia', 'Tendencia')
             memoria_ia = st.session_state.data.get('ia_memoria', {})
-            tam_matriz_calc, confianca_calc, motivo_calc, dados_internos = calcular_temperatura_e_confianca(historico_painel, estrategia_selecionada, memoria_ia)
+            
+            tam_matriz_calc, confianca_calc, motivo_calc, dados_internos = calcular_temperatura_e_confianca(
+                historico_painel, estrategia_selecionada, memoria_ia
+            )
+        
             qtd_em_falta = len(ia['faltam_ciclo'])
-            
+        
+            # Exibição das métricas principais com as novas regras
             col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-            col_c1.metric("Ciclo", f"{ia['ciclo_tam']}")
-            col_c2.metric("Faltando", qtd_em_falta)
-            col_c3.metric("🎯 Confiança", f"{confianca_calc * 100:.1f}%")
-            col_c4.metric("⚡ Múltiplos", "🔥 LIBERADO" if confianca_calc >= 0.75 else "⚠️ BLOQUEADO")
-            st.info(f"📋 {motivo_calc}")
+            col_c1.metric("Ciclo aberto há", f"{ia['ciclo_tam']} concursos")
+            col_c2.metric("Dezenas faltando", qtd_em_falta)
+            col_c3.metric("🎯 Confiança da Estratégia", f"{confianca_calc * 100:.1f}%")
             
-            with st.expander("Ver Backstage"):
-                st.write(f"🔥 Dezenas Quentes: {dados_internos.get('dezenas_quentes', 0)}/25")
-                st.write(f"📈 Pontuação atual: {dados_internos.get('score_ia', 11.0):.2f} pts")
+            # Decisão de 16 dezenas visível para você na tela
+            status_16 = "⚠️ BLOQUEADO (15 Dez)" if confianca_calc < 0.75 else "🔥 LIBERADO (16 Dez)"
+            col_c4.metric("⚡ Permissão p/ Jogos Múltiplos", status_16)
+        
+            # Justificativa visual do novo motor
+            st.info(f"📋 **Diagnóstico do Motor Matemático:** {motivo_calc}")
+        
+            with st.expander("Ver Backstage da Decisão (Regras e Peso da IA)"):
+                st.write(f"🔥 Dezenas 'Quentes' detectadas nos últimos 10 concursos: `{dados_internos.get('dezenas_quentes', 0)}/25`")
+                # --- CORREÇÃO DO DISPLAY DA NOTA DA IA ---
+                nota_real = ia.get('perf', {}).get(ia['cod_estrategia'], 11.0)
+                st.markdown(f"**📈 Pontuação atual da estratégia '{ia['estrategia']}':** `{nota_real:.2f} pts`")
+                st.write("---")
+                st.write("**Como a IA decide habilitar bilhetes de 16 dezenas (R$ 56,00)?**")
+                st.write("A inteligência cruza a Força do Ciclo com a Pontuação da Estratégia. Somente se a Confiança passar de **75%** e houver saldo em banca, o desdobramento de 16 números será gerado.")
 
             st.divider()
-            st.success(f"**⚡ LINHA TÁTICA:** {ia['estrategia']} \n\n**DIRETRIZ:** {ia['motivo_est']}")
-            st.info(f"**🎯 ELITE ({ia['qtd_matriz']} DEZ):** {', '.join([f'{n:02d}' for n in ia['matriz_base']])}")
+        
+        # =====================================================================
+        
+        st.success(f"**⚡ LINHA TÁTICA ATIVADA:** {ia['estrategia']} \n\n**DIRETRIZ DA DECISÃO:** {ia['motivo_est']}")
+        st.info(f"**🎯 GRUPO DE ELITE ({ia['qtd_matriz']} DEZENAS COMPILADAS):** {', '.join([f'{n:02d}' for n in ia['matriz_base']])}")
 
-            st.markdown("#### 📈 Parâmetros Volumétricos")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Soma", f"{ia['soma']:.1f}"); c2.metric("Ímpar", f"{ia['impares']:.1f}"); c3.metric("Primos", f"{ia['primos']:.1f}"); c4.metric("Moldura", f"{ia['moldura']:.1f}")
+        # --- NOVAS ANÁLISES EXTRAS SOLICITADAS ---
+        st.markdown("#### 📈 Parâmetros Volumétricos e Distribuição Espacial")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Massa de Soma", f"{ia['soma']:.1f}", delta="Equilíbrio: ~195")
+        c2.metric("Massa Ímpar", f"{ia['impares']:.1f}", delta="Equilíbrio: ~7.5")
+        c3.metric("Massa Primos", f"{ia['primos']:.1f}", delta="Equilíbrio: ~5.5")
+        c4.metric("Massa Moldura", f"{ia['moldura']:.1f}", delta="Equilíbrio: ~10")
 
-            linhas_count = {i: 0 for i in range(1, 6)}; colunas_count = {i: 0 for i in range(1, 6)}
-            for n in ia['matriz_base']:
-                linhas_count[(n - 1) // 5 + 1] += 1
-                colunas_count[(n - 1) % 5 + 1] += 1
-            
-            ultimo_sorteio = st.session_state.data["historico_dados"][-1]["dezenas"]
-            repetidas_previstas = len(set(ia['matriz_base']).intersection(set(ultimo_sorteio)))
+        # Análise de Quadrantes/Linhas/Colunas e Taxa de Repetição
+        linhas_count = {i: 0 for i in range(1, 6)}
+        colunas_count = {i: 0 for i in range(1, 6)}
+        for n in ia['matriz_base']:
+            l = (n - 1) // 5 + 1
+            c = (n - 1) % 5 + 1
+            linhas_count[l] += 1
+            colunas_count[c] += 1
+        
+        ultimo_sorteio = st.session_state.data["historico_dados"][-1]["dezenas"]
+        repetidas_previstas = len(set(ia['matriz_base']).intersection(set(ultimo_sorteio)))
 
-            c_an1, c_an2, c_an3 = st.columns(3)
-            c_an1.info(f"📋 Linhas: " + " | ".join([f"L{k}:{v}" for k, v in linhas_count.items()]))
-            c_an2.info(f"📋 Colunas: " + " | ".join([f"C{k}:{v}" for k, v in colunas_count.items()]))
-            c_an3.info(f"🔄 Repetidas: {repetidas_previstas}")
+        c_an1, c_an2, c_an3 = st.columns(3)
+        with c_an1:
+            st.info(f"📋 **Dezenas por Linha (Grupo Elite):**<br>" + " | ".join([f"L{k}: **{v}**" for k, v in linhas_count.items()]), icon="📊")
+        with c_an2:
+            st.info(f"📋 **Dezenas por Coluna (Grupo Elite):**<br>" + " | ".join([f"C{k}: **{v}**" for k, v in colunas_count.items()]), icon="📊")
+        with c_an3:
+            st.info(f"🔄 **Repetição do Concurso Anterior:** A Matriz de Elite carrega **{repetidas_previstas} dezenas** do concurso nº {st.session_state.data['historico_dados'][-1]['concurso']}.", icon="🔮")
 
-            st.markdown("#### 🎯 Retrospectiva Crítica")
-            ultimos_30 = st.session_state.data["historico_dados"][-30:]
-            acertos_grupo = [len(set(ia['matriz_base']).intersection(set(h['dezenas']))) for h in ultimos_30]
-            avg_hits = sum(acertos_grupo) / len(acertos_grupo) if acertos_grupo else 0
-            cd_1, cd_2, cd_3, cd_4 = st.columns(4)
-            cd_1.metric("Média Acertos", f"{avg_hits:.2f}"); cd_2.metric("11-12 Pts", f"{sum(1 for x in acertos_grupo if x in [11,12])}"); cd_3.metric("13 Pts", f"{sum(1 for x in acertos_grupo if x == 13)}"); cd_4.metric("14-15 Pts", f"{sum(1 for x in acertos_grupo if x >= 14)}")
+        # --- NOVO BLOCO: DESEMPENHO HISTÓRICO DAS DEZENAS ESCOLHIDAS PELA IA ---
+        st.markdown("#### 🎯 Retrospectiva Crítica do Grupo de Elite (Últimos 30 Concursos)")
+        ultimos_30 = st.session_state.data["historico_dados"][-30:]
+        acertos_grupo = []
+        for h in ultimos_30:
+            hits = len(set(ia['matriz_base']).intersection(set(h['dezenas'])))
+            acertos_grupo.append(hits)
+        
+        avg_hits = sum(acertos_grupo) / len(acertos_grupo) if acertos_grupo else 0
+        t11 = sum(1 for x in acertos_grupo if x == 11)
+        t12 = sum(1 for x in acertos_grupo if x == 12)
+        t13 = sum(1 for x in acertos_grupo if x == 13)
+        t14 = sum(1 for x in acertos_grupo if x == 14)
+        t15 = sum(1 for x in acertos_grupo if x == 15)
 
-            st.markdown("#### 📊 Desempenho Histórico")
-            c_e1, c_e2, c_e3, c_e4 = st.columns(4)
-            c_e1.metric("Tendência", f"{ia['perf']['Tendencia']:.2f}"); c_e2.metric("Reversão", f"{ia['perf']['Reversao']:.2f}"); c_e3.metric("Ciclo", f"{ia['perf']['Ciclo']:.2f}"); c_e4.metric("Simetria", f"{ia['perf']['Simetria']:.2f}")
-            
-            st.markdown("#### ⚖️ Grade Dinâmica de Pesos")
-            html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;'>"
-            for n in range(1, 26):
-                p_val = ia['pesos'].get(n, 0.0)
-                no_grupo = n in ia['matriz_base']
-                bg = "#1f77b4" if no_grupo else "#e0e0e0"
-                html_pesos += f"<div style='background-color: {bg}; padding: 8px; text-align: center; border-radius: 4px; color: white;'><b>{n:02d}</b><br><small>W:{p_val:.1f}</small></div>"
-            st.markdown(html_pesos + "</div>", unsafe_allow_html=True)
+        cd_1, cd_2, cd_3, cd_4 = st.columns(4)
+        cd_1.metric("Média Geral de Acertos", f"{avg_hits:.2f} / 15", help="Média de dezenas sorteadas dentro do seu grupo atual de elite nos últimos 30 concursos.")
+        cd_2.metric("Simulações com 11-12 Pts", f"{t11 + t12} vezes", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
+        cd_3.metric("Simulações com 13 Pts", f"{t13} vezes", help="Quantidade de vezes que o grupo capturou 13 acertos.")
+        cd_4.metric("Altas Premiações (14-15 Pts)", f"{t14 + t15} acertos", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
 
+        st.markdown("#### 📊 Desempenho Histórico das Inteligências Ativas")
+        c_e1, c_e2, c_e3, c_e4 = st.columns(4)
+        c_e1.metric("1. Frequência/Tendência", f"{ia['perf']['Tendencia']:.2f} pts")
+        c_e2.metric("2. Reversão Estatística", f"{ia['perf']['Reversao']:.2f} pts")
+        c_e3.metric("3. Fechamento de Ciclo", f"{ia['perf']['Ciclo']:.2f} pts")
+        c_e4.metric("4. Simetria de Borda", f"{ia['perf']['Simetria']:.2f} pts")
+        
+        st.markdown("#### 🔍 Dossiê Completo da Inteligência Artificial")
+        top5_quentes = sorted(ia['freq'].items(), key=lambda x: x[1], reverse=True)[:5]
+        str_quentes = ", ".join([f"{k:02d} ({v}x)" for k, v in top5_quentes])
+        
+        top5_atrasos = sorted(ia['atrasos'].items(), key=lambda x: x[1], reverse=True)[:5]
+        str_atrasos = ", ".join([f"{k:02d} ({v} conc.)" for k, v in top5_atrasos])
+        
+        html_dossie = f"""
+        <div style="background-color: #e8f4f8; border-left: 6px solid #1f77b4; padding: 15px; border-radius: 8px; margin-bottom: 25px; color: #1a1a1a;">
+            <div style="margin-bottom: 8px;"><strong>🔥 Top 5 Dezenas mais Quentes:</strong> <span style="color: #d62728; font-weight: 500;">{str_quentes}</span></div>
+            <div style="margin-bottom: 8px;"><strong>🧊 Top 5 Maiores Atrasos:</strong> <span style="color: #2ca02c; font-weight: 500;">{str_atrasos}</span></div>
+            <div><strong>⏳ Status do Ciclo:</strong> Aberto há {ia['ciclo_tam']} concursos. <span style="color: #ff7f0e; font-weight: 500;">Faltam {len(ia['faltam_ciclo'])} dezenas para fechar: {ia['faltam_ciclo']}</span></div>
+        </div>
+        """
+        st.markdown(html_dossie, unsafe_allow_html=True)
+
+        # --- PAINEL DE DESEMPENHO DOS JOGOS ATIVOS (Aba 2) ---
         jogos_ativos = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Aguardando Sorteio"]
         if jogos_ativos:
-            render_performance_grid([n for j in jogos_ativos for n in j["dezenas"]], "🧬 Jogos Ativos")
-    else: st.warning("Aguardando dados.")
+            st.markdown("---")
+            dezenas_ativos = [n for j in jogos_ativos for n in j["dezenas"]]
+            render_performance_grid(dezenas_ativos, "🧬 Dezenas que a IA selecionou para os seus Jogos Ativos")
+        else:
+            st.info("Nenhum jogo ativo na fila no momento.")
+
+        # --- NOVO PAINEL DE PESOS ESTILIZADO EM BADGES GIGANTES ---
+        st.markdown("#### ⚖️ Grade Dinâmica de Pesos Absolutos (Heatmap de Atração da IA)")
+        
+        html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; font-family: sans-serif; margin-bottom: 25px;'>"
+        for n in range(1, 26):
+            p_val = ia['pesos'].get(n, 0.0)
+            no_grupo = n in ia['matriz_base']
+            bg_color = "#d1e7dd" if no_grupo else "#f8f9fa"
+            border_color = "#0f5132" if no_grupo else "#dee2e6"
+            label_elite = "<span style='background-color:#0f5132; color:white; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:5px;'>ELITE</span>" if no_grupo else ""
+            
+            html_pesos += f"<div style='background-color: {bg_color}; border: 2px solid {border_color}; border-radius: 8px; padding: 12px; text-align: center; color: #1a1a1a;'><span style='font-size: 20px; font-weight: bold; color: #111;'>{n:02d}</span>{label_elite}<br><span style='font-size: 13px; color: #444;'>Peso: <b>{p_val:.1f}</b></span></div>"
+        
+        html_pesos += "</div>"
+        st.markdown(html_pesos, unsafe_allow_html=True)
+
+    else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
+
 # --- TAB 3: GERADOR AUTÔNOMO ---
 with tabs[2]:
     exibir_mini_painel_financeiro()
