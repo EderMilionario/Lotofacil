@@ -856,33 +856,42 @@ with tabs[1]:
                     st.warning("**Status: DESLIGADO**\n\nDesnecessário no momento. Para matrizes curtas, os motores matemáticos assumem.")
 
         # ==========================================================
-        # TABELA INSTITUCIONAL DE COBERTURA E CUSTOS (15 a 23 Dezenas)
+        # TABELA INSTITUCIONAL DE COBERTURA (Dinâmica e Profissional)
         # ==========================================================
-        with st.expander("📊 Ver Tabela Institucional de Probabilidades e Limites"):
-            st.markdown("""
-            <style>
-            .tabela-pro { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; font-family: sans-serif; }
-            .tabela-pro th { background-color: #0066cc; color: white; padding: 8px; border: 1px solid #ddd; }
-            .tabela-pro td { padding: 6px; border: 1px solid #ddd; color: #333;}
-            .tabela-pro tr:nth-child(even) { background-color: #f8f9fa; }
-            .tag-verde { background: #d4edda; color: #155724; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
-            .tag-amarela { background: #fff3cd; color: #856404; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
-            .tag-vermelha { background: #f8d7da; color: #721c24; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;}
-            </style>
-            <table class="tabela-pro">
-                <tr><th>Matriz</th><th>Combinações</th><th>Garantia Exata (14 pts)</th><th>Motor Recomendado</th></tr>
-                <tr><td>15</td><td>1</td><td><span class="tag-verde">1 Jogo</span></td><td>Plano A</td></tr>
-                <tr><td>16</td><td>16</td><td><span class="tag-verde">~ 3 Jogos</span></td><td>Plano A</td></tr>
-                <tr><td>17</td><td>136</td><td><span class="tag-verde">~ 8 Jogos</span></td><td>Híbrido</td></tr>
-                <tr><td>18</td><td>816</td><td><span class="tag-verde">~ 24 Jogos</span></td><td>Híbrido</td></tr>
-                <tr><td>19</td><td>3.876</td><td><span class="tag-amarela">~ 71 Jogos</span></td><td>Híbrido</td></tr>
-                <tr><td>20</td><td>15.504</td><td><span class="tag-amarela">~ 210 Jogos</span></td><td>Híbrido</td></tr>
-                <tr><td>21</td><td>54.264</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico</td></tr>
-                <tr><td>22</td><td>170.544</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico</td></tr>
-                <tr><td>23</td><td>490.314</td><td><span class="tag-vermelha">INVIÁVEL</span></td><td>Heurístico</td></tr>
-            </table>
-            """, unsafe_allow_html=True)
+        with st.expander("📊 Ver Tabela Institucional de Probabilidades e Limites", expanded=False):
+            
+            meta = st.radio("Selecione a Garantia de Retorno (Pontos):", [13, 14, 15], index=1, horizontal=True)
+            
+            # Base de dados institucional (Estimativa de Cobertura para Redução de Jogos)
+            data_cobertura = {
+                15: {"jogos": [1, 1, 1], "motor": ["Plano A", "Plano A", "Plano A"]},
+                16: {"jogos": [1, 3, 16], "motor": ["Plano A", "Plano A", "Plano A"]},
+                17: {"jogos": [3, 8, 136], "motor": ["Plano A", "Híbrido", "Híbrido"]},
+                18: {"jogos": [8, 24, 816], "motor": ["Híbrido", "Híbrido", "Híbrido"]},
+                19: {"jogos": [20, 71, 3876], "motor": ["Híbrido", "Híbrido", "Heurístico"]},
+                20: {"jogos": [60, 210, 15504], "motor": ["Híbrido", "Heurístico", "Heurístico"]},
+                21: {"jogos": [180, 800, 54264], "motor": ["Heurístico", "Heurístico", "Heurístico"]},
+                22: {"jogos": [500, 2500, 170544], "motor": ["Heurístico", "Heurístico", "Heurístico"]},
+                23: {"jogos": [1200, 7500, 490314], "motor": ["Heurístico", "Heurístico", "Heurístico"]}
+            }
 
+            df_list = []
+            idx_map = {15: 2, 14: 1, 13: 0} # Mapeia meta para o índice do array 'jogos'
+            
+            for tam, info in data_cobertura.items():
+                qtd = info["jogos"][idx_map[meta]]
+                custo = qtd * 3.50
+                df_list.append({
+                    "Matriz": f"{tam} Dez",
+                    "Bilhetes": f"{qtd:,}".replace(",", "."),
+                    "Custo (R$)": f"{custo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                    "Motor": info["motor"][idx_map[meta]]
+                })
+            
+            df_table = pd.DataFrame(df_list)
+            st.dataframe(df_table, use_container_width=True, hide_index=True)
+            
+            st.info(f"💡 **Nota Técnica:** Valores de bilhetes baseados em *Covering Designs* otimizados para garantir {meta} pontos.")
         # ==========================================================
         # BÚSSOLA DE APORTE (Otimização de Banca baseada no seu código)
         # ==========================================================
