@@ -947,8 +947,6 @@ with tabs[1]:
             </table>
             """, unsafe_allow_html=True)
         
-        # Garante que o sistema nunca quebre se a matriz for fora do padrão
-        dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
 
         # =====================================================================
         # 3. PAINEL DE CUSTOS E SIMULAÇÃO DE GARANTIA
