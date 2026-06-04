@@ -952,24 +952,30 @@ with tabs[1]:
             st.dataframe(df_institucional, use_container_width=True, hide_index=True)
 
         # ==========================================================
-        # BÚSSOLA DE APORTE INSTITUCIONAL (COM FRONTEIRA DE EFICIÊNCIA)
+        # BÚSSOLA DE APORTE INSTITUCIONAL (COESÃO TOTAL DE MOTOR)
         # ==========================================================
         banca_atual = st.session_state.data.get('banca', 0.0)
         
         jogos_100_pct = qtd_bilhetes_atual
         custo_100_pct = custo_atual
         
-        # 🧠 O CÁLCULO DA FRONTEIRA DE EFICIÊNCIA (O "Ponto Doce" Probabilístico)
-        # Quanto maior a matriz, menor a porcentagem necessária para extrair a nata com o Motor Ortogonal
+        # 🧠 O CÁLCULO DA FRONTEIRA DE EFICIÊNCIA
         fator_otimizacao = {
             15: 1.0, 16: 1.0, 17: 0.50, 18: 0.40, 
             19: 0.35, 20: 0.25, 21: 0.10, 22: 0.05, 23: 0.03
         }
         
-        # Calcula o Lote Otimizado Realista
         fator = fator_otimizacao.get(tam_atual, 0.05)
         jogos_otimizados = max(1, int(jogos_100_pct * fator))
         custo_otimizado = jogos_otimizados * 3.50
+        
+        # 🔥 AQUI ESTÁ A CORREÇÃO: O Nome dinâmico do motor real que será usado!
+        if tam_atual <= 18 and qtd_bilhetes_atual <= 24:
+            nome_motor_real = "Motor Matemático Exato (Plano A)"
+        elif tam_atual <= 20:
+            nome_motor_real = "Motor Híbrido Ortogonal"
+        else:
+            nome_motor_real = "Motor Heurístico (Arrasto Estocástico)"
         
         # Textos de Contexto
         if tam_atual <= 16:
@@ -987,14 +993,14 @@ with tabs[1]:
                 st.success(f"✅ **Banca Suficiente (Cobertura Total):** O seu saldo (R$ {banca_atual:,.2f}) cobre o **Lote Absoluto de {jogos_100_pct} jogos** (R$ {custo_100_pct:,.2f}) para cravar {garantia_escolhida} pontos na Matriz de {tam_atual}. O Motor trabalhará com Garantia 100% Exata.")
             
             elif banca_atual >= custo_otimizado:
-                st.success(f"⚡ **Banca Eficiente (Lote Otimizado):** O fechamento 100% exigiria R$ {custo_100_pct:,.2f}, mas o seu saldo atual (R$ {banca_atual:,.2f}) permite a execução da **Fronteira de Eficiência**. O Motor Ortogonal extrairá a nata matemática com apenas **{jogos_otimizados} bilhetes** (Custo Ideal: **R$ {custo_otimizado:,.2f}**). Pode disparar a máquina.")
+                st.success(f"⚡ **Banca Eficiente (Lote Otimizado):** O fechamento 100% exigiria R$ {custo_100_pct:,.2f}, mas o seu saldo atual (R$ {banca_atual:,.2f}) permite a execução da **Fronteira de Eficiência**. O sistema extrairá a nata probabilística com apenas **{jogos_otimizados} bilhetes** usando o **{nome_motor_real}** (Custo Ideal: **R$ {custo_otimizado:,.2f}**). Pode disparar a máquina.")
             
             else:
                 falta_para_otimizado = custo_otimizado - banca_atual
                 st.warning(f"""
                 ⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática dessa Matriz de {tam_atual} ({texto_bussola}), o exigido seria R$ {custo_100_pct:,.2f} ({jogos_100_pct} jogos).  
                 
-                No entanto, a **Fronteira de Eficiência** calculou que um **Lote Otimizado de {jogos_otimizados} bilhetes** (Custo: **R$ {custo_otimizado:,.2f}**) é o suficiente para extrair a nata probabilística usando o Motor Híbrido Ortogonal. 
+                No entanto, a **Fronteira de Eficiência** calculou que um **Lote Otimizado de {jogos_otimizados} bilhetes** (Custo: **R$ {custo_otimizado:,.2f}**) é o suficiente para extrair a melhor probabilidade usando o **{nome_motor_real}**. 
                 
                 *Como o seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de pelo menos **R$ {falta_para_otimizado:,.2f}** para rodar a operação otimizada.*
                 """)
