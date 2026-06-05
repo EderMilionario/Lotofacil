@@ -812,11 +812,92 @@ with tabs[0]:
 # --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
     exibir_mini_painel_financeiro()
+    # =====================================================================
+    # 🏆 PAINEL DE PERFORMANCE REAL (TRACK RECORD PERMANENTE)
+    # =====================================================================
+    st.markdown("### 📈 Track Record: Performance Histórica da Máquina")
+    
+    # 1. Cria o Cofre Imutável se for a primeira vez rodando
+    if "ledger_track" not in st.session_state.data:
+        st.session_state.data["ledger_track"] = {
+            "bilhetes": 0, "premiados_geral": 0, "elite": 0, "custo": 0.0, "retorno": 0.0
+        }
+        
+    # 2. Varredura Inteligente: Suga os dados de novos jogos conferidos
+    precisa_salvar = False
+    for j in st.session_state.data.get("jogos_salvos", []):
+        # Se o jogo já foi conferido e AINDA NÃO foi contabilizado no Cofre
+        if j.get("status") != "Aguardando Sorteio" and not j.get("ledger_ok", False):
+            
+            # Adiciona as estatísticas no Cofre Permanente
+            st.session_state.data["ledger_track"]["bilhetes"] += 1
+            
+            if j.get("acertos", 0) >= 11:
+                st.session_state.data["ledger_track"]["premiados_geral"] += 1
+            if j.get("acertos", 0) >= 14:
+                st.session_state.data["ledger_track"]["elite"] += 1
+                
+            custo = 56.0 if j.get("tamanho", 15) == 16 else 3.50
+            st.session_state.data["ledger_track"]["custo"] += custo
+            st.session_state.data["ledger_track"]["retorno"] += j.get("premio_valor", 0.0)
+            
+            # Carimba o bilhete para nunca mais ser somado em duplicidade
+            j["ledger_ok"] = True
+            precisa_salvar = True
+            
+    # Grava o Cofre no HD caso tenha sugado novos dados
+    if precisa_salvar:
+        salvar_dados(st.session_state.data)
+
+    # 3. Leitura dos Dados do Cofre Permanente (Imune a Exclusões da Fila)
+    ledger = st.session_state.data["ledger_track"]
+    
+    qtd_conferidos = ledger["bilhetes"]
+    
+    if qtd_conferidos > 0:
+        win_rate_geral = (ledger["premiados_geral"] / qtd_conferidos) * 100
+        
+        if ledger["elite"] > 0:
+            frequencia_elite = int(qtd_conferidos / ledger["elite"])
+            texto_freq_elite = f"1 a cada {frequencia_elite} bilhetes"
+        else:
+            texto_freq_elite = "Caçando a Elite..."
+    else:
+        win_rate_geral = 0.0
+        texto_freq_elite = "Aguardando Sorteios"
+
+    lucro_prejuizo_real = ledger["retorno"] - ledger["custo"]
+    
+    if ledger["custo"] > 0:
+        roi_real = (lucro_prejuizo_real / ledger["custo"]) * 100
+    else:
+        roi_real = 0.0
+
+    # 4. Renderização do Painel Profissional
+    with st.container(border=True):
+        col_trk1, col_trk2, col_trk3, col_trk4 = st.columns(4)
+        
+        col_trk1.metric("🎟️ Bilhetes Operados", f"{qtd_conferidos}")
+        
+        col_trk2.metric("🎯 Win Rate (Prêmios)", f"{win_rate_geral:.1f}%", 
+                        help="Um apostador cego tem ~9% de Win Rate. O que passar disso é o puro lucro da sua Inteligência.")
+        
+        col_trk3.metric("💎 Freq. de Elite", texto_freq_elite, 
+                        help="Mede quantos bilhetes a máquina gera em média até cravar um de 14 ou 15 pontos.")
+        
+        delta_color = "normal" if lucro_prejuizo_real >= 0 else "inverse"
+        col_trk4.metric("📈 ROI Financeiro", f"{roi_real:.1f}%", 
+                        delta=f"R$ {lucro_prejuizo_real:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), 
+                        delta_color=delta_color)
+        
+    st.divider()
+    # =====================================================================
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
         st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
             
         tam_atual = len(ia['matriz_base'])
+
 
         # =====================================================================
         # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
