@@ -812,10 +812,11 @@ with tabs[0]:
 # --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
     exibir_mini_painel_financeiro()
+    
     # =====================================================================
     # 🏆 PAINEL DE PERFORMANCE REAL (TRACK RECORD PERMANENTE)
     # =====================================================================
-    st.markdown("### 📈 Track Record: Performance Histórica da Máquina")
+    st.markdown("<h3 style='color: #1f77b4;'>📈 Track Record: Performance Histórica da Máquina</h3>", unsafe_allow_html=True)
     
     # 1. Cria o Cofre Imutável se for a primeira vez rodando
     if "ledger_track" not in st.session_state.data:
@@ -891,6 +892,7 @@ with tabs[1]:
                         delta_color=delta_color)
         
     st.divider()
+    
     # =====================================================================
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
@@ -898,11 +900,10 @@ with tabs[1]:
             
         tam_atual = len(ia['matriz_base'])
 
-
         # =====================================================================
         # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
         # =====================================================================
-        st.markdown("### 🧠 Transparência Absoluta: Motores e Probabilidades Reais")
+        st.markdown("<h3 style='color: #1f77b4;'>🧠 Transparência Absoluta: Motores e Probabilidades Reais</h3>", unsafe_allow_html=True)
         st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
 
         # =====================================================================
@@ -957,7 +958,7 @@ with tabs[1]:
                     )
 
         # =====================================================================
-        # DADOS MATEMÁTICOS UNIFICADOS (Usados para o Painel 3 e Tabela 4)
+        # DADOS MATEMÁTICOS UNIFICADOS
         # =====================================================================
         alvos_matematicos = {
             15: {15: 1, 14: 1, 13: 1, "motor": "🎯 Direto (Plano A)"},
@@ -976,7 +977,7 @@ with tabs[1]:
         # =====================================================================
         # 3. PAINEL DE CUSTOS, SELEÇÃO DE MOTOR E SIMULAÇÃO
         # =====================================================================
-        st.markdown("### 💰 Projeção Financeira e Análise de Motores")
+        st.markdown("<h3 style='color: #1f77b4; margin-top: 20px;'>💰 Projeção Financeira e Análise de Motores</h3>", unsafe_allow_html=True)
             
         with st.container(border=True):
             garantia_escolhida = st.radio(
@@ -987,31 +988,24 @@ with tabs[1]:
                 format_func=lambda x: f"Foco em {x} Pontos"
             )
         
-            # --- CHAVE DE FORÇAR O GERADOR ---
             st.divider()
-            forcar_motor = st.checkbox("🚀 Forçar uso do Motor Selecionado (Ignorar Plano A)",
+            forcar_motor = st.checkbox("🚀 **Forçar uso do Motor Selecionado (Ignorar Plano A)**",
                                        key='forcar_motor',
                                        help="Se marcado, o sistema ignorará o Plano A (Exato) mesmo que você tenha verba, forçando o uso do Plano B Híbrido ou Heurístico.")
-            
             st.divider()    
             
-            # --- DESCOBRE QUAIS MOTORES SÃO POSSÍVEIS PARA ESTE TAMANHO DE MATRIZ ---
             motores_disponiveis = []
-            if tam_atual <= 20:
-                motores_disponiveis.append("🥇 Plano A (Exato / 100%)")
-            if 17 <= tam_atual <= 20:
-                motores_disponiveis.append("🥈 Plano B (Híbrido Ortogonal / Fronteira)")
-            if tam_atual > 20:
-                motores_disponiveis.append("🥉 Plano B (Heurístico / Arrasto)")
+            if tam_atual <= 20: motores_disponiveis.append("🥇 Plano A (Exato / 100%)")
+            if 17 <= tam_atual <= 20: motores_disponiveis.append("🥈 Plano B (Híbrido Ortogonal / Fronteira)")
+            if tam_atual > 20: motores_disponiveis.append("🥉 Plano B (Heurístico / Arrasto)")
                 
             motor_selecionado = st.radio(
                 "⚙️ **Selecione o Motor Operacional para simulação:**",
                 motores_disponiveis,
-                index=0 if len(motores_disponiveis) == 1 else 1, # Foca no Híbrido se ele estiver disponível
+                index=0 if len(motores_disponiveis) == 1 else 1,
                 horizontal=True
             )
             
-            # --- CÁLCULOS MATEMÁTICOS BASEADOS NO MOTOR SELECIONADO ---
             jogos_100_pct = dados_matriz[garantia_escolhida]
             custo_100_pct = jogos_100_pct * 3.50
             
@@ -1043,14 +1037,14 @@ with tabs[1]:
             c_d.metric("💸 Investimento", f"R$ {custo_exibicao:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
         # ==========================================================
-        # TABELA INSTITUCIONAL DE COBERTURA (Completa e Profissional)
+        # TABELA INSTITUCIONAL DE COBERTURA
         # ==========================================================
         with st.expander("📊 Tabela Institucional Completa: Motores, Limites e Custos (15 a 23 Dezenas)", expanded=False):
             st.info(f"A tabela mapeia todos os cenários operacionais possíveis para a meta de **{garantia_escolhida} Pontos**. Compare o custo do Fechamento Exato contra a Fronteira de Eficiência (Planos B).")
             
             tabela_dados = []
             for m_tam, m_data in alvos_matematicos.items():
-                if m_tam > 23: continue # Evita estourar a tela com matrizes surreais
+                if m_tam > 23: continue 
                 
                 j_100 = m_data[garantia_escolhida]
                 c_100 = j_100 * 3.50
@@ -1058,28 +1052,14 @@ with tabs[1]:
                 j_opt = max(1, int(j_100 * f_opt))
                 c_opt = j_opt * 3.50
                 
-                # Regra de inserção do Plano A
                 if m_tam <= 20:
-                    tabela_dados.append({
-                        "Matriz": f"{m_tam} Dz", "Motor": "🥇 Plano A (Exato)",
-                        "Prob.": "100%", "Bilhetes": j_100, "Custo (R$)": c_100
-                    })
-                # Regra de inserção do Plano B Híbrido
+                    tabela_dados.append({"Matriz": f"{m_tam} Dz", "Motor": "🥇 Plano A (Exato)", "Prob.": "100%", "Bilhetes": j_100, "Custo (R$)": c_100})
                 if 17 <= m_tam <= 20:
-                    tabela_dados.append({
-                        "Matriz": f"{m_tam} Dz", "Motor": "🥈 Plano B (Híbrido)",
-                        "Prob.": "~90%", "Bilhetes": j_opt, "Custo (R$)": c_opt
-                    })
-                # Regra de inserção do Plano B Heurístico
+                    tabela_dados.append({"Matriz": f"{m_tam} Dz", "Motor": "🥈 Plano B (Híbrido)", "Prob.": "~90%", "Bilhetes": j_opt, "Custo (R$)": c_opt})
                 if m_tam > 20:
-                    tabela_dados.append({
-                        "Matriz": f"{m_tam} Dz", "Motor": "🥉 Plano B (Heurístico)",
-                        "Prob.": "~80%", "Bilhetes": j_opt, "Custo (R$)": c_opt
-                    })
+                    tabela_dados.append({"Matriz": f"{m_tam} Dz", "Motor": "🥉 Plano B (Heurístico)", "Prob.": "~80%", "Bilhetes": j_opt, "Custo (R$)": c_opt})
                     
             df_institucional = pd.DataFrame(tabela_dados)
-            
-            # Formatação Profissional do Pandas no Streamlit
             st.dataframe(
                 df_institucional,
                 column_config={
@@ -1089,12 +1069,11 @@ with tabs[1]:
                     "Bilhetes": st.column_config.NumberColumn("🎟️ Bilhetes", format="%d"),
                     "Custo (R$)": st.column_config.NumberColumn("💸 Custo Estimado", format="R$ %.2f")
                 },
-                hide_index=True,
-                use_container_width=True
+                hide_index=True, use_container_width=True
             )
 
         # ==========================================================
-        # BÚSSOLA DE APORTE FINANCEIRO (Sincronizada com o Motor Escolhido)
+        # BÚSSOLA DE APORTE FINANCEIRO
         # ==========================================================
         banca_atual = st.session_state.data.get('banca', 0.0)
         falta = custo_exibicao - banca_atual
@@ -1107,32 +1086,17 @@ with tabs[1]:
                 st.success(f"✅ **Banca Suficiente:** O seu saldo atual (R$ {banca_atual:,.2f}) cobre o investimento total da operação via **{motor_selecionado}** (Custo: **R$ {custo_exibicao:,.2f}**). Pode seguir para a Tab 3 e disparar o sistema.")
             else:
                 if "🥇" in motor_selecionado:
-                    st.warning(f"""
-                    ⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática com o **{motor_selecionado}**, o exigido é **R$ {custo_exibicao:,.2f}** ({qtd_exibicao} jogos).  
-                    
-                    Como o seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de pelo menos **R$ {falta:,.2f}** ou altere o simulador acima para o *Plano B (Híbrido)* para verificar o custo da operação com redução otimizada.
-                    """)
+                    st.warning(f"⚠️ **Orçamento Defensivo Detectado:** Para extrair a garantia 100% matemática com o **{motor_selecionado}**, o exigido é **R$ {custo_exibicao:,.2f}** ({qtd_exibicao} jogos).\n\nComo o seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de pelo menos **R$ {falta:,.2f}** ou altere o simulador acima para o *Plano B (Híbrido)* para verificar o custo da operação com redução otimizada.")
                 elif "🥈" in motor_selecionado:
-                     st.info(f"""
-                     ⚡ **Fronteira de Eficiência:** Você optou por ligar o **{motor_selecionado}**. 
-                     Ele corta o custo irreal do fechamento exato (que seria de R$ {custo_100_pct:,.2f}) e cria um **Lote Otimizado de {qtd_exibicao} bilhetes** focado na elite probabilística (Custo Realista: **R$ {custo_exibicao:,.2f}**).
-                     
-                     *Como seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de **R$ {falta:,.2f}** para disparar esta matriz otimizada.*
-                     """)
+                     st.info(f"⚡ **Fronteira de Eficiência:** Você optou por ligar o **{motor_selecionado}**. Ele corta o custo irreal do fechamento exato e cria um **Lote Otimizado de {qtd_exibicao} bilhetes** focado na elite probabilística (Custo Realista: **R$ {custo_exibicao:,.2f}**).\n\n*Como seu saldo atual é R$ {banca_atual:,.2f}, faça um aporte de **R$ {falta:,.2f}** para disparar esta matriz otimizada.*")
                 else:
-                     st.info(f"""
-                     🌪️ **Rede de Arrasto Estatística:** Para matrizes gigantes como esta ({tam_atual} Dz), o sistema obriga o uso do **{motor_selecionado}**.
-                     O computador definiu um **Lote Otimizado de {qtd_exibicao} bilhetes** para fazer a rede de proteção (Custo: **R$ {custo_exibicao:,.2f}**).
-                     
-                     *💡 Nota do Motor:* O volume estimado é de **{qtd_exibicao} jogos** de 15 dezenas. Porém, se o sistema detectar **Alta Confiança** na rodada, ele fará um upgrade automático: usará esse mesmo orçamento de R$ {custo_exibicao:,.2f} para comprar jogos de **16 dezenas**, reduzindo o número de bilhetes físicos, mas multiplicando o poder de acerto.
-                     
-                     *Como seu saldo atual é R$ {banca_atual:,.2f}, injete um aporte de **R$ {falta:,.2f}** para autorizar o motor estocástico.*
-                     """)
+                     st.info(f"🌪️ **Rede de Arrasto Estatística:** Para matrizes gigantes como esta ({tam_atual} Dz), o sistema obriga o uso do **{motor_selecionado}**. O computador definiu um **Lote Otimizado de {qtd_exibicao} bilhetes** para fazer a rede de proteção (Custo: **R$ {custo_exibicao:,.2f}**).\n\n*💡 Nota do Motor:* O volume estimado é de **{qtd_exibicao} jogos** de 15 dezenas. Porém, se o sistema detectar **Alta Confiança** na rodada, ele fará um upgrade automático: usará esse mesmo orçamento de R$ {custo_exibicao:,.2f} para comprar jogos de **16 dezenas**, reduzindo o número de bilhetes físicos, mas multiplicando o poder de acerto.\n\n*Como seu saldo atual é R$ {banca_atual:,.2f}, injete um aporte de **R$ {falta:,.2f}** para autorizar o motor estocástico.*")
 
-        st.markdown(f"### 🧠 Diagnóstico Autônomo — Concurso Alvo `{ia['alvo']}`")
         # =====================================================================
         # SUPER PAINEL INSTITUCIONAL: RAIO-X, RISCO E CORRELAÇÃO
         # =====================================================================
+        st.markdown(f"<h3 style='color: #1f77b4; margin-top: 30px;'>🧠 Diagnóstico Autônomo — Concurso Alvo <code>{ia['alvo']}</code></h3>", unsafe_allow_html=True)
+        
         historico_painel = st.session_state.data.get("historico_dados", [])
         if len(historico_painel) >= 2:
             ultimo_sort = historico_painel[-1]
@@ -1153,9 +1117,15 @@ with tabs[1]:
             repetidas_ult = len(set(dez_ult).intersection(set(dez_pen)))
             
             dezenas_ult_formatadas = " - ".join([f"{n:02d}" for n in dez_ult])
-            st.info(f"**🎯 Último Sorteio Oficial (Concurso {ultimo_sort['concurso']}):** {dezenas_ult_formatadas}")
             
-            # 6 Cartões com a nova leitura do Universo Lotofácil
+            # Banners HTML Elegantes para Destaques
+            st.markdown(f"""
+            <div style='background: linear-gradient(90deg, #1f77b4 0%, #00d2ff 100%); padding: 12px 20px; border-radius: 8px; color: white; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+                <h4 style='margin: 0; color: white;'>🎯 Último Sorteio Oficial (Concurso {ultimo_sort['concurso']})</h4>
+                <p style='margin: 5px 0 0 0; font-size: 18px; font-family: monospace; font-weight: bold;'>{dezenas_ult_formatadas}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
             col_rx1, col_rx2, col_rx3, col_rx4, col_rx5, col_rx6 = st.columns(6)
             col_rx1.metric("Ímpares", impares_ult)
             col_rx2.metric("Pares", pares_ult)
@@ -1185,31 +1155,31 @@ with tabs[1]:
             col_risk, col_corr = st.columns(2)
             
             with col_risk:
-                st.markdown("#### 🌡️ Termômetro de Risco (Critério de Kelly)")
+                st.markdown("#### 🌡️ Termômetro de Risco")
                 qtd_m = ia.get('qtd_matriz', 18)
                 if qtd_m >= 21:
-                    n_risco = "ALTO (Início de Ciclo / Caos Aleatório)"
-                    c_risco = "#dc3545"; d_banca = "Recomendação: Operar com orçamento defensivo."
+                    n_risco = "ALTO (Início de Ciclo / Caos)"
+                    c_risco = "#dc3545"; bg_risco = "#fff5f5"; d_banca = "Recomendação: Operar com orçamento defensivo."
                 elif qtd_m == 19:
                     n_risco = "MÉDIO (Meio de Ciclo / Transição)"
-                    c_risco = "#ffcc00"; d_banca = "Recomendação: Operar com orçamento padrão."
+                    c_risco = "#ffcc00"; bg_risco = "#fffdf5"; d_banca = "Recomendação: Operar com orçamento padrão."
                 else:
                     n_risco = "BAIXO (Fim de Ciclo / Alta Previsibilidade)"
-                    c_risco = "#28a745"; d_banca = "Recomendação: Janela de Ataque. Risco Mínimo."
+                    c_risco = "#28a745"; bg_risco = "#f5fff7"; d_banca = "Recomendação: Janela de Ataque. Risco Mínimo."
 
                 st.markdown(f"""
-                <div style='background-color: #f8f9fa; border-left: 5px solid {c_risco}; padding: 15px; border-radius: 6px;'>
-                    <span style='color: {c_risco}; font-weight: bold; font-size: 15px;'>Nível Atual: {n_risco}</span><br>
-                    <span style='color: #4d5156; font-size: 13px;'><b>Diretriz Institucional:</b> {d_banca}</span>
+                <div style='background-color: {bg_risco}; border-left: 6px solid {c_risco}; padding: 18px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 110px;'>
+                    <span style='color: {c_risco}; font-weight: 800; font-size: 16px; text-transform: uppercase;'>Nível Atual: {n_risco}</span><br><br>
+                    <span style='color: #4d5156; font-size: 14px;'><b>Diretriz Institucional:</b> {d_banca}</span>
                 </div>
                 """, unsafe_allow_html=True)
 
             with col_corr:
-                st.markdown("#### 🕸️ Teia de Correlação (Matriz Filtrada)")
+                st.markdown("#### 🕸️ Teia de Correlação")
                 st.markdown(f"""
-                <div style='background-color: #f8f9fa; border-left: 5px solid #1a73e8; padding: 15px; border-radius: 6px;'>
-                    <span style='color: #1a73e8; font-weight: bold; font-size: 15px;'>Par Magnético da Elite: {top_par[0]:02d} e {top_par[1]:02d}</span><br>
-                    <span style='color: #4d5156; font-size: 13px;'>Esta é a dupla mais quente <b>possível de ser gerada</b> pela matriz atual. O Motor DNA vai garantir a recompensa quântica por agrupá-las.</span>
+                <div style='background-color: #f4f8fb; border-left: 6px solid #1a73e8; padding: 18px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 110px;'>
+                    <span style='color: #1a73e8; font-weight: 800; font-size: 16px; text-transform: uppercase;'>Par Magnético da Elite: {top_par[0]:02d} e {top_par[1]:02d}</span><br><br>
+                    <span style='color: #4d5156; font-size: 14px;'>A dupla mais quente dentro da matriz. O Motor DNA focará no agrupamento quântico.</span>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1240,9 +1210,8 @@ with tabs[1]:
             
             st.info(f"📋 **Diagnóstico do Motor Matemático:** {motivo_calc}")
         
-            with st.expander("Ver Backstage da Decisão (Regras e Peso da IA)"):
+            with st.expander("🔍 Ver Backstage da Decisão (Regras e Peso da IA)"):
                 st.write(f"🔥 Dezenas 'Quentes' detectadas nos últimos 10 concursos: `{dados_internos.get('dezenas_quentes', 0)}/25`")
-                # CORREÇÃO DA NOTA DE APRENDIZADO
                 nota_real = ia.get('perf', {}).get(ia['cod_estrategia'], 11.0)
                 st.markdown(f"**📈 Pontuação atual da estratégia '{ia['estrategia']}':** `{nota_real:.2f} pts`")
                 st.write("---")
@@ -1276,11 +1245,11 @@ with tabs[1]:
 
             c_an1, c_an2, c_an3 = st.columns(3)
             with c_an1:
-                st.info(f"📋 **Dezenas por Linha (Grupo Elite):**<br>" + " | ".join([f"L{k}: **{v}**" for k, v in linhas_count.items()]), icon="📊")
+                st.info(f"📋 **Dezenas por Linha:**<br>" + " | ".join([f"L{k}: **{v}**" for k, v in linhas_count.items()]), icon="📊")
             with c_an2:
-                st.info(f"📋 **Dezenas por Coluna (Grupo Elite):**<br>" + " | ".join([f"C{k}: **{v}**" for k, v in colunas_count.items()]), icon="📊")
+                st.info(f"📋 **Dezenas por Coluna:**<br>" + " | ".join([f"C{k}: **{v}**" for k, v in colunas_count.items()]), icon="📊")
             with c_an3:
-                st.info(f"🔄 **Repetição do Concurso Anterior:** A Matriz de Elite carrega **{repetidas_previstas} dezenas** do concurso nº {st.session_state.data['historico_dados'][-1]['concurso']}.", icon="🔮")
+                st.info(f"🔄 **Repetição do Anterior:** A Matriz carrega **{repetidas_previstas} dezenas** do concurso nº {st.session_state.data['historico_dados'][-1]['concurso']}.", icon="🔮")
 
             # --- RETROSPECTIVA CRÍTICA ---
             st.markdown("#### 🎯 Retrospectiva Crítica do Grupo de Elite (Últimos 30 Concursos)")
@@ -1320,15 +1289,15 @@ with tabs[1]:
             str_atrasos = ", ".join([f"{k:02d} ({v} conc.)" for k, v in top5_atrasos])
         
             html_dossie = f"""
-            <div style="background-color: #e8f4f8; border-left: 6px solid #1f77b4; padding: 15px; border-radius: 8px; margin-bottom: 25px; color: #1a1a1a;">
-                <div style="margin-bottom: 8px;"><strong>🔥 Top 5 Dezenas mais Quentes:</strong> <span style="color: #d62728; font-weight: 500;">{str_quentes}</span></div>
-                <div style="margin-bottom: 8px;"><strong>🧊 Top 5 Maiores Atrasos:</strong> <span style="color: #2ca02c; font-weight: 500;">{str_atrasos}</span></div>
-                <div><strong>⏳ Status do Ciclo:</strong> Aberto há {ia['ciclo_tam']} concursos. <span style="color: #ff7f0e; font-weight: 500;">Faltam {len(ia['faltam_ciclo'])} dezenas para fechar: {ia['faltam_ciclo']}</span></div>
+            <div style="background: linear-gradient(145deg, #ffffff, #f0f4f8); border-left: 6px solid #1f77b4; padding: 20px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); color: #2c3e50; font-family: sans-serif;">
+                <div style="margin-bottom: 12px; font-size: 15px;"><strong>🔥 Top 5 Dezenas mais Quentes:</strong> <span style="color: #d32f2f; font-weight: 700; background: #ffebee; padding: 3px 8px; border-radius: 5px;">{str_quentes}</span></div>
+                <div style="margin-bottom: 12px; font-size: 15px;"><strong>🧊 Top 5 Maiores Atrasos:</strong> <span style="color: #2e7d32; font-weight: 700; background: #e8f5e9; padding: 3px 8px; border-radius: 5px;">{str_atrasos}</span></div>
+                <div style="font-size: 15px;"><strong>⏳ Status do Ciclo:</strong> Aberto há {ia['ciclo_tam']} concursos. <span style="color: #f57c00; font-weight: 700; background: #fff3e0; padding: 3px 8px; border-radius: 5px;">Faltam {len(ia['faltam_ciclo'])} dezenas para fechar: {ia['faltam_ciclo']}</span></div>
             </div>
             """
             st.markdown(html_dossie, unsafe_allow_html=True)
 
-            # --- PAINEL DE DESEMPENHO DOS JOGOS ATIVOS (Aba 2) ---
+            # --- PAINEL DE DESEMPENHO DOS JOGOS ATIVOS ---
             jogos_ativos = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Aguardando Sorteio"]
             if jogos_ativos:
                 st.markdown("---")
@@ -1337,18 +1306,23 @@ with tabs[1]:
             else:
                 st.info("Nenhum jogo ativo na fila no momento.")
 
-            # --- NOVO PAINEL DE PESOS ESTILIZADO EM BADGES GIGANTES ---
-            st.markdown("#### ⚖️ Grade Dinâmica de Pesos Absolutos (Heatmap de Atração da IA)")
+            # --- NOVO PAINEL DE PESOS ESTILIZADO ---
+            st.markdown("#### ⚖️ Grade Dinâmica de Pesos Absolutos (Heatmap da IA)")
         
-            html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; font-family: sans-serif; margin-bottom: 25px;'>"
+            html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; font-family: sans-serif; margin-bottom: 30px;'>"
             for n in range(1, 26):
                 p_val = ia['pesos'].get(n, 0.0)
                 no_grupo = n in ia['matriz_base']
-                bg_color = "#d1e7dd" if no_grupo else "#f8f9fa"
-                border_color = "#0f5132" if no_grupo else "#dee2e6"
-                label_elite = "<span style='background-color:#0f5132; color:white; padding:2px 6px; font-size:10px; border-radius:4px; margin-left:5px;'>ELITE</span>" if no_grupo else ""
+                
+                # Cores mais sofisticadas
+                bg_color = "linear-gradient(135deg, #d1e7dd 0%, #b3dac6 100%)" if no_grupo else "#fdfdfd"
+                border_color = "#0f5132" if no_grupo else "#e2e8f0"
+                text_color = "#0f5132" if no_grupo else "#475569"
+                shadow = "box-shadow: 0 4px 6px rgba(0,0,0,0.08);" if no_grupo else "box-shadow: 0 2px 4px rgba(0,0,0,0.03);"
+                
+                label_elite = "<div style='background-color:#0f5132; color:white; font-size:10px; font-weight:bold; letter-spacing: 0.5px; padding:3px 0; border-radius:0 0 8px 8px; margin-top: 8px;'>ELITE</div>" if no_grupo else "<div style='height: 20px; margin-top: 8px;'></div>"
             
-                html_pesos += f"<div style='background-color: {bg_color}; border: 2px solid {border_color}; border-radius: 8px; padding: 12px; text-align: center; color: #1a1a1a;'><span style='font-size: 20px; font-weight: bold; color: #111;'>{n:02d}</span>{label_elite}<br><span style='font-size: 13px; color: #444;'>Peso: <b>{p_val:.1f}</b></span></div>"
+                html_pesos += f"<div style='background: {bg_color}; border: 1px solid {border_color}; {shadow} border-radius: 10px; text-align: center; color: {text_color}; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;'><div style='padding: 12px 10px 0 10px;'><span style='font-size: 24px; font-weight: 800;'>{n:02d}</span><br><span style='font-size: 13px; font-weight: 500; opacity: 0.9;'>Peso: {p_val:.1f}</span></div>{label_elite}</div>"
         
             html_pesos += "</div>"
             st.markdown(html_pesos, unsafe_allow_html=True)
