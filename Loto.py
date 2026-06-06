@@ -892,12 +892,22 @@ with tabs[0]:
             
             st.divider()
             
-            # Botão Mestre de Reset (Zera Banca, Saques e Aportes para começar nova temporada)
-            if st.button("🔄 ZERAR BANCA E HISTÓRICO", use_container_width=True, type="secondary"):
+            # Botão Mestre de Reset (Zera Banca, Saques, Aportes, IA e Jogos para coerência absoluta do ROI)
+            if st.button("🔄 ZERAR BANCA E TRACK RECORD (ROI)", use_container_width=True, type="secondary"):
                 st.session_state.data["banca"] = 0.0
                 st.session_state.data["historico_aportes"] = 0.0
                 st.session_state.data["historico_saques"] = 0.0
+                st.session_state.data["jogos_salvos"] = [] # Zera os bilhetes para a Aba 2 e o ROI baterem
+                
+                # Zera a memória da IA para ela recomeçar o aprendizado
+                st.session_state.data["ia_memoria"] = {
+                    "Tendencia": {"usos": 0, "pontos": 0}, 
+                    "Reversao": {"usos": 0, "pontos": 0},
+                    "Ciclo": {"usos": 0, "pontos": 0},
+                    "Simetria": {"usos": 0, "pontos": 0}
+                }
                 salvar_dados(st.session_state.data)
+                st.success("Track Record Financeiro e Memória da IA resetados com sucesso! Tudo zerado.")
                 st.rerun()
 
 # --- TAB 2: CÉREBRO ANALÍTICO ---
@@ -1342,28 +1352,36 @@ with tabs[1]:
             with c_an3:
                 st.info(f"🔄 **Repetição do Anterior:** A Matriz carrega **{repetidas_previstas} dezenas** do concurso nº {st.session_state.data['historico_dados'][-1]['concurso']}.", icon="🔮")
 
-            # --- RETROSPECTIVA CRÍTICA ---
-            st.markdown("#### 🎯 Retrospectiva Crítica do Grupo de Elite (Últimos 30 Concursos)")
-            ultimos_30 = st.session_state.data["historico_dados"][-30:]
-            acertos_grupo = []
-            for h in ultimos_30:
-                hits = len(set(ia['matriz_base']).intersection(set(h['dezenas'])))
-                acertos_grupo.append(hits)
-        
-            avg_hits = sum(acertos_grupo) / len(acertos_grupo) if acertos_grupo else 0
-            t11 = sum(1 for x in acertos_grupo if x == 11)
-            t12 = sum(1 for x in acertos_grupo if x == 12)
-            t13 = sum(1 for x in acertos_grupo if x == 13)
-            t14 = sum(1 for x in acertos_grupo if x == 14)
-            t15 = sum(1 for x in acertos_grupo if x == 15)
+            # --- RETROSPECTIVA CRÍTICA (COERENTE COM O ROI FINANCEIRO) ---
+            st.markdown("#### 🎯 Retrospectiva Crítica dos Bilhetes (Últimos 30 Concursos)")
+            
+            # Puxa os jogos salvos da memória (os bilhetes reais que geram o ROI)
+            todos_jogos = st.session_state.data.get("jogos_salvos", [])
+            
+            # Pega o número dos últimos 30 concursos que estão no banco
+            historico_base = st.session_state.data.get("historico_dados", [])
+            ultimos_30_concursos = [h['concurso'] for h in historico_base[-30:]] if historico_base else []
+            
+            acertos_reais_bilhetes = []
+            
+            # Filtra apenas os bilhetes que foram jogados nestes últimos 30 concursos
+            for j in todos_jogos:
+                if j.get('concurso_alvo') in ultimos_30_concursos:
+                    acertos_reais_bilhetes.append(j.get('acertos', 0))
+            
+            avg_hits = sum(acertos_reais_bilhetes) / len(acertos_reais_bilhetes) if acertos_reais_bilhetes else 0
+            t11 = sum(1 for x in acertos_reais_bilhetes if x == 11)
+            t12 = sum(1 for x in acertos_reais_bilhetes if x == 12)
+            t13 = sum(1 for x in acertos_reais_bilhetes if x == 13)
+            t14 = sum(1 for x in acertos_reais_bilhetes if x == 14)
+            t15 = sum(1 for x in acertos_reais_bilhetes if x == 15)
 
             with st.container(border=True):
                 cd_1, cd_2, cd_3, cd_4 = st.columns(4)
-                cd_1.metric("Média Geral de Acertos", f"{avg_hits:.2f} / 15", help="Média de dezenas sorteadas dentro do seu grupo atual de elite nos últimos 30 concursos.")
-                cd_2.metric("Simulações com 11-12 Pts", f"{t11 + t12} vezes", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
-                cd_3.metric("Simulações com 13 Pts", f"{t13} vezes", help="Quantidade de vezes que o grupo capturou 13 acertos.")
-                cd_4.metric("Altas Premiações (14-15 Pts)", f"{t14 + t15} acertos", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
-
+                cd_1.metric("Média de Acertos nos Bilhetes", f"{avg_hits:.2f} / 15", help="Média real nos bilhetes de 15 dezenas (coerente com o ROI).")
+                cd_2.metric("Bilhetes com 11-12 Pts", f"{t11 + t12} prêmios", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
+                cd_3.metric("Bilhetes com 13 Pts", f"{t13} prêmios", help="Quantidade real de bilhetes premiados com 13.")
+                cd_4.metric("Prêmios Máximos (14-15 Pts)", f"{t14 + t15} prêmios", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
             st.markdown("#### 📊 Desempenho Histórico das Inteligências Ativas")
             with st.container(border=True):
                 c_e1, c_e2, c_e3, c_e4 = st.columns(4)
@@ -2078,28 +2096,21 @@ with tabs[4]:
                     except Exception as e:
                         st.error(f"Erro ao processar GAPs: {e}")
 
-        # --- BOTÃO 2: O NOVO BOTÃO INTELIGENTE (VIDA REAL DO ZERO - ADAPTATIVO) ---
+        # --- COLUNA 2: DOWNLOAD PURO E TREINAMENTO SEPARADO (ESTABILIDADE TOTAL) ---
         with col_massa2:
-            if st.button("☢️ INICIAR VIDA REAL (BAIXAR E TREINAR DESDE O 1)", type="secondary", use_container_width=True):
-                # 1. Limpeza total da mente da IA
+            st.markdown("#### ☢️ Iniciar Vida Real (Download e Calibragem)")
+            
+            # BOTÃO A: APENAS DOWNLOAD DO 1 AO ATUAL (Não trava, pois não usa IA aqui)
+            if st.button("📥 1. BAIXAR SORTEIOS (DO 1 AO ATUAL)", type="secondary", use_container_width=True):
                 st.session_state.data["historico_dados"] = []
-                st.session_state.data["ia_memoria"] = {
-                    "Tendencia": {"usos": 0, "pontos": 0}, 
-                    "Reversao": {"usos": 0, "pontos": 0},
-                    "Ciclo": {"usos": 0, "pontos": 0},
-                    "Simetria": {"usos": 0, "pontos": 0}
-                }
-                st.session_state.data["banca"] = 10000.00
-                st.session_state.data["jogos_salvos"] = [] 
+                st.session_state.data["jogos_salvos"] = []
                 
-                with st.spinner("Calibrando a IA (Simulação Dinâmica de Orçamento) desde o 1º sorteio..."):
+                with st.spinner("Baixando base de dados da Caixa do 1º sorteio em diante..."):
                     try:
                         res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
                         res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
                         
-                        barra = st.progress(0)
-                        lucro_acumulado_massa = 0.0
-                        logs_massa = []
+                        barra_down = st.progress(0)
                         total_concursos = len(res_todos)
                         
                         for i, res_conc in enumerate(res_todos):
@@ -2112,8 +2123,49 @@ with tabs[4]:
                                 "data": res_conc.get('data', '')
                             })
                             
-                            # --- O FANTASMA ADAPTATIVO DA IA ---
-                            historico_para_ia = st.session_state.data["historico_dados"][:-1]
+                            if i % 50 == 0:
+                                barra_down.progress((i + 1) / total_concursos)
+                                
+                        salvar_dados(st.session_state.data)
+                        barra_down.progress(1.0)
+                        st.success(f"✅ Download de {total_concursos} sorteios concluído. Agora clique em CALIBRAR.")
+                    except Exception as e:
+                        st.error(f"Erro na conexão com API: {e}")
+
+            # BOTÃO B: CALIBRAR A INTELIGÊNCIA COM O BANCO SALVO (O FANTASMA ADAPTATIVO COMPLETO)
+            if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TODO O BANCO)", type="primary", use_container_width=True):
+                historico_completo = st.session_state.data.get("historico_dados", [])
+                
+                if not historico_completo:
+                    st.error("O banco de dados está vazio! Clique no botão de Baixar primeiro.")
+                else:
+                    # Limpeza total da mente da IA e Banca para recomeçar a simulação financeira
+                    st.session_state.data["ia_memoria"] = {
+                        "Tendencia": {"usos": 0, "pontos": 0}, 
+                        "Reversao": {"usos": 0, "pontos": 0},
+                        "Ciclo": {"usos": 0, "pontos": 0},
+                        "Simetria": {"usos": 0, "pontos": 0}
+                    }
+                    st.session_state.data["banca"] = 10000.00
+                    st.session_state.data["historico_aportes"] = 0.0
+                    st.session_state.data["historico_saques"] = 0.0
+                    st.session_state.data["jogos_salvos"] = []
+                    
+                    with st.spinner("Calibrando a IA com o Histórico Completo. Isso usa apenas processamento local..."):
+                        barra_calib = st.progress(0)
+                        porcentagem_texto = st.empty()
+                        
+                        lucro_acumulado_massa = 0.0
+                        total_concursos = len(historico_completo)
+                        
+                        # A IA vai ler linha por linha do banco que você já baixou
+                        for i, dado_atual in enumerate(historico_completo):
+                            num = dado_atual['concurso']
+                            dezenas_sorteadas = dado_atual['dezenas']
+                            
+                            # --- O FANTASMA ADAPTATIVO DA IA (Exatamente a sua lógica) ---
+                            # Pega o histórico até o sorteio anterior ao atual para não ver o futuro
+                            historico_para_ia = historico_completo[:i]
                             
                             if len(historico_para_ia) >= 10:
                                 try:
@@ -2130,7 +2182,7 @@ with tabs[4]:
                                         # A IA TREINA USANDO O PLANO A / HÍBRIDO (Garantia de 14 pts)
                                         jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
                                                 
-                                        # Limite financeiro do backtest para não sangrar a banca fantasma (simulando a poda)
+                                        # Limite financeiro do backtest para não sangrar a banca
                                         limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
                                                 
                                         if len(jogos_reduzidos) > limite_jogos:
@@ -2171,6 +2223,7 @@ with tabs[4]:
                                     st.session_state.data["banca"] -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
                                             
+                                    # Substitui os jogos salvos temporariamente para a função auditar
                                     st.session_state.data["jogos_salvos"] = jogos_simulados
                                             
                                 except Exception as e:
@@ -2178,32 +2231,24 @@ with tabs[4]:
                             else:
                                 st.session_state.data["jogos_salvos"] = []
                             
-                            rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
-                            
-                            # O funil confere e agora ENCONTRA o bilhete e a estratégia para pontuar!
-                            lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
+                            # Auditoria Pericial Unificada (A IA aprende se deu certo ou errado)
+                            lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios=None)
                             lucro_acumulado_massa += lucro_parcial
                             
-                            if i == total_concursos - 1:
-                                logs_massa.extend(relatorio_parcial)
-                                
-                            if i % 50 == 0:
-                                barra.progress((i + 1) / total_concursos)
-                                
-                        barra.progress(1.0)
+                            # Atualização da barra de progresso
+                            if i % 20 == 0:
+                                pct = (i + 1) / total_concursos
+                                barra_calib.progress(pct)
+                                porcentagem_texto.text(f"Progresso da Calibragem: {pct*100:.1f}%")
                         
-                        if logs_massa:
-                            st.session_state.ultimo_aprendizado = list(set(logs_massa))
-                            
+                        # Limpa os jogos no final, pois foi só simulação de memória (os dados financeiros ficaram na banca)
                         st.session_state.data["jogos_salvos"] = [] 
                         salvar_dados(st.session_state.data)
                         
-                        st.success(f"🚀 Calibração Concluída! Saldo Final Simulado: R$ {lucro_acumulado_massa:.2f}")
+                        barra_calib.progress(1.0)
+                        porcentagem_texto.text("Progresso da Calibragem: 100.0%")
+                        st.success(f"🚀 Calibração Inteligente Concluída! Saldo Final Simulado na Banca: R$ {st.session_state.data['banca']:,.2f}")
                         st.balloons()
-                        st.rerun()
-                        
-                    except Exception as e:
-                        st.error(f"Erro ao processar: {e}")
     
     col_sync1, col_sync2 = st.columns(2)
     
