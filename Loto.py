@@ -455,6 +455,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if 'auth' not in st.session_state: st.session_state.auth = False
+# Continuação do bloco de Login (cola isto logo abaixo da linha que já tens)
+if not st.session_state.auth:
+    st.markdown("<div style='max-width: 400px; margin: 100px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center;'>", unsafe_allow_html=True)
+    st.title("🍀 LotoMatrix PRO")
+    senha = st.text_input("Digite a senha de acesso:", type="password")
+    if st.button("ENTRAR", type="primary"):
+        if senha == "777": # Ajusta a tua senha aqui
+            st.session_state.auth = True
+            st.rerun()
+        else:
+            st.error("Senha incorreta!")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop() # Bloqueia o carregamento do resto do sistema    
 
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
@@ -1842,14 +1855,15 @@ with tabs[3]:
             )
         st.markdown("---")
         # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
-        # --- NOVO PADRÃO VISUAL (CARDS OFICIAIS) ---
-        cols = st.columns(3)
-        jogos = st.session_state.data["jogos_salvos"]
         
-        for idx, j in enumerate(jogos):
-            with cols[idx % 3]:
-                # 1. Renderiza o Card de Volante oficial
-                exibir_card_volante(j, idx + 1)
+        # Usamos o caminho real da sua variável: st.session_state.data["jogos_salvos"]
+        
+        jogos_salvos = st.session_state.data["jogos_salvos"]
+        cols = st.columns(3)
+        
+        for idx, jogo in enumerate(jogos_salvos, 1):
+            with cols[(idx-1) % 3]:
+                exibir_card_volante(jogo, idx)
                 
                 # 2. Status com cores profissionais do Streamlit
                 status = j.get('status', 'Aguardando Sorteio')
