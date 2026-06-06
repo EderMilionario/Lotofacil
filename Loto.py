@@ -386,24 +386,121 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
 
     return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 
+def exibir_card_volante(jogo, indice):
+    dezenas = jogo.get('dezenas', [])
+    estrategia = jogo.get('estrategia', 'Padrão')
+    alvo = jogo.get('concurso_alvo', 'N/A')
+    dna = jogo.get('dna', 'DNA não calculado')
+    
+    html = f"""
+    <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; border-left: 8px solid #930089; font-family: sans-serif;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px;">
+            <div style="font-weight: 800; color: #2c3e50; font-size: 18px;">🎫 JOGO {indice:02d}</div>
+            <div style="background-color: #930089; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px;">{len(dezenas)} DEZENAS</div>
+        </div>
+        <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 20px; display: flex; justify-content: space-between;">
+            <span><strong>Alvo:</strong> {alvo}</span>
+            <span><strong>Tática:</strong> {estrategia}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 260px; margin: 0 auto; background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+    """
+    
+    # Desenha as 25 bolas do volante (Roxas se selecionadas, Cinzas se não)
+    for i in range(1, 26):
+        if i in dezenas:
+            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #930089; box-shadow: 0 2px 4px rgba(147,0,137,0.4);">{i:02d}</div>'
+        else:
+            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: 600; color: #b2bec3; background-color: #dfe6e9;">{i:02d}</div>'
+            
+    html += f"""
+        </div>
+        <div style="margin-top: 15px; font-size: 11px; color: #95a5a6; text-align: center; font-style: italic;">DNA: {dna}</div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
 # =====================================================================
 # CONFIGURAÇÃO E LOGIN
 # =====================================================================
 st.set_page_config(page_title="LotoMatrix PRO - Agente Autônomo", page_icon="🧬", layout="wide")
 
+st.markdown("""
+<style>
+    /* 1. FUNDO GERAL DO SISTEMA (Toque Premium) */
+    .stApp { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* 2. ABAS FLUTUANTES (Remove o visual de texto solto) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 10px 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #e2e8f0;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #930089 !important; /* Roxo Lotofácil */
+        color: white !important;
+        border: none;
+        box-shadow: 0 4px 10px rgba(147,0,137,0.3);
+    }
+    
+    /* 3. PAINÉIS E MÉTRICAS (Estilo Dashboard Financeiro) */
+    div[data-testid="stMetric"] {
+        background-color: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        border-left: 6px solid #930089;
+    }
+    
+    /* 4. BOTÕES PRIMÁRIOS (Gerar, Salvar, Sincronizar) */
+    button[kind="primary"] {
+        background-color: #930089 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        padding: 20px 24px !important;
+        box-shadow: 0 4px 10px rgba(147,0,137,0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #7a0072 !important;
+        transform: translateY(-2px);
+    }
+    
+    /* 5. BOTÕES SECUNDÁRIOS */
+    button[kind="secondary"] {
+        border-radius: 8px !important;
+        border: 1px solid #ced4da !important;
+        font-weight: 600 !important;
+        color: #495057 !important;
+    }
+    button[kind="secondary"]:hover {
+        border-color: #930089 !important;
+        color: #930089 !important;
+        background-color: #fdf5ff !important;
+    }
+    
+    /* 6. CAIXAS DE MENSAGENS (Info, Alerta, Sucesso) */
+    .stAlert {
+        border-radius: 10px !important;
+        border: none !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03) !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 if 'auth' not in st.session_state: st.session_state.auth = False
-if not st.session_state.auth:
-    st.markdown("<h1 style='text-align: center; color: #006644;'>🔐 Acesso Restrito - LotoMatrix PRO</h1>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        with st.container(border=True):
-            senha = st.text_input("Digite a Senha para Acessar a IA:", type="password")
-            if st.button("ENTRAR NO SISTEMA", type="primary", use_container_width=True):
-                if senha == "777":
-                    st.session_state.auth = True
-                    st.rerun()
-                else: st.error("Acesso Negado.")
-    st.stop()
 
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
@@ -1691,6 +1788,13 @@ with tabs[2]:
                         st.rerun()
 
     else: st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
+    # Fica lindo na tela de computador colocando 3 cartões lado a lado
+    cols = st.columns(3)
+    for idx, jogo in enumerate(jogos_gerados, 1):
+        with cols[(idx-1) % 3]:
+            exibir_card_volante(jogo, idx)    
+
+
 # --- TAB 4: FILA DE SORTEIO ---
 with tabs[3]:
     exibir_mini_painel_financeiro()
@@ -1784,9 +1888,9 @@ with tabs[3]:
             )
         st.markdown("---")
         # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
-        
         for j in st.session_state.data["jogos_salvos"]:
             alvo = j.get('concurso_alvo')
+       
             
             if j.get('status') == "Premiado":
                 html_card = f"""
