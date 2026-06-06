@@ -1820,30 +1820,39 @@ with tabs[3]:
         
         # Usamos o caminho real da sua variável: st.session_state.data["jogos_salvos"]
         
-        jogos_salvos = st.session_state.data["jogos_salvos"]
+        # Carrega os jogos salvos
+    jogos = st.session_state.data.get("jogos_salvos", [])
+    
+    if jogos:
         cols = st.columns(3)
-        
-        for idx, jogo in enumerate(jogos_salvos, 1):
-            with cols[(idx-1) % 3]:
-                exibir_card_volante(jogo, idx)
+        for idx, j in enumerate(jogos):
+            
+            # ==========================================
+            # TRAVA DE SEGURANÇA CONTRA BACKUP CORROMPIDO
+            if not isinstance(j, dict):
+                continue # Se o dado do backup não for um dicionário válido, ele pula e não quebra o sistema
+            # ==========================================
+
+            with cols[idx % 3]:
+                # Desenha o cartão
+                exibir_card_volante(j, idx + 1)
                 
-                # 2. Status com cores profissionais do Streamlit
+                # Lê o status com segurança
                 status = j.get('status', 'Aguardando Sorteio')
+                
                 if status == "Premiado":
-                    st.success(f"✅ PREMIADO ({j.get('acertos')} Acertos) | R$ {j.get('premio_valor', 0):.2f}")
+                    st.success(f"✅ PREMIADO ({j.get('acertos', 0)} Acertos)\n💰 R$ {j.get('premio_valor', 0):.2f}")
                 elif status == "Não Premiado":
-                    st.error(f"❌ NÃO PREMIADO ({j.get('acertos')} Acertos)")
+                    st.error(f"❌ NÃO PREMIADO ({j.get('acertos', 0)} Acertos)")
                 else:
                     st.info("⏳ AGUARDANDO SORTEIO")
                 
-                # 3. Botão de apagar alinhado
-                st.button("🗑️ Apagar", key=f"del_{j['id']}", on_click=cb_excluir_jogo, args=(j['id'],), use_container_width=True)
+                # Botão apagar seguro (usando .get no ID para evitar novo erro)
+                id_jogo = j.get('id', str(uuid.uuid4()))
+                st.button("🗑️ Apagar", key=f"del_{id_jogo}", on_click=cb_excluir_jogo, args=(id_jogo,), use_container_width=True)
                 st.markdown("<br><br>", unsafe_allow_html=True)
-            with st.container():
-                st.code(" - ".join([f"{n:02d}" for n in j.get('dezenas', [])]))
-                st.button("Apagar", key=f"del_{j['id']}", on_click=cb_excluir_jogo, args=(j['id'],))
-                st.markdown("<br>", unsafe_allow_html=True)
-    else: st.info("Sem bilhetes registrados na fila atual.")
+    else:
+        st.info("Nenhum bilhete na fila.")
 
 # --- TAB 5: SINCRONIZAÇÃO E ENTRADA ---
 with tabs[4]:
