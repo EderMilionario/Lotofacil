@@ -630,7 +630,6 @@ def raciocinio_total_ia(historico, memoria):
         if isinstance(dado_memoria, dict):
             usos = dado_memoria.get("usos", 0)
             pontos = dado_memoria.get("pontos", 0)
-            # Lê a média limpa. A IA já ajusta a inércia na Aba 5.
             perf[est] = pontos / usos if usos > 0 else 11.0 
         else:
             perf[est] = float(dado_memoria)
@@ -669,16 +668,92 @@ def raciocinio_total_ia(historico, memoria):
             notas_finais["Simetria"] += 1.8
     except: pass
 
+    # =================================================================
+    # 🕵️‍♂️ MOTOR DE SOMBRA (AUTO-BACKTESTING DE MOMENTUM)
+    # Testa matematicamente o que funcionou no último mês (30 concursos)
+    # =================================================================
+    janela_backtest = 30
+    historico_sombra = historico[-janela_backtest-10:] if len(historico) >= janela_backtest+10 else historico
+    pontos_sombra = {"Tendencia": 0, "Reversao": 0, "Ciclo": 0, "Simetria": 0}
+    
+    if len(historico_sombra) > janela_backtest:
+        for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
+            h_passado = historico_sombra[:i]
+            sorteio_real = set(historico_sombra[i]['dezenas'])
+            
+            freq_v = Counter([n for h in h_passado[-30:] for n in h['dezenas']])
+            
+            # Matrizes virtuais defensivas (18 dezenas) de cada estratégia
+            p_tend = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0), reverse=True)[:18]
+            p_rev = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0))[:18]
+            p_sim = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0) + freq_v.get(26-x, 0), reverse=True)[:18]
+            
+            c_v = set()
+            for h in reversed(h_passado):
+                c_v.update(h['dezenas'])
+                if len(c_v) >= 20: break
+            f_v = set(range(1,26)) - c_v
+            p_ciclo = sorted(range(1, 26), key=lambda x: 100 if x in f_v else freq_v.get(x, 0), reverse=True)[:18]
+            
+            # Checa quantos pontos as estratégias fariam no passado
+            acertos_v = {
+                "Tendencia": len(set(p_tend) & sorteio_real),
+                "Reversao": len(set(p_rev) & sorteio_real),
+                "Simetria": len(set(p_sim) & sorteio_real),
+                "Ciclo": len(set(p_ciclo) & sorteio_real)
+            }
+            
+            # Injeção de Pontuação de Backtest (ROI Simulado)
+            for est, qtd_acertos in acertos_v.items():
+                if qtd_acertos == 15: pontos_sombra[est] += 50
+                elif qtd_acertos == 14: pontos_sombra[est] += 15
+                elif qtd_acertos == 13: pontos_sombra[est] += 5
+                elif qtd_acertos <= 10: pontos_sombra[est] -= 2 # Penalidade rigorosa por erro
+                
+    # A IA ajusta a Nota Final somando a evidência matemática do Backtest
+    for est in notas_finais:
+        notas_finais[est] += (pontos_sombra.get(est, 0) * 0.15) 
+
+    # O Veredito: A estratégia matematicamente superior no cenário atual
     melhor_est = max(notas_finais, key=notas_finais.get)
     
-    # --- TAMANHO DA MATRIZ ---
-    qtd_matriz, _, _, _ = calcular_temperatura_e_confianca(historico, melhor_est, perf)
+    # =================================================================
+    # 📏 OTIMIZADOR DE MATRIZ DINÂMICO (CONTROLE DE RISCO)
+    # Qual tamanho de matriz deu mais lucro (ou menos prejuízo) com esta estratégia?
+    # =================================================================
+    melhor_tamanho = 18 # Tamanho padrão de segurança
+    if len(historico_sombra) > janela_backtest:
+        roi_tamanhos = {16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0}
+        
+        for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
+            h_passado = historico_sombra[:i]
+            sorteio_real = set(historico_sombra[i]['dezenas'])
+            freq_v = Counter([n for h in h_passado[-30:] for n in h['dezenas']])
+            
+            # Rankeia as 25 dezenas com a assinatura da Estratégia Campeã
+            if melhor_est == "Reversao": rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0))
+            elif melhor_est == "Simetria": rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0) + freq_v.get(26-x, 0), reverse=True)
+            elif melhor_est == "Ciclo": rank_v = sorted(range(1, 26), key=lambda x: 100 if x in f_v else freq_v.get(x, 0), reverse=True)
+            else: rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0), reverse=True)
+                
+            for t in roi_tamanhos:
+                acertos_t = len(set(rank_v[:t]) & sorteio_real)
+                custo = {16: 56, 17: 408, 18: 2448, 19: 11628, 20: 46512, 21: 162792}.get(t, 0)
+                retorno = 1500000 if acertos_t == 15 else (1500 if acertos_t == 14 else (30 if acertos_t == 13 else 0))
+                roi_tamanhos[t] += (retorno - custo)
+                
+        # Define o tamanho com base no ROI histórico das últimas 30 rodadas
+        melhor_tamanho = max(roi_tamanhos, key=roi_tamanhos.get)
+        if roi_tamanhos[melhor_tamanho] < 0 and melhor_tamanho > 18:
+            melhor_tamanho = 17 # Recuo defensivo: se as matrizes grandes estão perdendo, protege a banca.
+            
+    qtd_matriz = melhor_tamanho
 
     # --- MUTAÇÃO DE PESOS DA IA (O Bote Otimizado) ---
     if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
         estrategia = "Ciclo Otimizado"
         pesos = {i: 100 if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
-        motivo_est = "A IA priorizou o Fechamento de Ciclo. Dezenas ausentes receberam força máxima."
+        motivo_est = f"A IA elegeu Fechamento de Ciclo. O Motor de Sombra identificou alto momento para esta estratégia. Matriz auto-ajustada para {qtd_matriz} dezenas pelo Controle de Risco."
         
     elif melhor_est == "Simetria":
         estrategia = "Simetria de Borda"
@@ -688,12 +763,12 @@ def raciocinio_total_ia(historico, memoria):
             peso_espelho = freq_recente.get(espelho, 0)
             bonus_borda = 15 if i in moldura_lista else 0
             pesos[i] = freq_recente.get(i, 0) + peso_espelho + bonus_borda
-        motivo_est = "A IA adotou Simetria Analítica. Dezenas e seus espelhos ganharam força magnética conjunta."
+        motivo_est = f"A IA ativou Simetria Analítica após varredura nos últimos 30 sorteios. Tamanho de matriz definido em {qtd_matriz} dezenas pelo Otimizador Dinâmico para maximizar Retorno sobre Investimento (ROI)."
         
     elif melhor_est == "Reversao":
         estrategia = "Reversão Estatística"
         pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 5)) for i in range(1, 26)}
-        motivo_est = "A IA ativou Reversão Estatística focada no curto prazo (Janela de Esquecimento)."
+        motivo_est = f"Análise de Anomalia confirmada pelo Backtest Noturno. Reversão Estatística ativada com foco no curto prazo. A matriz de {qtd_matriz} dezenas apresentou o menor risco de quebra de banca recentemente."
         
     else:
         estrategia = "Tendência de Frequência"
@@ -702,7 +777,7 @@ def raciocinio_total_ia(historico, memoria):
             aceleracao = freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0) 
             peso_base = freq_recente.get(i, 0)
             pesos[i] = max(1, peso_base + (aceleracao * 3))
-        motivo_est = "A IA escolheu Tendência com Viés Direcional. Dezenas em aceleração no momento foram priorizadas."
+        motivo_est = f"Tendência Acelerada aprovada no Teste de Sombra (Auto-Backtest). Dezenas em momento direcional de alta foram priorizadas. A IA alocou uma matriz defensiva/ofensiva de {qtd_matriz} dezenas."
 
     dezenas_ordenadas = sorted(range(1, 26), key=lambda x: pesos[x], reverse=True)
     matriz_base = sorted(dezenas_ordenadas[:qtd_matriz])
