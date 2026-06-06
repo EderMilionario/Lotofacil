@@ -2079,9 +2079,11 @@ with tabs[4]:
                         st.error(f"Erro ao processar GAPs: {e}")
 
         with col_massa2:
-            # BOTÃO DE DOWNLOAD (APENAS DADOS)
-            if st.button("🛸 BAIXAR SORTEIOS DESDE O 1", type="secondary", use_container_width=True):
-                # Limpeza inicial necessária
+            st.markdown("#### ☢️ VIDA REAL: BAIXAR E CALIBRAR")
+            
+            # 1. BOTÃO: BAIXAR (APENAS DOWNLOAD DOS DADOS)
+            if st.button("📥 1. BAIXAR SORTEIOS DO 1 AO ATUAL", type="secondary", use_container_width=True):
+                # Limpeza de dados
                 st.session_state.data["historico_dados"] = []
                 st.session_state.data["jogos_salvos"] = []
                 st.session_state.data["banca"] = 10000.00
@@ -2105,17 +2107,18 @@ with tabs[4]:
                         
                         salvar_dados(st.session_state.data)
                         barra.progress(1.0)
-                        st.success("Download concluído! Dados salvos no banco. Agora clique em CALIBRAR.")
+                        st.success("Download completo. Agora clique em CALIBRAR INTELIGÊNCIA.")
                     except Exception as e:
                         st.error(f"Erro no download: {e}")
-            # BOTÃO DE CALIBRAGEM (APENAS IA)
-            if st.button("🧠 CALIBRAR INTELIGÊNCIA", type="primary", use_container_width=True):
+
+            # 2. BOTÃO: CALIBRAR (TREINAMENTO TOTAL SEM INTERNET)
+            if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TUDO)", type="primary", use_container_width=True):
                 historico = st.session_state.data.get("historico_dados", [])
                 
                 if not historico:
                     st.error("Banco vazio! Baixe os sorteios primeiro.")
                 else:
-                    # Reset da memória
+                    # Reset da memória da IA
                     st.session_state.data["ia_memoria"] = {
                         "Tendencia": {"usos": 0, "pontos": 0}, 
                         "Reversao": {"usos": 0, "pontos": 0},
@@ -2123,29 +2126,31 @@ with tabs[4]:
                         "Simetria": {"usos": 0, "pontos": 0}
                     }
                     
-                    with st.spinner("Treinando IA com histórico completo..."):
-                        barra = st.progress(0)
-                        total = len(historico)
+                    with st.spinner("Calibrando a IA (processando o banco de dados)..."):
+                        barra_calib = st.progress(0)
+                        total_concursos = len(historico)
                         
+                        # Loop que lê o banco de dados salvo e treina a IA
                         for i in range(len(historico)):
-                            # Passa o histórico até o momento atual
-                            historico_parcial = historico[:i+1]
-                            num_atual = historico[i]["concurso"]
-                            dezenas_atual = historico[i]["dezenas"]
+                            # Pega até o ponto atual para simular o histórico acumulado
+                            historico_para_ia = historico[:i] 
+                            dado_atual = historico[i]
                             
-                            # Roda a inteligência
-                            if len(historico_parcial) >= 10:
-                                ia_temp = raciocinio_total_ia(historico_parcial[:-1], st.session_state.data["ia_memoria"])
-                                # Auditoria
-                                auditar_e_aprender_unificado(num_atual, dezenas_atual, {})
+                            # Roda a lógica de raciocínio se tiver histórico suficiente
+                            if len(historico_para_ia) >= 10:
+                                # Chama a função original que você definiu
+                                raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
+                            
+                            # Audita e aprende com o sorteio atual
+                            auditar_e_aprender_unificado(dado_atual['concurso'], dado_atual['dezenas'], {})
                             
                             if i % 50 == 0:
-                                barra.progress((i + 1) / total)
+                                barra_calib.progress((i + 1) / total_concursos)
                         
                         salvar_dados(st.session_state.data)
-                        barra.progress(1.0)
-                        st.success("IA Calibrada com sucesso lendo todo o banco de dados!")
-                        st.rerun()            
+                        barra_calib.progress(1.0)
+                        st.success("IA Calibrada com sucesso com todo o histórico!")
+                        st.rerun()
     
     col_sync1, col_sync2 = st.columns(2)
     
