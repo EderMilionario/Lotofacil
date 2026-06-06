@@ -1412,7 +1412,7 @@ with tabs[2]:
                                 "status": "Aguardando Sorteio", 
                                 "acertos": 0, 
                                 "premio_valor": 0.0,
-                                "matriz_origem": st.session_state.data["matriz_viva_atual"], 
+                                "matriz_origem": ia['matriz_base'], # 🛡️ CORREÇÃO: Passando ia['matriz_base'] direto
                                 "dna": "🧬 Fechamento Matemático 100% Garantido"
                             })
                             
@@ -1429,7 +1429,9 @@ with tabs[2]:
                         # =====================================================================
                         st.info(f"⚠️ **Orçamento Limitado:** {msg_status}") 
                         
+                        # 🛡️ NOVO: Preparação dupla para o Escudo Anti-Zumbi (15 e 14/15 pts)
                         historico_sets = {frozenset(h['dezenas']) for h in st.session_state.data['historico_dados']}
+                        historico_oficial_sets = [set(h['dezenas']) for h in st.session_state.data['historico_dados']]
                         ultimo_sorteio = st.session_state.data["historico_dados"][-1]["dezenas"] if st.session_state.data["historico_dados"] else []
                         
                         jogos_neste_lote = [] 
@@ -1452,7 +1454,13 @@ with tabs[2]:
                             def filtrar_universo(universo):
                                 pote = []
                                 for candidato in universo:
-                                    if frozenset(candidato) in historico_sets: continue
+                                    # 🛡️ NOVO: Convertendo para set uma vez para a verificação de 14 pontos
+                                    candidato_set = set(candidato)
+                                    
+                                    if frozenset(candidato) in historico_sets: continue # Filtro 15 pontos exato
+                                    
+                                    # 🛡️ NOVO ESCUDO: Se o bilhete (seja 15 ou 16) tiver 14 ou mais acertos num jogo passado, é descartado.
+                                    if any(len(candidato_set & sorteio_passado) >= 14 for sorteio_passado in historico_oficial_sets): continue
                                     
                                     max_c, atual_c = 1, 1
                                     for i in range(1, len(candidato)):
@@ -1539,7 +1547,11 @@ with tabs[2]:
                                         dez_temp.pop(idx); pesos_temp.pop(idx)
                                         
                                     candidato = sorted(candidato)
-                                    if frozenset(candidato) in historico_sets: continue
+                                    
+                                    # 🛡️ NOVO: Escudo Anti-Zumbi Simétrico para Rota 2
+                                    candidato_set = set(candidato)
+                                    if frozenset(candidato) in historico_sets: continue # Filtro 15 exato
+                                    if any(len(candidato_set & sorteio_passado) >= 14 for sorteio_passado in historico_oficial_sets): continue # Filtro 14/15 dinâmico
                                     
                                     max_c, atual_c = 1, 1
                                     for i in range(1, len(candidato)):
@@ -1583,7 +1595,7 @@ with tabs[2]:
                                 "status": "Aguardando Sorteio", 
                                 "acertos": 0, 
                                 "premio_valor": 0.0,
-                                "matriz_origem": st.session_state.data["matriz_viva_atual"], 
+                                "matriz_origem": ia['matriz_base'], # 🛡️ CORREÇÃO: Passando ia['matriz_base'] direto
                                 "dna": melhor_dna
                             })
                             
@@ -1604,7 +1616,6 @@ with tabs[2]:
                         st.rerun()
 
     else: st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
-
 # --- TAB 4: FILA DE SORTEIO ---
 with tabs[3]:
     exibir_mini_painel_financeiro()
