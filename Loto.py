@@ -17,70 +17,26 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     if dezenas_anteriores is None:
         dezenas_anteriores = []
         
-    # === 🛡️ O ESCUDO DE PROTEÇÃO DO PDF ===
     def limpar_latin1(texto):
-        # Remove emojis, bolinhas (•) e caracteres (⚠️) que derrubam o FPDF antigo
         return str(texto).encode('latin-1', 'ignore').decode('latin-1')
-        
-    # Baixa o ícone do DNA colorido
-    img_path = "dna_icon_pro.png"
-    if not os.path.exists(img_path):
-        try:
-            url_dna = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f9ec.png"
-            r = requests.get(url_dna, timeout=5)
-            with open(img_path, 'wb') as f:
-                f.write(r.content)
-        except:
-            pass 
-
-    # --- CALCULADOR DE DNA COMPLETO ---
-    def calcular_dna_na_hora(dezenas, repetidas_salvas=None):
-        if not dezenas: return ""
-        primos_list = [2, 3, 5, 7, 11, 13, 17, 19, 23]
-        fib_list = [1, 2, 3, 5, 8, 13, 21]
-        moldura_list = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
-        mult3_list = [3, 6, 9, 12, 15, 18, 21, 24]
-        
-        pares = sum(1 for x in dezenas if x % 2 == 0)
-        primos = sum(1 for x in dezenas if x in primos_list)
-        fibs = sum(1 for x in dezenas if x in fib_list)
-        moldura = sum(1 for x in dezenas if x in moldura_list)
-        mult3 = sum(1 for x in dezenas if x in mult3_list)
-        soma = sum(dezenas)
-        
-        if repetidas_salvas is not None:
-            rep_str = f"{repetidas_salvas} Rep | "
-        elif dezenas_anteriores:
-            repetidas_calc = sum(1 for x in dezenas if x in dezenas_anteriores)
-            rep_str = f"{repetidas_calc} Rep | "
-        else:
-            rep_str = "" 
-            
-        return f"{moldura} Mol | {pares} Par | {primos} Pri | {fibs} Fib | {mult3} Mlt | {rep_str}Soma {soma}"
 
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # CABEÇALHO 
-    if os.path.exists(img_path):
-        pdf.image(img_path, 10, 10, 16)
-        x_offset = 30
-    else:
-        x_offset = 10
-        
-    pdf.set_text_color(0, 102, 204)
+    # CABEÇALHO DO PDF
+    pdf.set_text_color(147, 0, 137) # #930089 Loto Color
     pdf.set_font('Arial', 'B', 22)
-    pdf.set_xy(x_offset, 12)
-    pdf.cell(0, 10, "LotoMatrix PRO", ln=0)
+    pdf.set_xy(10, 12)
+    pdf.cell(0, 10, "LotoMatrix PRO - Volantes de Aposta", ln=0)
     
     pdf.set_font('Arial', '', 10)
     pdf.set_text_color(100, 100, 100)
-    pdf.set_xy(x_offset, 22)
-    pdf.cell(0, 8, "Relatorio Oficial de Analise e Estrategia", ln=0)
+    pdf.set_xy(10, 22)
+    pdf.cell(0, 8, "Relatorio Oficial Pericial", ln=0)
     
     pdf.set_font('Arial', 'B', 11)
-    pdf.set_text_color(0, 102, 204)
+    pdf.set_text_color(147, 0, 137)
     pdf.set_xy(10, 12)
     pdf.cell(190, 10, f"TOTAL: {len(jogos)} BILHETES", ln=0, align='R')
     
@@ -91,72 +47,70 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     
     pdf.ln(30)
     
-    # GERADOR DE CARDS
+    # GERADOR DE CARDS NO PDF (Com Volante 5x5)
     for i, j in enumerate(jogos, 1):
-        if pdf.get_y() > 240:
+        if pdf.get_y() > 220:
             pdf.add_page()
             
         y_start = pdf.get_y()
         
-        # AQUI APLICAMOS O ESCUDO PARA NÃO DERRUBAR O APP
         estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')).replace("🧬", "").strip())
         dna_banco = limpar_latin1(str(j.get('dna', '')).replace("🧬", "").strip())
         dezenas = j.get('dezenas', [])
-        
-        repetidas_salvas = j.get('repetidas', None)
-        
-        if "Par" not in dna_banco and "Pri" not in dna_banco:
-            dna_calculado = calcular_dna_na_hora(dezenas, repetidas_salvas)
-            dna_texto = f"{dna_calculado} ({dna_banco})" 
-        else:
-            dna_texto = dna_banco
-            
-        # Protege o texto do DNA final
-        dna_texto = limpar_latin1(dna_texto)
         alvo = limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
-        dezenas_str = limpar_latin1(" - ".join([f"{n:02d}" for n in dezenas]))
         
-        # Fundo e Bordas
-        pdf.set_fill_color(248, 248, 250)
-        pdf.rect(10, y_start, 190, 40, 'F')
-        pdf.set_fill_color(0, 168, 89)
-        pdf.rect(10, y_start, 2, 40, 'F')
+        # Fundo e Bordas do Cartão
+        pdf.set_fill_color(252, 252, 254)
+        pdf.rect(10, y_start, 190, 65, 'F')
+        pdf.set_fill_color(147, 0, 137)
+        pdf.rect(10, y_start, 3, 65, 'F')
         
-        # Topo
-        pdf.set_text_color(30, 30, 30)
-        pdf.set_font('Arial', 'B', 11)
-        pdf.set_xy(15, y_start + 4)
-        pdf.cell(120, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  Grade: {len(dezenas)} Dezenas", ln=0)
+        # Topo do Cartão
+        pdf.set_text_color(40, 40, 40)
+        pdf.set_font('Arial', 'B', 12)
+        pdf.set_xy(18, y_start + 5)
+        pdf.cell(100, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  {len(dezenas)} Dezenas", ln=0)
         
-        pdf.set_text_color(0, 102, 204) 
+        pdf.set_text_color(147, 0, 137) 
         pdf.set_font('Arial', 'B', 10)
-        pdf.set_xy(10, y_start + 4)
+        pdf.set_xy(10, y_start + 5)
         pdf.cell(185, 8, f"{estrategia}", ln=0, align='R')
         
-        # DNA
-        if os.path.exists(img_path):
-            pdf.image(img_path, 15, y_start + 14, 4)
-            x_dna = 21 
-        else:
-            x_dna = 15
+        # =======================================================
+        # DESENHO DO VOLANTE 5X5 DA LOTOFÁCIL (MATEMÁTICA VETORIAL)
+        # =======================================================
+        start_x = 75 # Posição centralizada para a folha A4 (largura 190mm útil)
+        start_y = y_start + 18
+        espaco_x = 10 # Espaço entre bolas na horizontal
+        espaco_y = 8  # Espaço entre bolas na vertical
+        
+        for num in range(1, 26):
+            linha = (num - 1) // 5
+            coluna = (num - 1) % 5
+            cx = start_x + (coluna * espaco_x)
+            cy = start_y + (linha * espaco_y)
             
-        pdf.set_text_color(80, 80, 80)
-        pdf.set_font('Arial', '', 9)
-        pdf.set_xy(x_dna, y_start + 13.5)
-        pdf.cell(170, 5, f"DNA: {dna_texto}", ln=0)
+            if num in dezenas:
+                pdf.set_fill_color(147, 0, 137) # Bola selecionada roxa
+                pdf.set_text_color(255, 255, 255)
+            else:
+                pdf.set_fill_color(235, 235, 235) # Bola vazia cinza
+                pdf.set_text_color(160, 160, 160)
+                
+            pdf.ellipse(cx, cy, 6, 6, 'F') # Desenha a bolinha
+            pdf.set_xy(cx, cy)
+            pdf.set_font('Arial', 'B', 7)
+            pdf.cell(6, 6, f"{num:02d}", align='C')
+            
+        # =======================================================
         
-        # Dezenas
-        pdf.set_fill_color(255, 255, 255)
-        pdf.rect(15, y_start + 22, 180, 12, 'F')
-        pdf.set_draw_color(220, 220, 220)
-        pdf.rect(15, y_start + 22, 180, 12, 'D')
+        # Rodapé (DNA)
+        pdf.set_text_color(100, 100, 100)
+        pdf.set_font('Arial', 'I', 8)
+        pdf.set_xy(18, y_start + 58)
+        pdf.cell(170, 5, f"DNA: {dna_banco}", ln=0, align='C')
         
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font('Courier', 'B', 11.5)
-        pdf.set_xy(15, y_start + 24)
-        pdf.cell(180, 8, dezenas_str, ln=0, align='C')
-        
-        pdf.set_y(y_start + 45)
+        pdf.set_y(y_start + 70)
         
     resultado = pdf.output(dest='S')
     if isinstance(resultado, str):
