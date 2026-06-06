@@ -24,7 +24,7 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # CABEÇALHO DO PDF
+    # CABEÇALHO DO PDF (Roxo Lotofácil)
     pdf.set_text_color(147, 0, 137) # #930089 Loto Color
     pdf.set_font('Arial', 'B', 22)
     pdf.set_xy(10, 12)
@@ -47,20 +47,20 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     
     pdf.ln(30)
     
-    # GERADOR DE CARDS NO PDF (Com Volante 5x5)
+    # GERADOR DE CARDS NO PDF
     for i, j in enumerate(jogos, 1):
         if pdf.get_y() > 220:
             pdf.add_page()
             
         y_start = pdf.get_y()
         
-        estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')).replace("🧬", "").strip())
-        dna_banco = limpar_latin1(str(j.get('dna', '')).replace("🧬", "").strip())
+        estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')).replace("🧬", "").replace("🍀", "").strip())
+        dna_banco = limpar_latin1(str(j.get('dna', '')).replace("🧬", "").replace("🍀", "").strip())
         dezenas = j.get('dezenas', [])
         alvo = limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
         
         # Fundo e Bordas do Cartão
-        pdf.set_fill_color(252, 252, 254)
+        pdf.set_fill_color(252, 245, 255) # Fundo levemente roxo
         pdf.rect(10, y_start, 190, 65, 'F')
         pdf.set_fill_color(147, 0, 137)
         pdf.rect(10, y_start, 3, 65, 'F')
@@ -76,13 +76,11 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
         pdf.set_xy(10, y_start + 5)
         pdf.cell(185, 8, f"{estrategia}", ln=0, align='R')
         
-        # =======================================================
-        # DESENHO DO VOLANTE 5X5 DA LOTOFÁCIL (MATEMÁTICA VETORIAL)
-        # =======================================================
-        start_x = 75 # Posição centralizada para a folha A4 (largura 190mm útil)
+        # DESENHO DO VOLANTE
+        start_x = 75
         start_y = y_start + 18
-        espaco_x = 10 # Espaço entre bolas na horizontal
-        espaco_y = 8  # Espaço entre bolas na vertical
+        espaco_x = 10
+        espaco_y = 8 
         
         for num in range(1, 26):
             linha = (num - 1) // 5
@@ -91,24 +89,22 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
             cy = start_y + (linha * espaco_y)
             
             if num in dezenas:
-                pdf.set_fill_color(147, 0, 137) # Bola selecionada roxa
+                pdf.set_fill_color(147, 0, 137) # Bola roxa
                 pdf.set_text_color(255, 255, 255)
             else:
-                pdf.set_fill_color(235, 235, 235) # Bola vazia cinza
+                pdf.set_fill_color(235, 235, 235) # Bola cinza
                 pdf.set_text_color(160, 160, 160)
                 
-            pdf.ellipse(cx, cy, 6, 6, 'F') # Desenha a bolinha
+            pdf.ellipse(cx, cy, 6, 6, 'F')
             pdf.set_xy(cx, cy)
             pdf.set_font('Arial', 'B', 7)
             pdf.cell(6, 6, f"{num:02d}", align='C')
             
-        # =======================================================
-        
-        # Rodapé (DNA)
-        pdf.set_text_color(100, 100, 100)
+        # Rodapé
+        pdf.set_text_color(147, 0, 137)
         pdf.set_font('Arial', 'I', 8)
         pdf.set_xy(18, y_start + 58)
-        pdf.cell(170, 5, f"DNA: {dna_banco}", ln=0, align='C')
+        pdf.cell(170, 5, f"DNA LotoMatrix: {dna_banco}", ln=0, align='C')
         
         pdf.set_y(y_start + 70)
         
@@ -342,132 +338,89 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
 
 def exibir_card_volante(jogo, indice):
     dezenas = jogo.get('dezenas', [])
-    estrategia = jogo.get('estrategia', 'Padrão')
+    estrategia = jogo.get('estrategia', 'Padrão').replace("🧬", "🍀")
     alvo = jogo.get('concurso_alvo', 'N/A')
-    dna = jogo.get('dna', 'DNA não calculado')
+    dna = jogo.get('dna', 'DNA não calculado').replace("🧬", "🍀")
     
     html = f"""
-    <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; border-left: 8px solid #930089; font-family: sans-serif;">
+    <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(147,0,137,0.1); margin-bottom: 20px; border-left: 8px solid #930089; font-family: sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px;">
-            <div style="font-weight: 800; color: #2c3e50; font-size: 18px;">🎫 JOGO {indice:02d}</div>
+            <div style="font-weight: 900; color: #930089; font-size: 18px;">🎫 JOGO {indice:02d}</div>
             <div style="background-color: #930089; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px;">{len(dezenas)} DEZENAS</div>
         </div>
         <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 20px; display: flex; justify-content: space-between;">
-            <span><strong>Alvo:</strong> {alvo}</span>
-            <span><strong>Tática:</strong> {estrategia}</span>
+            <span><strong style="color: #930089;">Alvo:</strong> {alvo}</span>
+            <span><strong style="color: #930089;">Tática:</strong> {estrategia}</span>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 260px; margin: 0 auto; background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 260px; margin: 0 auto; background-color: #fdf5ff; padding: 15px; border-radius: 10px; border: 1px solid #eccbff;">
     """
     
-    # Desenha as 25 bolas do volante (Roxas se selecionadas, Cinzas se não)
     for i in range(1, 26):
         if i in dezenas:
-            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #930089; box-shadow: 0 2px 4px rgba(147,0,137,0.4);">{i:02d}</div>'
+            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #930089; box-shadow: 0 2px 5px rgba(147,0,137,0.4);">{i:02d}</div>'
         else:
-            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: 600; color: #b2bec3; background-color: #dfe6e9;">{i:02d}</div>'
+            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: 600; color: #b2bec3; background-color: #ffffff; border: 1px solid #dfe6e9;">{i:02d}</div>'
             
     html += f"""
         </div>
-        <div style="margin-top: 15px; font-size: 11px; color: #95a5a6; text-align: center; font-style: italic;">DNA: {dna}</div>
+        <div style="margin-top: 15px; font-size: 11px; color: #930089; text-align: center; font-weight: bold;">{dna}</div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
 
 # =====================================================================
-# CONFIGURAÇÃO E LOGIN
+# CONFIGURAÇÃO E LOGIN (100% ROXO LOTOFÁCIL)
 # =====================================================================
-st.set_page_config(page_title="LotoMatrix PRO - Agente Autônomo", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="LotoMatrix PRO", page_icon="🍀", layout="wide")
 
 st.markdown("""
 <style>
-    /* 1. FUNDO GERAL DO SISTEMA (Toque Premium) */
+    :root { --roxo: #930089; --roxo-hover: #7a0072; }
+    
+    /* FUNDO GERAL */
     .stApp { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     
-    /* 2. ABAS FLUTUANTES (Remove o visual de texto solto) */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 10px 20px;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        transition: all 0.3s ease;
-    }
-    .stTabs [data-baseweb="tab"]:hover {
-        background-color: #e2e8f0;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #930089 !important; /* Roxo Lotofácil */
-        color: white !important;
-        border: none;
-        box-shadow: 0 4px 10px rgba(147,0,137,0.3);
-    }
+    /* ABAS FLUTUANTES 100% ROXAS */
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .stTabs [data-baseweb="tab"] { border-radius: 8px; padding: 10px 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; transition: all 0.3s ease; }
+    .stTabs [aria-selected="true"] { background-color: var(--roxo) !important; color: white !important; border: none; box-shadow: 0 4px 10px rgba(147,0,137,0.3); }
     
-    /* 3. PAINÉIS E MÉTRICAS (Estilo Dashboard Financeiro) */
-    div[data-testid="stMetric"] {
-        background-color: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-        border-left: 6px solid #930089;
-    }
+    /* PAINÉIS, MÉTRICAS E ALERTAS ROXOS */
+    div[data-testid="stMetric"] { background-color: white; padding: 20px; border-radius: 12px; border-left: 6px solid var(--roxo); box-shadow: 0 4px 6px rgba(0,0,0,0.04); }
+    div[data-testid="stAlert"] { background-color: #fdf5ff !important; border-left: 5px solid var(--roxo) !important; color: #333 !important; border-radius: 8px !important; }
     
-    /* 4. BOTÕES PRIMÁRIOS (Gerar, Salvar, Sincronizar) */
-    button[kind="primary"] {
-        background-color: #930089 !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        padding: 20px 24px !important;
-        box-shadow: 0 4px 10px rgba(147,0,137,0.4) !important;
-        transition: all 0.3s ease !important;
-    }
-    button[kind="primary"]:hover {
-        background-color: #7a0072 !important;
-        transform: translateY(-2px);
-    }
+    /* BOTÕES (GERAR, SALVAR) */
+    button[kind="primary"] { background-color: var(--roxo) !important; border: none !important; border-radius: 8px !important; font-weight: bold !important; color: white !important; box-shadow: 0 4px 10px rgba(147,0,137,0.4) !important; transition: all 0.3s ease !important; }
+    button[kind="primary"]:hover { background-color: var(--roxo-hover) !important; transform: translateY(-2px); }
     
-    /* 5. BOTÕES SECUNDÁRIOS */
-    button[kind="secondary"] {
-        border-radius: 8px !important;
-        border: 1px solid #ced4da !important;
-        font-weight: 600 !important;
-        color: #495057 !important;
-    }
-    button[kind="secondary"]:hover {
-        border-color: #930089 !important;
-        color: #930089 !important;
-        background-color: #fdf5ff !important;
-    }
-    
-    /* 6. CAIXAS DE MENSAGENS (Info, Alerta, Sucesso) */
-    .stAlert {
-        border-radius: 10px !important;
-        border: none !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03) !important;
-    }
+    /* TELA DE LOGIN PREMIUM */
+    .login-box { max-width: 420px; margin: 80px auto; padding: 40px; background: white; border-radius: 16px; border-top: 6px solid var(--roxo); box-shadow: 0 10px 30px rgba(147,0,137,0.15); text-align: center; }
+    .login-title { color: var(--roxo); font-weight: 900; font-size: 26px; margin-bottom: 5px; }
+    .login-sub { color: #666; font-size: 14px; margin-bottom: 25px; }
 </style>
 """, unsafe_allow_html=True)
 
-if 'auth' not in st.session_state: st.session_state.auth = False
-# Continuação do bloco de Login (cola isto logo abaixo da linha que já tens)
+if 'auth' not in st.session_state: 
+    st.session_state.auth = False
+
 if not st.session_state.auth:
-    st.markdown("<div style='max-width: 400px; margin: 100px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center;'>", unsafe_allow_html=True)
-    st.title("🍀 LotoMatrix PRO")
-    senha = st.text_input("Digite a senha de acesso:", type="password")
-    if st.button("ENTRAR", type="primary"):
-        if senha == "777": # Ajusta a tua senha aqui
-            st.session_state.auth = True
-            st.rerun()
-        else:
-            st.error("Senha incorreta!")
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.stop() # Bloqueia o carregamento do resto do sistema    
+    st.markdown("""
+    <div class='login-box'>
+        <div class='login-title'>🍀 LotoMatrix PRO</div>
+        <div class='login-sub'>Autenticação de Segurança</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        senha = st.text_input("Senha de Acesso", type="password", placeholder="Digite sua senha...", label_visibility="collapsed")
+        if st.button("ENTRAR NO SISTEMA", type="primary", use_container_width=True):
+            if senha == "777": # Trocque pela sua senha real
+                st.session_state.auth = True
+                st.rerun()
+            else:
+                st.error("Acesso Negado! Senha incorreta.")
+    st.stop()
 
 # =====================================================================
 # MÓDULO MATEMÁTICO: PREMIAÇÃO MÚLTIPLA DA CAIXA
@@ -857,9 +810,8 @@ def raciocinio_total_ia(historico, memoria):
 # =====================================================================
 # INTERFACE PRINCIPAL
 # =====================================================================
-st.markdown("<h2 style='text-align: center; color: #1f77b4;'>🧬 LotoMatrix PRO - Agente Autônomo</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #930089; font-weight: 900;'>🍀 LotoMatrix PRO - Agente Autônomo</h2>", unsafe_allow_html=True)
 tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio", "🏆 5. Sincronização e Entrada"])
-
 # --- TAB 1: BANCO DE DADOS E BANCA ---
 with tabs[0]:
     st.markdown("### 💾 Central de Dados e Ajuste Financeiro")
