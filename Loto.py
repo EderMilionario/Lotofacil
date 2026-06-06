@@ -1709,7 +1709,7 @@ with tabs[2]:
     else: st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
     # Fica lindo na tela de computador colocando 3 cartões lado a lado
     cols = st.columns(3)
-    for idx, jogo in enumerate(jogos_gerados, 1):
+    for idx, jogo in enumerate(jogos_salvos, 1):
         with cols[(idx-1) % 3]:
             exibir_card_volante(jogo, idx)    
 
