@@ -2078,10 +2078,10 @@ with tabs[4]:
                     except Exception as e:
                         st.error(f"Erro ao processar GAPs: {e}")
 
+        # --- BOTÃO 2: O NOVO BOTÃO INTELIGENTE (VIDA REAL DO ZERO - ADAPTATIVO) ---
         with col_massa2:
-            # 1. BOTÃO PARA BUSCAR SORTEIOS (DOWNLOAD DO 1 AO ATUAL)
-            if st.button("📥 BUSCAR SORTEIOS DESDE O 1", type="secondary", use_container_width=True):
-                # Limpeza inicial do banco
+            if st.button("☢️ INICIAR VIDA REAL (BAIXAR E TREINAR DESDE O 1)", type="secondary", use_container_width=True):
+                # 1. Limpeza total da mente da IA
                 st.session_state.data["historico_dados"] = []
                 st.session_state.data["ia_memoria"] = {
                     "Tendencia": {"usos": 0, "pontos": 0}, 
@@ -2090,115 +2090,120 @@ with tabs[4]:
                     "Simetria": {"usos": 0, "pontos": 0}
                 }
                 st.session_state.data["banca"] = 10000.00
-                st.session_state.data["jogos_salvos"] = []
-        
-                with st.spinner("Buscando sorteios..."):
+                st.session_state.data["jogos_salvos"] = [] 
+                
+                with st.spinner("Calibrando a IA (Simulação Dinâmica de Orçamento) desde o 1º sorteio..."):
                     try:
                         res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
                         res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
-                
+                        
                         barra = st.progress(0)
+                        lucro_acumulado_massa = 0.0
+                        logs_massa = []
                         total_concursos = len(res_todos)
-                
+                        
                         for i, res_conc in enumerate(res_todos):
                             num = int(res_conc['concurso'])
                             dezenas_sorteadas = sorted([int(d) for d in res_conc['dezenas']])
-                    
+                            
                             st.session_state.data["historico_dados"].append({
                                 "concurso": num, 
                                 "dezenas": dezenas_sorteadas, 
                                 "data": res_conc.get('data', '')
                             })
-                    
+                            
+                            # --- O FANTASMA ADAPTATIVO DA IA ---
+                            historico_para_ia = st.session_state.data["historico_dados"][:-1]
+                            
+                            if len(historico_para_ia) >= 10:
+                                try:
+                                    ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
+                                    matriz_base = ia_temp.get('matriz_base', [])
+                                    estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
+                                    tamanho_matriz = len(matriz_base)
+                                    jogos_simulados = []
+                                            
+                                    # ==========================================================
+                                    # 🧠 SIMULAÇÃO REALISTA: O ESPELHO DA VIDA REAL (PLANO A e B)
+                                    # ==========================================================
+                                    if tamanho_matriz <= 20:
+                                        # A IA TREINA USANDO O PLANO A / HÍBRIDO (Garantia de 14 pts)
+                                        jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
+                                                
+                                        # Limite financeiro do backtest para não sangrar a banca fantasma (simulando a poda)
+                                        limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
+                                                
+                                        if len(jogos_reduzidos) > limite_jogos:
+                                            jogos_reduzidos = random.sample(jogos_reduzidos, limite_jogos)
+                                                    
+                                        for j_dez in jogos_reduzidos:
+                                            jogos_simulados.append({
+                                                "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(j_dez),
+                                                "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                                "estrategia": estrategia_rodada, "justificativa": "Fantasma (Plano Exato/Híbrido)"
+                                            })
+                                    else:
+                                        # A IA TREINA USANDO O PLANO B HEURÍSTICO (Arrasto nas Gigantes)
+                                        qtd_jogos = 30 # Orçamento defensivo para matrizes caóticas
+                                        pesos = ia_temp.get('pesos', {})
+                                                
+                                        for _ in range(qtd_jogos):
+                                            candidato = []
+                                            dez_temp = list(matriz_base)
+                                            pesos_temp = [pesos.get(d, 1) for d in dez_temp]
+                                                    
+                                            # Roleta estocástica puxando as mais quentes
+                                            for _ in range(15):
+                                                escolhida = random.choices(dez_temp, weights=pesos_temp, k=1)[0]
+                                                candidato.append(escolhida)
+                                                idx = dez_temp.index(escolhida)
+                                                dez_temp.pop(idx)
+                                                pesos_temp.pop(idx)
+                                                        
+                                            jogos_simulados.append({
+                                                "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
+                                                "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                                "estrategia": estrategia_rodada, "justificativa": "Fantasma (Heurístico)"
+                                            })
+                                            
+                                    # CORREÇÃO FINANCEIRA ABSOLUTA E AUTOMÁTICA
+                                    custo_treinamento = len(jogos_simulados) * 3.50
+                                    st.session_state.data["banca"] -= custo_treinamento
+                                    lucro_acumulado_massa -= custo_treinamento    
+                                            
+                                    st.session_state.data["jogos_salvos"] = jogos_simulados
+                                            
+                                except Exception as e:
+                                    st.session_state.data["jogos_salvos"] = []
+                            else:
+                                st.session_state.data["jogos_salvos"] = []
+                            
+                            rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
+                            
+                            # O funil confere e agora ENCONTRA o bilhete e a estratégia para pontuar!
+                            lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
+                            lucro_acumulado_massa += lucro_parcial
+                            
+                            if i == total_concursos - 1:
+                                logs_massa.extend(relatorio_parcial)
+                                
                             if i % 50 == 0:
                                 barra.progress((i + 1) / total_concursos)
-                
-                        salvar_dados(st.session_state.data)
+                                
                         barra.progress(1.0)
-                        st.success("Download concluído! Dados salvos.")
+                        
+                        if logs_massa:
+                            st.session_state.ultimo_aprendizado = list(set(logs_massa))
+                            
+                        st.session_state.data["jogos_salvos"] = [] 
+                        salvar_dados(st.session_state.data)
+                        
+                        st.success(f"🚀 Calibração Concluída! Saldo Final Simulado: R$ {lucro_acumulado_massa:.2f}")
+                        st.balloons()
                         st.rerun()
+                        
                     except Exception as e:
-                        st.error(f"Erro na busca: {e}")
-
-    # 2. BOTÃO PARA CALIBRAR IA (LÊ O BANCO E RODA A TUA LÓGICA)
-    if st.button("🧠 CALIBRAR INTELIGÊNCIA", type="primary", use_container_width=True):
-        historico = st.session_state.data.get("historico_dados", [])
-        
-        if not historico:
-            st.error("Banco vazio! Baixe os sorteios primeiro.")
-        else:
-            # Reseta IA
-            st.session_state.data["ia_memoria"] = {
-                "Tendencia": {"usos": 0, "pontos": 0}, 
-                "Reversao": {"usos": 0, "pontos": 0},
-                "Ciclo": {"usos": 0, "pontos": 0},
-                "Simetria": {"usos": 0, "pontos": 0}
-            }
-            
-            with st.spinner("Calibrando a IA..."):
-                barra = st.progress(0)
-                total_concursos = len(historico)
-                
-                for i, res_conc in enumerate(historico):
-                    num = int(res_conc['concurso'])
-                    dezenas_sorteadas = res_conc['dezenas']
-                    
-                    # --- A TUA LÓGICA EXATA (O FANTASMA ADAPTATIVO) ---
-                    historico_para_ia = historico[:i]
-                    
-                    if len(historico_para_ia) >= 10:
-                        try:
-                            ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
-                            matriz_base = ia_temp.get('matriz_base', [])
-                            estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
-                            tamanho_matriz = len(matriz_base)
-                            jogos_simulados = []
-                            
-                            # --- SIMULAÇÃO REALISTA ---
-                            if tamanho_matriz <= 20:
-                                jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
-                                limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
-                                if len(jogos_reduzidos) > limite_jogos:
-                                    jogos_reduzidos = random.sample(jogos_reduzidos, limite_jogos)
-                                for j_dez in jogos_reduzidos:
-                                    jogos_simulados.append({
-                                        "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(j_dez),
-                                        "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
-                                        "estrategia": estrategia_rodada, "justificativa": "Fantasma (Plano Exato/Híbrido)"
-                                    })
-                            else:
-                                qtd_jogos = 30
-                                pesos = ia_temp.get('pesos', {})
-                                for _ in range(qtd_jogos):
-                                    candidato = []
-                                    dez_temp = list(matriz_base)
-                                    pesos_temp = [pesos.get(d, 1) for d in dez_temp]
-                                    for _ in range(15):
-                                        escolhida = random.choices(dez_temp, weights=pesos_temp, k=1)[0]
-                                        candidato.append(escolhida)
-                                        idx = dez_temp.index(escolhida)
-                                        dez_temp.pop(idx)
-                                        pesos_temp.pop(idx)
-                                    jogos_simulados.append({
-                                        "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
-                                        "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
-                                        "estrategia": estrategia_rodada, "justificativa": "Fantasma (Heurístico)"
-                                    })
-                            
-                            st.session_state.data["jogos_salvos"] = jogos_simulados
-                        except Exception as e:
-                            st.session_state.data["jogos_salvos"] = []
-                    
-                    # Auditoria final (a função que você já usa)
-                    auditar_e_aprender_unificado(num, dezenas_sorteadas, {})
-                    
-                    if i % 50 == 0:
-                        barra.progress((i + 1) / total_concursos)
-                
-                barra.progress(1.0)
-                salvar_dados(st.session_state.data)
-                st.success("IA Calibrada com sucesso!")
-                st.rerun()
+                        st.error(f"Erro ao processar: {e}")
     
     col_sync1, col_sync2 = st.columns(2)
     
