@@ -2079,78 +2079,126 @@ with tabs[4]:
                         st.error(f"Erro ao processar GAPs: {e}")
 
         with col_massa2:
-            st.markdown("#### ☢️ VIDA REAL: BAIXAR E CALIBRAR")
-            
-            # 1. BOTÃO: BAIXAR (APENAS DOWNLOAD DOS DADOS)
-            if st.button("📥 1. BAIXAR SORTEIOS DO 1 AO ATUAL", type="secondary", use_container_width=True):
-                # Limpeza de dados
+            # 1. BOTÃO PARA BUSCAR SORTEIOS (DOWNLOAD DO 1 AO ATUAL)
+            if st.button("📥 BUSCAR SORTEIOS DESDE O 1", type="secondary", use_container_width=True):
+                # Limpeza inicial do banco
                 st.session_state.data["historico_dados"] = []
-                st.session_state.data["jogos_salvos"] = []
+                st.session_state.data["ia_memoria"] = {
+                    "Tendencia": {"usos": 0, "pontos": 0}, 
+                    "Reversao": {"usos": 0, "pontos": 0},
+                    "Ciclo": {"usos": 0, "pontos": 0},
+                    "Simetria": {"usos": 0, "pontos": 0}
+                }
                 st.session_state.data["banca"] = 10000.00
-                
-                with st.spinner("Baixando histórico oficial..."):
+                st.session_state.data["jogos_salvos"] = []
+        
+                with st.spinner("Buscando sorteios..."):
                     try:
                         res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
                         res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
-                        
+                
                         barra = st.progress(0)
-                        total = len(res_todos)
-                        
+                        total_concursos = len(res_todos)
+                
                         for i, res_conc in enumerate(res_todos):
+                            num = int(res_conc['concurso'])
+                            dezenas_sorteadas = sorted([int(d) for d in res_conc['dezenas']])
+                    
                             st.session_state.data["historico_dados"].append({
-                                "concurso": int(res_conc['concurso']), 
-                                "dezenas": sorted([int(d) for d in res_conc['dezenas']]), 
+                                "concurso": num, 
+                                "dezenas": dezenas_sorteadas, 
                                 "data": res_conc.get('data', '')
                             })
+                    
                             if i % 50 == 0:
-                                barra.progress((i + 1) / total)
-                        
+                                barra.progress((i + 1) / total_concursos)
+                
                         salvar_dados(st.session_state.data)
                         barra.progress(1.0)
-                        st.success("Download completo. Agora clique em CALIBRAR INTELIGÊNCIA.")
-                    except Exception as e:
-                        st.error(f"Erro no download: {e}")
-
-            # 2. BOTÃO: CALIBRAR (TREINAMENTO TOTAL SEM INTERNET)
-            if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TUDO)", type="primary", use_container_width=True):
-                historico = st.session_state.data.get("historico_dados", [])
-                
-                if not historico:
-                    st.error("Banco vazio! Baixe os sorteios primeiro.")
-                else:
-                    # Reset da memória da IA
-                    st.session_state.data["ia_memoria"] = {
-                        "Tendencia": {"usos": 0, "pontos": 0}, 
-                        "Reversao": {"usos": 0, "pontos": 0},
-                        "Ciclo": {"usos": 0, "pontos": 0},
-                        "Simetria": {"usos": 0, "pontos": 0}
-                    }
-                    
-                    with st.spinner("Calibrando a IA (processando o banco de dados)..."):
-                        barra_calib = st.progress(0)
-                        total_concursos = len(historico)
-                        
-                        # Loop que lê o banco de dados salvo e treina a IA
-                        for i in range(len(historico)):
-                            # Pega até o ponto atual para simular o histórico acumulado
-                            historico_para_ia = historico[:i] 
-                            dado_atual = historico[i]
-                            
-                            # Roda a lógica de raciocínio se tiver histórico suficiente
-                            if len(historico_para_ia) >= 10:
-                                # Chama a função original que você definiu
-                                raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
-                            
-                            # Audita e aprende com o sorteio atual
-                            auditar_e_aprender_unificado(dado_atual['concurso'], dado_atual['dezenas'], {})
-                            
-                            if i % 50 == 0:
-                                barra_calib.progress((i + 1) / total_concursos)
-                        
-                        salvar_dados(st.session_state.data)
-                        barra_calib.progress(1.0)
-                        st.success("IA Calibrada com sucesso com todo o histórico!")
+                        st.success("Download concluído! Dados salvos.")
                         st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro na busca: {e}")
+
+    # 2. BOTÃO PARA CALIBRAR IA (LÊ O BANCO E RODA A TUA LÓGICA)
+    if st.button("🧠 CALIBRAR INTELIGÊNCIA", type="primary", use_container_width=True):
+        historico = st.session_state.data.get("historico_dados", [])
+        
+        if not historico:
+            st.error("Banco vazio! Baixe os sorteios primeiro.")
+        else:
+            # Reseta IA
+            st.session_state.data["ia_memoria"] = {
+                "Tendencia": {"usos": 0, "pontos": 0}, 
+                "Reversao": {"usos": 0, "pontos": 0},
+                "Ciclo": {"usos": 0, "pontos": 0},
+                "Simetria": {"usos": 0, "pontos": 0}
+            }
+            
+            with st.spinner("Calibrando a IA..."):
+                barra = st.progress(0)
+                total_concursos = len(historico)
+                
+                for i, res_conc in enumerate(historico):
+                    num = int(res_conc['concurso'])
+                    dezenas_sorteadas = res_conc['dezenas']
+                    
+                    # --- A TUA LÓGICA EXATA (O FANTASMA ADAPTATIVO) ---
+                    historico_para_ia = historico[:i]
+                    
+                    if len(historico_para_ia) >= 10:
+                        try:
+                            ia_temp = raciocinio_total_ia(historico_para_ia, st.session_state.data["ia_memoria"])
+                            matriz_base = ia_temp.get('matriz_base', [])
+                            estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
+                            tamanho_matriz = len(matriz_base)
+                            jogos_simulados = []
+                            
+                            # --- SIMULAÇÃO REALISTA ---
+                            if tamanho_matriz <= 20:
+                                jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
+                                limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
+                                if len(jogos_reduzidos) > limite_jogos:
+                                    jogos_reduzidos = random.sample(jogos_reduzidos, limite_jogos)
+                                for j_dez in jogos_reduzidos:
+                                    jogos_simulados.append({
+                                        "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(j_dez),
+                                        "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                        "estrategia": estrategia_rodada, "justificativa": "Fantasma (Plano Exato/Híbrido)"
+                                    })
+                            else:
+                                qtd_jogos = 30
+                                pesos = ia_temp.get('pesos', {})
+                                for _ in range(qtd_jogos):
+                                    candidato = []
+                                    dez_temp = list(matriz_base)
+                                    pesos_temp = [pesos.get(d, 1) for d in dez_temp]
+                                    for _ in range(15):
+                                        escolhida = random.choices(dez_temp, weights=pesos_temp, k=1)[0]
+                                        candidato.append(escolhida)
+                                        idx = dez_temp.index(escolhida)
+                                        dez_temp.pop(idx)
+                                        pesos_temp.pop(idx)
+                                    jogos_simulados.append({
+                                        "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
+                                        "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                        "estrategia": estrategia_rodada, "justificativa": "Fantasma (Heurístico)"
+                                    })
+                            
+                            st.session_state.data["jogos_salvos"] = jogos_simulados
+                        except Exception as e:
+                            st.session_state.data["jogos_salvos"] = []
+                    
+                    # Auditoria final (a função que você já usa)
+                    auditar_e_aprender_unificado(num, dezenas_sorteadas, {})
+                    
+                    if i % 50 == 0:
+                        barra.progress((i + 1) / total_concursos)
+                
+                barra.progress(1.0)
+                salvar_dados(st.session_state.data)
+                st.success("IA Calibrada com sucesso!")
+                st.rerun()
     
     col_sync1, col_sync2 = st.columns(2)
     
