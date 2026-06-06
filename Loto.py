@@ -1842,42 +1842,27 @@ with tabs[3]:
             )
         st.markdown("---")
         # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
-        for j in st.session_state.data["jogos_salvos"]:
-            alvo = j.get('concurso_alvo')
-       
-            
-            if j.get('status') == "Premiado":
-                html_card = f"""
-                <div style="border-top: 5px solid #28a745; background-color: #f8f9fa; border-left: 1px solid #dadce0; border-right: 1px solid #dadce0; border-bottom: 1px solid #dadce0; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
-                    <span style="color: #28a745; font-weight: bold; font-size: 14px;">✅ PREMIADO ({j.get('acertos')} Acertos) - R$ {j.get('premio_valor'):.2f}</span><br>
-                    <span style="color: #4d5156; font-size: 13px; font-weight: 500;">Concurso Alvo: {alvo} | Grade: {j.get('tamanho')} Dezenas</span><br>
-                    <span style="color: #5f6368; font-size: 12px;">Estratégia Operante: {j.get('estrategia')}</span><br>
-                    <span style="color: #5f6368; font-size: 12px; font-style: italic;">Especificações da estratégia: {j.get('justificativa', 'Padrão autônomo.')}</span><br>
-                    <span style="color: #006644; font-size: 13px; font-weight: bold;">{j.get('dna', '🧬 DNA Padrão Pós-Atualização')}</span>
-                </div>
-                """
-            elif j.get('status') == "Não Premiado":
-                html_card = f"""
-                <div style="border-top: 5px solid #dc3545; background-color: #f8f9fa; border-left: 1px solid #dadce0; border-right: 1px solid #dadce0; border-bottom: 1px solid #dadce0; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
-                    <span style="color: #dc3545; font-weight: bold; font-size: 14px;">❌ NÃO PREMIADO ({j.get('acertos')} Acertos)</span><br>
-                    <span style="color: #4d5156; font-size: 13px; font-weight: 500;">Concurso Alvo: {alvo} | Grade: {j.get('tamanho')} Dezenas</span><br>
-                    <span style="color: #5f6368; font-size: 12px;">Estratégia Operante: {j.get('estrategia')}</span><br>
-                    <span style="color: #5f6368; font-size: 12px; font-style: italic;">Especificações da estratégia: {j.get('justificativa', 'Padrão autônomo.')}</span><br>
-                    <span style="color: #006644; font-size: 13px; font-weight: bold;">{j.get('dna', '🧬 DNA Padrão Pós-Atualização')}</span>
-                </div>
-                """
-            else:
-                html_card = f"""
-                <div style="border-top: 5px solid #ffcc00; background-color: #f8f9fa; border-left: 1px solid #dadce0; border-right: 1px solid #dadce0; border-bottom: 1px solid #dadce0; border-radius: 6px; padding: 15px; margin-bottom: 10px;">
-                    <span style="color: #1a73e8; font-weight: bold; font-size: 14px;">⏳ AGUARDANDO SORTEIO</span><br>
-                    <span style="color: #4d5156; font-size: 13px; font-weight: 500;">Espera do Concurso Alvo: {alvo} | Grade: {j.get('tamanho')} Dezenas</span><br>
-                    <span style="color: #5f6368; font-size: 12px;">Estratégia Operante: {j.get('estrategia')}</span><br>
-                    <span style="color: #5f6368; font-size: 12px; font-style: italic;">Especificações da estratégia: {j.get('justificativa', 'Padrão autônomo.')}</span><br>
-                    <span style="color: #006644; font-size: 13px; font-weight: bold;">{j.get('dna', '🧬 DNA Padrão Pós-Atualização')}</span>
-                </div>
-                """
-            
-            st.markdown(html_card, unsafe_allow_html=True)
+        # --- NOVO PADRÃO VISUAL (CARDS OFICIAIS) ---
+        cols = st.columns(3)
+        jogos = st.session_state.data["jogos_salvos"]
+        
+        for idx, j in enumerate(jogos):
+            with cols[idx % 3]:
+                # 1. Renderiza o Card de Volante oficial
+                exibir_card_volante(j, idx + 1)
+                
+                # 2. Status com cores profissionais do Streamlit
+                status = j.get('status', 'Aguardando Sorteio')
+                if status == "Premiado":
+                    st.success(f"✅ PREMIADO ({j.get('acertos')} Acertos) | R$ {j.get('premio_valor', 0):.2f}")
+                elif status == "Não Premiado":
+                    st.error(f"❌ NÃO PREMIADO ({j.get('acertos')} Acertos)")
+                else:
+                    st.info("⏳ AGUARDANDO SORTEIO")
+                
+                # 3. Botão de apagar alinhado
+                st.button("🗑️ Apagar", key=f"del_{j['id']}", on_click=cb_excluir_jogo, args=(j['id'],), use_container_width=True)
+                st.markdown("<br><br>", unsafe_allow_html=True)
             with st.container():
                 st.code(" - ".join([f"{n:02d}" for n in j.get('dezenas', [])]))
                 st.button("Apagar", key=f"del_{j['id']}", on_click=cb_excluir_jogo, args=(j['id'],))
