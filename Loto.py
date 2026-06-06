@@ -1815,31 +1815,51 @@ with tabs[3]:
                 type="primary",
                 use_container_width=True
             )
-        st.markdown("---")
-        # [AQUI CONTINUA O RESTO DO SEU CÓDIGO QUE RENDERIZA OS CARDS...]
-        
-        # Usamos o caminho real da sua variável: st.session_state.data["jogos_salvos"]
-        
-        # Carrega os jogos salvos
+        # --- ABA 4: FILA DE SORTEIO (COM PAGINAÇÃO ANTI-TRAVAMENTO) ---
+    st.markdown("---")
+    st.markdown("### 🎫 Visualização de Jogos")
+    
+    # Busca os dados reais
     jogos = st.session_state.data.get("jogos_salvos", [])
     
     if jogos:
-        cols = st.columns(3)
-        for idx, j in enumerate(jogos):
+        # =======================================================
+        # SISTEMA DE PAGINAÇÃO (Mostra 30 bilhetes por tela)
+        # =======================================================
+        bilhetes_por_pagina = 30
+        total_paginas = (len(jogos) // bilhetes_por_pagina) + (1 if len(jogos) % bilhetes_por_pagina > 0 else 0)
+        
+        # Se tiver muitos bilhetes, cria o seletor de páginas roxo
+        if total_paginas > 1:
+            st.markdown(f"<div style='color: #930089; font-weight: bold; margin-bottom: 5px;'>Total: {len(jogos)} bilhetes | Escolha a página:</div>", unsafe_allow_html=True)
+            pagina_atual = st.selectbox("Navegação de Páginas", range(1, total_paginas + 1), label_visibility="collapsed")
+        else:
+            pagina_atual = 1
+            st.markdown(f"<div style='color: #930089; font-weight: bold; margin-bottom: 15px;'>Total: {len(jogos)} bilhetes</div>", unsafe_allow_html=True)
             
-            # ==========================================
-            # TRAVA DE SEGURANÇA CONTRA BACKUP CORROMPIDO
-            if not isinstance(j, dict):
-                continue # Se o dado do backup não for um dicionário válido, ele pula e não quebra o sistema
-            # ==========================================
+        # Calcula onde começa e onde termina a lista dessa página
+        inicio = (pagina_atual - 1) * bilhetes_por_pagina
+        fim = inicio + bilhetes_por_pagina
+        jogos_pagina = jogos[inicio:fim]
+        # =======================================================
 
+        cols = st.columns(3)
+        # Agora ele faz o loop apenas nos bilhetes DESTA página (jogos_pagina)
+        for idx, j in enumerate(jogos_pagina):
+            
+            # Trava de segurança contra backup corrompido
+            if not isinstance(j, dict):
+                continue
+                
+            # O número real do jogo (Ex: se está na pág 2, começa do jogo 31)
+            numero_real_jogo = inicio + idx + 1
+            
             with cols[idx % 3]:
-                # Desenha o cartão
-                exibir_card_volante(j, idx + 1)
+                # Desenha o volante roxo premium
+                exibir_card_volante(j, numero_real_jogo)
                 
-                # Lê o status com segurança
+                # Exibe status e prêmios
                 status = j.get('status', 'Aguardando Sorteio')
-                
                 if status == "Premiado":
                     st.success(f"✅ PREMIADO ({j.get('acertos', 0)} Acertos)\n💰 R$ {j.get('premio_valor', 0):.2f}")
                 elif status == "Não Premiado":
@@ -1847,12 +1867,12 @@ with tabs[3]:
                 else:
                     st.info("⏳ AGUARDANDO SORTEIO")
                 
-                # Botão apagar seguro (usando .get no ID para evitar novo erro)
+                # Botão de apagar com a cor primária (Roxo)
                 id_jogo = j.get('id', str(uuid.uuid4()))
                 st.button("🗑️ Apagar", key=f"del_{id_jogo}", on_click=cb_excluir_jogo, args=(id_jogo,), use_container_width=True)
                 st.markdown("<br><br>", unsafe_allow_html=True)
     else:
-        st.info("Nenhum bilhete na fila.")
+        st.info("Nenhum bilhete registrado na fila.")
 
 # --- TAB 5: SINCRONIZAÇÃO E ENTRADA ---
 with tabs[4]:
