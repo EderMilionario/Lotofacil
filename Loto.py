@@ -1706,12 +1706,22 @@ with tabs[2]:
                         st.success(f"**Lote processado com Sucesso Absoluto!** O sistema extraiu a Elite Probabilística respeitando o seu bolso. Verifique a Aba 4 para ver os jogos.")
                         st.rerun()
 
-    else: st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
+    else: 
+        st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
+
+    # =======================================================
+    # AQUI ESTÁ A CORREÇÃO QUE MATA O ERRO NameError:
+    # Nós declaramos a variável puxando ela do banco de dados 
+    # antes de tentar desenhar os cartões.
+    jogos_salvos = st.session_state.data.get("jogos_salvos", [])
+    # =======================================================
+
     # Fica lindo na tela de computador colocando 3 cartões lado a lado
-    cols = st.columns(3)
-    for idx, jogo in enumerate(jogos_salvos, 1):
-        with cols[(idx-1) % 3]:
-            exibir_card_volante(jogo, idx)    
+    if jogos_salvos: # Só desenha as colunas se houver jogos salvos
+        cols = st.columns(3)
+        for idx, jogo in enumerate(jogos_salvos, 1):
+            with cols[(idx-1) % 3]:
+                exibir_card_volante(jogo, idx) 
 
 
 # --- TAB 4: FILA DE SORTEIO ---
