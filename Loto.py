@@ -2162,28 +2162,21 @@ with tabs[4]:
                     except Exception as e:
                         st.error(f"Erro ao processar GAPs: {e}")
 
-        # --- BOTÃO 2: O NOVO BOTÃO INTELIGENTE (VIDA REAL DO ZERO - ADAPTATIVO) ---
+        # --- COLUNA 2: DOWNLOAD PURO E TREINAMENTO SEPARADO (ESTABILIDADE TOTAL) ---
         with col_massa2:
-            if st.button("☢️ INICIAR VIDA REAL (BAIXAR E TREINAR DESDE O 1)", type="secondary", use_container_width=True):
-                # 1. Limpeza total da mente da IA
+            st.markdown("#### ☢️ Iniciar Vida Real (Download e Calibragem)")
+            
+            # BOTÃO A: APENAS DOWNLOAD DO 1 AO ATUAL (Não trava, pois não usa IA aqui)
+            if st.button("📥 1. BAIXAR SORTEIOS (DO 1 AO ATUAL)", type="secondary", use_container_width=True):
                 st.session_state.data["historico_dados"] = []
-                st.session_state.data["ia_memoria"] = {
-                    "Tendencia": {"usos": 0, "pontos": 0}, 
-                    "Reversao": {"usos": 0, "pontos": 0},
-                    "Ciclo": {"usos": 0, "pontos": 0},
-                    "Simetria": {"usos": 0, "pontos": 0}
-                }
-                st.session_state.data["banca"] = 10000.00
-                st.session_state.data["jogos_salvos"] = [] 
+                st.session_state.data["jogos_salvos"] = []
                 
-                with st.spinner("Calibrando a IA (Simulação Dinâmica de Orçamento) desde o 1º sorteio..."):
+                with st.spinner("Baixando base de dados da Caixa do 1º sorteio em diante..."):
                     try:
                         res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
                         res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
                         
-                        barra = st.progress(0)
-                        lucro_acumulado_massa = 0.0
-                        logs_massa = []
+                        barra_down = st.progress(0)
                         total_concursos = len(res_todos)
                         
                         for i, res_conc in enumerate(res_todos):
@@ -2196,8 +2189,49 @@ with tabs[4]:
                                 "data": res_conc.get('data', '')
                             })
                             
-                            # --- O FANTASMA ADAPTATIVO DA IA ---
-                            historico_para_ia = st.session_state.data["historico_dados"][:-1]
+                            if i % 50 == 0:
+                                barra_down.progress((i + 1) / total_concursos)
+                                
+                        salvar_dados(st.session_state.data)
+                        barra_down.progress(1.0)
+                        st.success(f"✅ Download de {total_concursos} sorteios concluído. Agora clique em CALIBRAR.")
+                    except Exception as e:
+                        st.error(f"Erro na conexão com API: {e}")
+
+            # BOTÃO B: CALIBRAR A INTELIGÊNCIA COM O BANCO SALVO (O FANTASMA ADAPTATIVO COMPLETO)
+            if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TODO O BANCO)", type="primary", use_container_width=True):
+                historico_completo = st.session_state.data.get("historico_dados", [])
+                
+                if not historico_completo:
+                    st.error("O banco de dados está vazio! Clique no botão de Baixar primeiro.")
+                else:
+                    # Limpeza total da mente da IA e Banca para recomeçar a simulação financeira
+                    st.session_state.data["ia_memoria"] = {
+                        "Tendencia": {"usos": 0, "pontos": 0}, 
+                        "Reversao": {"usos": 0, "pontos": 0},
+                        "Ciclo": {"usos": 0, "pontos": 0},
+                        "Simetria": {"usos": 0, "pontos": 0}
+                    }
+                    st.session_state.data["banca"] = 10000.00
+                    st.session_state.data["historico_aportes"] = 0.0
+                    st.session_state.data["historico_saques"] = 0.0
+                    st.session_state.data["jogos_salvos"] = []
+                    
+                    with st.spinner("Calibrando a IA com o Histórico Completo. Isso usa apenas processamento local..."):
+                        barra_calib = st.progress(0)
+                        porcentagem_texto = st.empty()
+                        
+                        lucro_acumulado_massa = 0.0
+                        total_concursos = len(historico_completo)
+                        
+                        # A IA vai ler linha por linha do banco que você já baixou
+                        for i, dado_atual in enumerate(historico_completo):
+                            num = dado_atual['concurso']
+                            dezenas_sorteadas = dado_atual['dezenas']
+                            
+                            # --- O FANTASMA ADAPTATIVO DA IA (Exatamente a sua lógica) ---
+                            # Pega o histórico até o sorteio anterior ao atual para não ver o futuro
+                            historico_para_ia = historico_completo[:i]
                             
                             if len(historico_para_ia) >= 10:
                                 try:
@@ -2214,7 +2248,7 @@ with tabs[4]:
                                         # A IA TREINA USANDO O PLANO A / HÍBRIDO (Garantia de 14 pts)
                                         jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
                                                 
-                                        # Limite financeiro do backtest para não sangrar a banca fantasma (simulando a poda)
+                                        # Limite financeiro do backtest para não sangrar a banca
                                         limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
                                                 
                                         if len(jogos_reduzidos) > limite_jogos:
@@ -2255,6 +2289,7 @@ with tabs[4]:
                                     st.session_state.data["banca"] -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
                                             
+                                    # Substitui os jogos salvos temporariamente para a função auditar
                                     st.session_state.data["jogos_salvos"] = jogos_simulados
                                             
                                 except Exception as e:
@@ -2262,32 +2297,24 @@ with tabs[4]:
                             else:
                                 st.session_state.data["jogos_salvos"] = []
                             
-                            rateios_massa = extrair_rateios_api(res_conc.get('premiacoes', []))
-                            
-                            # O funil confere e agora ENCONTRA o bilhete e a estratégia para pontuar!
-                            lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios_massa)
+                            # Auditoria Pericial Unificada (A IA aprende se deu certo ou errado)
+                            lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios=None)
                             lucro_acumulado_massa += lucro_parcial
                             
-                            if i == total_concursos - 1:
-                                logs_massa.extend(relatorio_parcial)
-                                
-                            if i % 50 == 0:
-                                barra.progress((i + 1) / total_concursos)
-                                
-                        barra.progress(1.0)
+                            # Atualização da barra de progresso
+                            if i % 20 == 0:
+                                pct = (i + 1) / total_concursos
+                                barra_calib.progress(pct)
+                                porcentagem_texto.text(f"Progresso da Calibragem: {pct*100:.1f}%")
                         
-                        if logs_massa:
-                            st.session_state.ultimo_aprendizado = list(set(logs_massa))
-                            
+                        # Limpa os jogos no final, pois foi só simulação de memória (os dados financeiros ficaram na banca)
                         st.session_state.data["jogos_salvos"] = [] 
                         salvar_dados(st.session_state.data)
                         
-                        st.success(f"🚀 Calibração Concluída! Saldo Final Simulado: R$ {lucro_acumulado_massa:.2f}")
+                        barra_calib.progress(1.0)
+                        porcentagem_texto.text("Progresso da Calibragem: 100.0%")
+                        st.success(f"🚀 Calibração Inteligente Concluída! Saldo Final Simulado na Banca: R$ {st.session_state.data['banca']:,.2f}")
                         st.balloons()
-                        st.rerun()
-                        
-                    except Exception as e:
-                        st.error(f"Erro ao processar: {e}")
     
     col_sync1, col_sync2 = st.columns(2)
     
