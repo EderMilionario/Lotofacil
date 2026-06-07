@@ -1388,6 +1388,66 @@ with tabs[1]:
                 cd_2.metric("Bilhetes com 11-12 Pts", f"{t11 + t12} prêmios", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
                 cd_3.metric("Bilhetes com 13 Pts", f"{t13} prêmios", help="Quantidade real de bilhetes premiados com 13.")
                 cd_4.metric("Prêmios Máximos (14-15 Pts)", f"{t14 + t15} prêmios", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
+
+
+            # =================================================================
+            # 🔮 PAINEL BONITO: DESEMPENHO BRUTO DA MATRIZ BASE (GRUPO DE ELITE)
+            # =================================================================
+            with st.container(border=True):
+                st.markdown("#### 🧬 Potencial Bruto: Força da Matriz Base")
+                st.write("Avalia quantos pontos a matriz bruta atual (antes dos desdobramentos) teria segurado nos últimos 30 concursos.")
+                
+                # Puxa os últimos 30 concursos do seu banco de dados oficial
+                historico_base = st.session_state.data.get("historico_dados", [])
+                ultimos_30 = historico_base[-30:] if historico_base else []
+                
+                # Substitua "ia['matriz_base']" pelo nome da variável da sua matriz na Aba 2, se necessário.
+                # Exemplo: matriz_atual = set(matriz_base)
+                try:
+                    matriz_atual = set(ia['matriz_base']) 
+                    tamanho_matriz = len(matriz_atual)
+                    
+                    if ultimos_30 and tamanho_matriz > 0:
+                        acertos_matriz = []
+                        
+                        # Cruza as dezenas da Matriz Base com os sorteios oficiais
+                        for sorteio in ultimos_30:
+                            sorteio_set = set(sorteio['dezenas'])
+                            hits = len(matriz_atual.intersection(sorteio_set))
+                            acertos_matriz.append(hits)
+                            
+                        # Cálculos de performance da Matriz
+                        media_acertos = sum(acertos_matriz) / len(acertos_matriz)
+                        freq_14_15 = sum(1 for x in acertos_matriz if x >= 14)
+                        
+                        # --- VISUAL ELEGANTE (MÉTRICAS ALINHADAS) ---
+                        col_m1, col_m2, col_m3 = st.columns(3)
+                        
+                        col_m1.metric(
+                            label="Tamanho da Matriz", 
+                            value=f"{tamanho_matriz} Dezenas", 
+                            delta="Matriz Ativa"
+                        )
+                        col_m2.metric(
+                            label="Média de Retenção", 
+                            value=f"{media_acertos:.2f} / 15", 
+                            help="Média de dezenas sorteadas que caíram DENTRO da matriz."
+                        )
+                        col_m3.metric(
+                            label="Frequência de 14-15 Pts", 
+                            value=f"{freq_14_15} vezes", 
+                            delta="Nos últimos 30 concursos", 
+                            delta_color="normal"
+                        )
+                        
+                        # --- TERMÓMETRO DE EFICIÊNCIA ---
+                        st.caption(f"**Termómetro de Eficiência da Matriz (Média atual: {media_acertos:.1f} pontos)**")
+                        # A barra enche baseada na média em relação a 15 (o máximo)
+                        pct_eficiencia = min(media_acertos / 15.0, 1.0)
+                        st.progress(pct_eficiencia)
+                        
+                except Exception as e:
+                    st.info("Gere a estratégia da IA para visualizar o desempenho da Matriz Base.")
             st.markdown("#### 📊 Desempenho Histórico das Inteligências Ativas")
             with st.container(border=True):
                 c_e1, c_e2, c_e3, c_e4 = st.columns(4)
