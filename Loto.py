@@ -892,12 +892,28 @@ with tabs[0]:
             
             st.divider()
             
-            # Botão Mestre de Reset (Zera Banca, Saques e Aportes para começar nova temporada)
-            if st.button("🔄 ZERAR BANCA E HISTÓRICO", use_container_width=True, type="secondary"):
+            # --- BOTÃO DE RESET EXCLUSIVAMENTE FINANCEIRO ---
+            # Este botão zera o ROI e o Financeiro, mas NÃO toca na IA nem nos dados.
+            if st.button("🔄 ZERAR FINANCEIRO E ROI (MANTER IA)", use_container_width=True, type="secondary"):
+    
+                # 1. Reset da Banca e Fluxo de Caixa
                 st.session_state.data["banca"] = 0.0
                 st.session_state.data["historico_aportes"] = 0.0
                 st.session_state.data["historico_saques"] = 0.0
+    
+                # 2. Reset do Track Record (A contabilidade que alimenta a Aba 2)
+                st.session_state.data["ledger_track"] = {
+                    "bilhetes": 0, "premiados_geral": 0, "elite": 0, "custo": 0.0, "retorno": 0.0
+                }
+    
+                # 3. Reseta a flag 'ledger_ok' para que a Aba 2 entenda que o histórico de contagem foi zerado
+                for j in st.session_state.data.get("jogos_salvos", []):
+                    j["ledger_ok"] = False
+        
+                # 4. Salva apenas as alterações financeiras
                 salvar_dados(st.session_state.data)
+    
+                st.success("Financeiro e ROI zerados com sucesso. A IA e os dados históricos permanecem intactos.")
                 st.rerun()
 
 # --- TAB 2: CÉREBRO ANALÍTICO ---
