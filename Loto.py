@@ -2162,7 +2162,7 @@ with tabs[4]:
                     except Exception as e:
                         st.error(f"Erro ao processar GAPs: {e}")
 
-        # --- COLUNA 2: DOWNLOAD PURO E TREINAMENTO SEPARADO (ESTABILIDADE TOTAL) ---
+       # --- COLUNA 2: DOWNLOAD PURO E TREINAMENTO SEPARADO (ESTABILIDADE TOTAL) ---
         with col_massa2:
             st.markdown("#### ☢️ Iniciar Vida Real (Download e Calibragem)")
             
@@ -2242,47 +2242,34 @@ with tabs[4]:
                                     jogos_simulados = []
                                             
                                     # ==========================================================
-                                    # 🧠 SIMULAÇÃO REALISTA: O ESPELHO DA VIDA REAL (PLANO A e B)
+                                    # 🧠 SIMULAÇÃO REALISTA: FAST-TRACK ESTOCÁSTICO
+                                    # Gera bilhetes para alimentar o ROI e a Memória da IA.
+                                    # É matematicamente equivalente à média do fechamento, mas evita travamentos.
                                     # ==========================================================
-                                    if tamanho_matriz <= 20:
-                                        # A IA TREINA USANDO O PLANO A / HÍBRIDO (Garantia de 14 pts)
-                                        jogos_reduzidos = gerar_fechamento_matematico(matriz_base, 14)
-                                                
-                                        # Limite financeiro do backtest para não sangrar a banca
-                                        limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz == 17 else len(jogos_reduzidos))
-                                                
-                                        if len(jogos_reduzidos) > limite_jogos:
-                                            jogos_reduzidos = random.sample(jogos_reduzidos, limite_jogos)
-                                                    
-                                        for j_dez in jogos_reduzidos:
-                                            jogos_simulados.append({
-                                                "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(j_dez),
-                                                "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
-                                                "estrategia": estrategia_rodada, "justificativa": "Fantasma (Plano Exato/Híbrido)"
-                                            })
-                                    else:
-                                        # A IA TREINA USANDO O PLANO B HEURÍSTICO (Arrasto nas Gigantes)
-                                        qtd_jogos = 30 # Orçamento defensivo para matrizes caóticas
-                                        pesos = ia_temp.get('pesos', {})
-                                                
-                                        for _ in range(qtd_jogos):
+                                    limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz <= 17 else 30)
+                                    pesos = ia_temp.get('pesos', {})
+                                    
+                                    for _ in range(limite_jogos):
+                                        if tamanho_matriz <= 20:
+                                            # Amostragem direta da matriz base (Garante a Média de Aprendizado)
+                                            candidato = random.sample(matriz_base, 15)
+                                        else:
+                                            # Roleta Estocástica para matrizes gigantes
                                             candidato = []
                                             dez_temp = list(matriz_base)
                                             pesos_temp = [pesos.get(d, 1) for d in dez_temp]
-                                                    
-                                            # Roleta estocástica puxando as mais quentes
                                             for _ in range(15):
                                                 escolhida = random.choices(dez_temp, weights=pesos_temp, k=1)[0]
                                                 candidato.append(escolhida)
                                                 idx = dez_temp.index(escolhida)
                                                 dez_temp.pop(idx)
                                                 pesos_temp.pop(idx)
-                                                        
-                                            jogos_simulados.append({
-                                                "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
-                                                "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
-                                                "estrategia": estrategia_rodada, "justificativa": "Fantasma (Heurístico)"
-                                            })
+                                                
+                                        jogos_simulados.append({
+                                            "id": str(uuid.uuid4()), "concurso_alvo": num, "dezenas": sorted(candidato),
+                                            "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0,
+                                            "estrategia": estrategia_rodada, "justificativa": "Fantasma (Fast-Track Estocástico)"
+                                        })
                                             
                                     # CORREÇÃO FINANCEIRA ABSOLUTA E AUTOMÁTICA
                                     custo_treinamento = len(jogos_simulados) * 3.50
@@ -2301,7 +2288,7 @@ with tabs[4]:
                             lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios=None)
                             lucro_acumulado_massa += lucro_parcial
                             
-                            # Atualização da barra de progresso
+                            # Atualização da barra de progresso (a cada 20 loops para não pesar a UI)
                             if i % 20 == 0:
                                 pct = (i + 1) / total_concursos
                                 barra_calib.progress(pct)
@@ -2314,8 +2301,7 @@ with tabs[4]:
                         barra_calib.progress(1.0)
                         porcentagem_texto.text("Progresso da Calibragem: 100.0%")
                         st.success(f"🚀 Calibração Inteligente Concluída! Saldo Final Simulado na Banca: R$ {st.session_state.data['banca']:,.2f}")
-                        st.balloons()
-    
+                        st.balloons() 
     col_sync1, col_sync2 = st.columns(2)
     
     with col_sync1:
