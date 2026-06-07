@@ -892,24 +892,28 @@ with tabs[0]:
             
             st.divider()
             
-            # Botão Mestre de Reset (Zera Banca, Saques, Aportes, IA e Jogos para coerência absoluta do ROI)
-            if st.button("🔄 ZERAR BANCA E TRACK RECORD (ROI)", use_container_width=True, type="secondary"):
-                st.session_state.data["banca"] = 0.0
-                st.session_state.data["historico_aportes"] = 0.0
-                st.session_state.data["historico_saques"] = 0.0
-                st.session_state.data["jogos_salvos"] = [] # Zera os bilhetes para a Aba 2 e o ROI baterem
-                
-                # Zera a memória da IA para ela recomeçar o aprendizado
-                st.session_state.data["ia_memoria"] = {
-                    "Tendencia": {"usos": 0, "pontos": 0}, 
-                    "Reversao": {"usos": 0, "pontos": 0},
-                    "Ciclo": {"usos": 0, "pontos": 0},
-                    "Simetria": {"usos": 0, "pontos": 0}
-                }
-                salvar_dados(st.session_state.data)
-                st.success("Track Record Financeiro e Memória da IA resetados com sucesso! Tudo zerado.")
-                st.rerun()
-
+           if st.button("🔄 ZERAR BANCA E TRACK RECORD (ROI)", use_container_width=True, type="secondary"):
+               # Limpa a base financeira
+               st.session_state.data["banca"] = 0.0
+               st.session_state.data["historico_aportes"] = 0.0
+               st.session_state.data["historico_saques"] = 0.0
+    
+               # Limpa os logs de desempenho para o ROI zerar na Aba 2
+               st.session_state.data["jogos_salvos"] = []
+               st.session_state.data["ia_memoria"] = {
+                   "Tendencia": {"usos": 0, "pontos": 0}, 
+                   "Reversao": {"usos": 0, "pontos": 0},
+                   "Ciclo": {"usos": 0, "pontos": 0},
+                   "Simetria": {"usos": 0, "pontos": 0}
+               }
+    
+               # Limpa as variáveis auxiliares do Streamlit se existirem
+               if "ultimo_aprendizado" in st.session_state: del st.session_state.ultimo_aprendizado
+               if "caixa_latest" in st.session_state: del st.session_state.caixa_latest
+    
+               salvar_dados(st.session_state.data)
+               st.success("Tudo resetado! A banca e o ROI estão agora zerados.")
+               st.rerun()
 # --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
     exibir_mini_painel_financeiro()
@@ -918,6 +922,17 @@ with tabs[1]:
     # 🏆 PAINEL DE PERFORMANCE REAL (TRACK RECORD PERMANENTE)
     # =====================================================================
     st.markdown("<h3 style='color: #1f77b4;'>📈 Track Record: Performance Histórica da Máquina</h3>", unsafe_allow_html=True)
+    # --- ROI FINANCEIRO NA ABA 2 ---
+    st.markdown("#### 📈 ROI Financeiro")
+    bilhetes = st.session_state.data.get("jogos_salvos", [])
+
+    if not bilhetes:
+        st.metric("ROI Financeiro", "R$ 0,00", "Sem dados")
+        st.write("Aguardando novas simulações...")
+    else:
+        # Aqui entra o teu cálculo de ROI, que só vai rodar se houver jogos.
+        # Como resetamos a lista de jogos na Aba 1, isto vai mostrar zero automaticamente.
+        ...
     
     # 1. Cria o Cofre Imutável se for a primeira vez rodando
     if "ledger_track" not in st.session_state.data:
