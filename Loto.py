@@ -748,34 +748,42 @@ def raciocinio_total_ia(historico, memoria):
     # Daqui para baixo, segue o bloco do "OTIMIZADOR DE MATRIZ DINÂMICO" que te passei antes...
     
     # =================================================================
-    # 📏 OTIMIZADOR DE MATRIZ DINÂMICO (CONTROLE DE RISCO)
-    # Qual tamanho de matriz deu mais lucro (ou menos prejuízo) com esta estratégia?
+    # 📏 OTIMIZADOR DE MATRIZ INTELIGENTE (ÍNDICE DE PERFORMANCE)
+    # Foco: Maximizar acertos (Poder de Vitória) mantendo risco sob controle.
     # =================================================================
-    melhor_tamanho = 18 # Tamanho padrão de segurança
+    melhor_tamanho = 18 
     if len(historico_sombra) > janela_backtest:
-        roi_tamanhos = {16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0}
+        # Score de performance (Índice de acerto + Peso de Risco)
+        scores = {16: 0.0, 17: 0.0, 18: 0.0, 19: 0.0, 20: 0.0, 21: 0.0}
         
         for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
             h_passado = historico_sombra[:i]
             sorteio_real = set(historico_sombra[i]['dezenas'])
             freq_v = Counter([n for h in h_passado[-30:] for n in h['dezenas']])
             
-            # Rankeia as 25 dezenas com a assinatura da Estratégia Campeã
+            # Rankeamento dinâmico por estratégia (já existente no seu código)
             if melhor_est == "Reversao": rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0))
             elif melhor_est == "Simetria": rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0) + freq_v.get(26-x, 0), reverse=True)
             elif melhor_est == "Ciclo": rank_v = sorted(range(1, 26), key=lambda x: 100 if x in f_v else freq_v.get(x, 0), reverse=True)
             else: rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0), reverse=True)
                 
-            for t in roi_tamanhos:
+            for t in scores:
                 acertos_t = len(set(rank_v[:t]) & sorteio_real)
-                custo = {16: 56, 17: 408, 18: 2448, 19: 11628, 20: 46512, 21: 162792}.get(t, 0)
-                retorno = 1500000 if acertos_t == 15 else (1500 if acertos_t == 14 else (30 if acertos_t == 13 else 0))
-                roi_tamanhos[t] += (retorno - custo)
                 
-        # Define o tamanho com base no ROI histórico das últimas 30 rodadas
-        melhor_tamanho = max(roi_tamanhos, key=roi_tamanhos.get)
-        if roi_tamanhos[melhor_tamanho] < 0 and melhor_tamanho > 18:
-            melhor_tamanho = 17 # Recuo defensivo: se as matrizes grandes estão perdendo, protege a banca.
+                # 1. PONTUAÇÃO DE VITÓRIA (O que importa é acertar)
+                if acertos_t == 15: pontos = 500.0
+                elif acertos_t == 14: pontos = 100.0
+                elif acertos_t == 13: pontos = 20.0
+                elif acertos_t == 12: pontos = 5.0
+                else: pontos = -2.0 # Pequena penalidade por erro
+                
+                # 2. PUNIÇÃO DE RISCO (Suave, não destrutiva)
+                # Punimos matrizes grandes, mas não a ponto de banir o uso.
+                fator_puni = {16: 1, 17: 1.2, 18: 1.5, 19: 2.0, 20: 3.0, 21: 5.0}
+                scores[t] += (pontos / fator_puni[t])
+        
+        # A IA escolhe o que teve maior performance técnica ponderada
+        melhor_tamanho = max(scores, key=scores.get)
             
     qtd_matriz = melhor_tamanho
 
