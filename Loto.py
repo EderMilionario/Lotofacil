@@ -892,28 +892,28 @@ with tabs[0]:
             
             st.divider()
             
-           if st.button("🔄 ZERAR BANCA E TRACK RECORD (ROI)", use_container_width=True, type="secondary"):
-               # Limpa a base financeira
-               st.session_state.data["banca"] = 0.0
-               st.session_state.data["historico_aportes"] = 0.0
-               st.session_state.data["historico_saques"] = 0.0
+            if st.button("🔄 ZERAR BANCA E TRACK RECORD (ROI)", use_container_width=True, type="secondary"):
+                # Limpa a base financeira
+                st.session_state.data["banca"] = 0.0
+                st.session_state.data["historico_aportes"] = 0.0
+                st.session_state.data["historico_saques"] = 0.0
     
-               # Limpa os logs de desempenho para o ROI zerar na Aba 2
-               st.session_state.data["jogos_salvos"] = []
-               st.session_state.data["ia_memoria"] = {
-                   "Tendencia": {"usos": 0, "pontos": 0}, 
-                   "Reversao": {"usos": 0, "pontos": 0},
-                   "Ciclo": {"usos": 0, "pontos": 0},
-                   "Simetria": {"usos": 0, "pontos": 0}
-               }
+                # Limpa os logs de desempenho para o ROI zerar na Aba 2
+                st.session_state.data["jogos_salvos"] = []
+                st.session_state.data["ia_memoria"] = {
+                    "Tendencia": {"usos": 0, "pontos": 0}, 
+                    "Reversao": {"usos": 0, "pontos": 0},
+                    "Ciclo": {"usos": 0, "pontos": 0},
+                    "Simetria": {"usos": 0, "pontos": 0}
+                }
     
-               # Limpa as variáveis auxiliares do Streamlit se existirem
-               if "ultimo_aprendizado" in st.session_state: del st.session_state.ultimo_aprendizado
-               if "caixa_latest" in st.session_state: del st.session_state.caixa_latest
+                # Limpa as variáveis auxiliares do Streamlit se existirem
+                if "ultimo_aprendizado" in st.session_state: del st.session_state.ultimo_aprendizado
+                if "caixa_latest" in st.session_state: del st.session_state.caixa_latest
     
-               salvar_dados(st.session_state.data)
-               st.success("Tudo resetado! A banca e o ROI estão agora zerados.")
-               st.rerun()
+                salvar_dados(st.session_state.data)
+                st.success("Tudo resetado! A banca e o ROI estão agora zerados.")
+                st.rerun()
 # --- TAB 2: CÉREBRO ANALÍTICO ---
 with tabs[1]:
     exibir_mini_painel_financeiro()
