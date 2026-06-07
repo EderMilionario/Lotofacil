@@ -1342,28 +1342,36 @@ with tabs[1]:
             with c_an3:
                 st.info(f"🔄 **Repetição do Anterior:** A Matriz carrega **{repetidas_previstas} dezenas** do concurso nº {st.session_state.data['historico_dados'][-1]['concurso']}.", icon="🔮")
 
-            # --- RETROSPECTIVA CRÍTICA ---
-            st.markdown("#### 🎯 Retrospectiva Crítica do Grupo de Elite (Últimos 30 Concursos)")
-            ultimos_30 = st.session_state.data["historico_dados"][-30:]
-            acertos_grupo = []
-            for h in ultimos_30:
-                hits = len(set(ia['matriz_base']).intersection(set(h['dezenas'])))
-                acertos_grupo.append(hits)
-        
-            avg_hits = sum(acertos_grupo) / len(acertos_grupo) if acertos_grupo else 0
-            t11 = sum(1 for x in acertos_grupo if x == 11)
-            t12 = sum(1 for x in acertos_grupo if x == 12)
-            t13 = sum(1 for x in acertos_grupo if x == 13)
-            t14 = sum(1 for x in acertos_grupo if x == 14)
-            t15 = sum(1 for x in acertos_grupo if x == 15)
+            # --- RETROSPECTIVA CRÍTICA (COERENTE COM O ROI FINANCEIRO) ---
+            st.markdown("#### 🎯 Retrospectiva Crítica dos Bilhetes (Últimos 30 Concursos)")
+            
+            # Puxa os jogos salvos da memória (os bilhetes reais que geram o ROI)
+            todos_jogos = st.session_state.data.get("jogos_salvos", [])
+            
+            # Pega o número dos últimos 30 concursos que estão no banco
+            historico_base = st.session_state.data.get("historico_dados", [])
+            ultimos_30_concursos = [h['concurso'] for h in historico_base[-30:]] if historico_base else []
+            
+            acertos_reais_bilhetes = []
+            
+            # Filtra apenas os bilhetes que foram jogados nestes últimos 30 concursos
+            for j in todos_jogos:
+                if j.get('concurso_alvo') in ultimos_30_concursos:
+                    acertos_reais_bilhetes.append(j.get('acertos', 0))
+            
+            avg_hits = sum(acertos_reais_bilhetes) / len(acertos_reais_bilhetes) if acertos_reais_bilhetes else 0
+            t11 = sum(1 for x in acertos_reais_bilhetes if x == 11)
+            t12 = sum(1 for x in acertos_reais_bilhetes if x == 12)
+            t13 = sum(1 for x in acertos_reais_bilhetes if x == 13)
+            t14 = sum(1 for x in acertos_reais_bilhetes if x == 14)
+            t15 = sum(1 for x in acertos_reais_bilhetes if x == 15)
 
             with st.container(border=True):
                 cd_1, cd_2, cd_3, cd_4 = st.columns(4)
-                cd_1.metric("Média Geral de Acertos", f"{avg_hits:.2f} / 15", help="Média de dezenas sorteadas dentro do seu grupo atual de elite nos últimos 30 concursos.")
-                cd_2.metric("Simulações com 11-12 Pts", f"{t11 + t12} vezes", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
-                cd_3.metric("Simulações com 13 Pts", f"{t13} vezes", help="Quantidade de vezes que o grupo capturou 13 acertos.")
-                cd_4.metric("Altas Premiações (14-15 Pts)", f"{t14 + t15} acertos", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
-
+                cd_1.metric("Média de Acertos nos Bilhetes", f"{avg_hits:.2f} / 15", help="Média real nos bilhetes de 15 dezenas (coerente com o ROI).")
+                cd_2.metric("Bilhetes com 11-12 Pts", f"{t11 + t12} prêmios", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
+                cd_3.metric("Bilhetes com 13 Pts", f"{t13} prêmios", help="Quantidade real de bilhetes premiados com 13.")
+                cd_4.metric("Prêmios Máximos (14-15 Pts)", f"{t14 + t15} prêmios", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
             st.markdown("#### 📊 Desempenho Histórico das Inteligências Ativas")
             with st.container(border=True):
                 c_e1, c_e2, c_e3, c_e4 = st.columns(4)
