@@ -2201,6 +2201,13 @@ with tabs[4]:
             # BOTÃO B: CALIBRAR A INTELIGÊNCIA COM O BANCO SALVO (O FANTASMA ADAPTATIVO COMPLETO)
             if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TODO O BANCO)", type="primary", use_container_width=True):
                 historico_completo = st.session_state.data.get("historico_dados", [])
+                # Mapeamento para garantir que o nome da estratégia gere a chave correta na memória
+                mapa_chaves = {
+                    "Tendência de Frequência": "Tendencia",
+                    "Reversão Estatística": "Reversao",
+                    "Ciclo Otimizado": "Ciclo",
+                    "Simetria de Borda": "Simetria"
+                }
                 
                 if not historico_completo:
                     st.error("O banco de dados está vazio! Clique no botão de Baixar primeiro.")
@@ -2344,7 +2351,7 @@ with tabs[4]:
                                 del st.session_state.ia_memoria # Força reload visual
                                 
                             st.success(f"✅ Sincronização Automática Concluída! Inteligência treinada. Lucro creditado: R$ {lucro_total:.2f}")
-                            if lucro_total > 0: st.balloons()
+                            if lucro_total > 0: st.toast("IA calbrada com sucesso", icon="💰")
                             st.rerun()
                         else:
                             st.error("Erro na API da Caixa. Tente a inserção manual ao lado.")
