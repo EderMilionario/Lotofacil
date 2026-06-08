@@ -895,6 +895,7 @@ with tabs[1]:
     # =====================================================================
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
+        tam_atual = 18
         
         if ia is not None:
             st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
