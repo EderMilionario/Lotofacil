@@ -717,6 +717,7 @@ def raciocinio_total_ia(historico, memoria):
         tatic_desc = "Tendência Acelerada no fluxo de sorteios."
 
     # Sincronização Dinâmica do Texto
+    estrategia_teorica = ia_memoria.get('estrategia', 'Tendencia')
     texto_estrategia = (
         f"a heurística teórica sugeria '{estrategia_teorica}', mas o algoritmo biológico RECALCULOU o plano para a tática atual devido à maior eficiência de acerto no backtest."
         if melhor_est != estrategia_teorica else 
