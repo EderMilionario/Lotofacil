@@ -890,27 +890,26 @@ with tabs[1]:
         
     st.divider()
     
-   # =====================================================================
-   # 2. DECISÃO E PROCESSAMENTO DA IA
-   # =====================================================================
-   if st.session_state.data["historico_dados"]:
-       ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
+    # =====================================================================
+    # 2. DECISÃO E PROCESSAMENTO DA IA
+    # =====================================================================
+    if st.session_state.data["historico_dados"]:
+        ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
         
-       if ia is not None:
-           st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
-           tam_atual = len(ia['matriz_base'])
+        if ia is not None:
+            st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
+            tam_atual = len(ia['matriz_base'])
 
-           # INDICADOR DO MOTOR ATIVO NO MOMENTO
-           st.markdown("<h3 style='color: #1f77b4;'>🧠 Transparência Absoluta: Motores e Probabilidades Reais</h3>", unsafe_allow_html=True)
-           st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
+            # INDICADOR DO MOTOR ATIVO NO MOMENTO
+            st.markdown("<h3 style='color: #1f77b4;'>🧠 Transparência Absoluta: Motores e Probabilidades Reais</h3>", unsafe_allow_html=True)
+            st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
             
-       else:
-           st.error("⚠️ O Cérebro da IA não conseguiu processar os dados agora. Recarregando...")
-           # Definimos tam_atual para evitar erro de NameError se a IA falhar
-           tam_atual = 18 
+        else:
+            st.error("⚠️ O Cérebro da IA não conseguiu processar os dados agora. Recarregando...")
+            # Definimos tam_atual para evitar erro de NameError se a IA falhar
+            tam_atual = 18 
 
-   else:
-       st.error("⚠️ O Cérebro da IA não conseguiu processar os dados agora.") 
+    
         # =====================================================================
         # 2. PAINEL DE TRANSPARÊNCIA: 3 COLUNAS DAS INTELIGÊNCIAS
         # =====================================================================
