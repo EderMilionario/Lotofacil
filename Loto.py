@@ -637,8 +637,7 @@ def raciocinio_total_ia(historico, memoria):
         if moldura_ultimo <= 8 or moldura_ultimo >= 12: 
             notas_finais["Simetria"] += 1.8
     except: pass
-
-   def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
+def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
     """
     Calcula a temperatura do jogo. Gera o laudo TEÓRICO (Instinto Inicial).
     Este laudo será auditado e pode ser sobreposto pelo Córtex Estratégico.
@@ -696,7 +695,8 @@ def raciocinio_total_ia(historico, memoria):
     taxa_confianca = max(min((fator_quentes * 0.4) + (fator_ia * 0.6), 1.0), 0.1)
 
     detalhes = {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes, "score_ia": score_estrategia}
-    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes 
+    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
+  
 # =====================================================================
 # INTERFACE PRINCIPAL
 # =====================================================================
