@@ -902,11 +902,13 @@ with tabs[1]:
             # Opcional: st.rerun() para tentar forçar nova leitura
         
 
-        # =====================================================================
-        # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
-        # =====================================================================
-        st.markdown("<h3 style='color: #1f77b4;'>🧠 Transparência Absoluta: Motores e Probabilidades Reais</h3>", unsafe_allow_html=True)
-        st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
+            # =====================================================================
+            # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
+            # =====================================================================
+            st.markdown("<h3 style='color: #1f77b4;'>🧠 Transparência Absoluta: Motores e Probabilidades Reais</h3>", unsafe_allow_html=True)
+            st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
+        else:
+            st.error("⚠️ O Cérebro da IA não conseguiu processar os dados agora.")
 
         # =====================================================================
         # 2. PAINEL DE TRANSPARÊNCIA: 3 COLUNAS DAS INTELIGÊNCIAS
