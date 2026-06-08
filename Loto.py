@@ -893,9 +893,14 @@ with tabs[1]:
     # =====================================================================
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data["ia_memoria"])
-        st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
-            
-        tam_atual = len(ia['matriz_base'])
+        # 🛡️ PROTEÇÃO: Verifica se a IA retornou dados antes de tentar usar
+        if ia is not None:
+            st.session_state.data["matriz_viva_atual"] = ia["matriz_base"]
+            tam_atual = len(ia['matriz_base'])
+        else:
+            st.error("⚠️ O Cérebro da IA não conseguiu processar os dados agora. Recarregando...")
+            # Opcional: st.rerun() para tentar forçar nova leitura
+        
 
         # =====================================================================
         # 1. INDICADOR DO MOTOR ATIVO NO MOMENTO (TOPO)
