@@ -231,44 +231,64 @@ def motor_garantia_exata_dinamica(ia, orcamento, conf_calc):
     return False, [], "Verba insuficiente para o Fechamento 100% Exato. Acionando Plano B (Ortogonal)."
 
 def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
-    if not historico: return 18, 0.50, "Histórico vazio. Usando matriz base.", {}
+    """
+    Calcula a temperatura do jogo. Gera o laudo TEÓRICO (Instinto Inicial).
+    Este laudo será auditado e pode ser sobreposto pelo Córtex Estratégico.
+    """
+    if not historico:
+        return 18, 0.50, "Histórico vazio. Usando matriz base de 18 dezenas por segurança.", {}
 
+    # 1. Análise de Volatilidade e Quentes
     ultimos_10 = historico[-10:]
     todas_dezenas = [d for jogo in ultimos_10 for d in jogo['dezenas']]
     contagem = Counter(todas_dezenas)
     media_freq = sum(contagem.values()) / 25
     dezenas_quentes = [num for num, freq in contagem.items() if freq > media_freq]
     
+    # 2. Identificação do Ciclo Faltante
     numeros_sorteados_ciclo = set()
     for jogo in reversed(historico):
         numeros_sorteados_ciclo.update(jogo['dezenas'])
         if len(numeros_sorteados_ciclo) == 25: break
-    qtd_ausentes = 25 - len(numeros_sorteados_ciclo)
+    dezenas_ausentes_ciclo = [d for d in range(1, 26) if d not in numeros_sorteados_ciclo]
+    qtd_ausentes = len(dezenas_ausentes_ciclo)
 
+    # 3. Cálculo de Desempenho Histórico da Estratégia
     score_estrategia = 11.0
     if pontuacao_estrategias and estrategia_atual in pontuacao_estrategias:
         dado_memoria = pontuacao_estrategias[estrategia_atual]
-        if isinstance(dado_memoria, dict) and dado_memoria.get("usos", 0) > 0:
+        if isinstance(dado_memoria, dict) and "usos" in dado_memoria and dado_memoria["usos"] > 0:
             score_estrategia = dado_memoria["pontos"] / dado_memoria["usos"]
         elif isinstance(dado_memoria, (int, float)):
             score_estrategia = float(dado_memoria)
 
-    # O texto não manda mais no tamanho da matriz, a Matemática Orgânica é quem dita.
-    tamanho_matriz = 18 
-    gravidade = 100 / max(1, qtd_ausentes)
-    
+    # 4. INSTINTO TEÓRICO (Hipótese Base)
     if estrategia_atual == "Ciclo":
-        motivo = f"Gravidade de Ciclo (Nível {gravidade:.1f}): {qtd_ausentes} dezenas ausentes sendo puxadas para o grupo de Elite. Tamanho se adaptará pelo ROI."
+        if qtd_ausentes <= 4: tamanho_matriz, motivo_tamanho = 17, f"Teoria do Ciclo: Fechamento iminente ({qtd_ausentes} ausentes). Sugestão: 17 dezenas."
+        elif qtd_ausentes <= 7: tamanho_matriz, motivo_tamanho = 19, f"Teoria do Ciclo: Reta final ({qtd_ausentes} ausentes). Sugestão: 19 dezenas."
+        else: tamanho_matriz, motivo_tamanho = 21, f"Teoria do Ciclo: Cenário inicial ({qtd_ausentes} ausentes). Sugestão: 21 dezenas."
+            
     elif estrategia_atual == "Simetria":
-        motivo = f"Teoria Simétrica: Analisando geometria de bordas. Expansão/contração da matriz guiada por Retorno Financeiro."
+        if score_estrategia >= 12.5: tamanho_matriz, motivo_tamanho = 18, f"Teoria Simétrica: Assertividade alta ({score_estrategia:.1f} pts). Sugestão: 18 dezenas."
+        else: tamanho_matriz, motivo_tamanho = 20, f"Teoria Simétrica: Volatilidade. Sugestão defensiva: 20 dezenas."
+            
     elif estrategia_atual == "Reversao":
-        motivo = f"Caça às Zebras: Cenário caótico detectado. Matriz buscará tamanho ótimo para rede de proteção."
-    else:
-        motivo = f"Teoria da Tendência: Otimizando ponto de corte entre Custo e Lucro Exato."
+        if score_estrategia >= 12.0: tamanho_matriz, motivo_tamanho = 19, f"Teoria da Reversão: Confiança em zebras ({score_estrategia:.1f} pts). Sugestão: 19 dezenas."
+        elif score_estrategia < 10.5: tamanho_matriz, motivo_tamanho = 22, f"Teoria da Reversão: Risco extremo. Sugestão ampla: 22 dezenas."
+        else: tamanho_matriz, motivo_tamanho = 21, f"Teoria da Reversão: Padrão. Sugestão: 21 dezenas."
+        
+    else: # Tendencia
+        if score_estrategia >= 12.8: tamanho_matriz, motivo_tamanho = 18, f"Teoria da Tendência: Padrão forte ({score_estrategia:.1f} pts). Sugestão: 18 dezenas."
+        elif score_estrategia < 11.2: tamanho_matriz, motivo_tamanho = 21, f"Teoria da Tendência: Desempenho em queda. Sugestão de resgate: 21 dezenas."
+        else: tamanho_matriz, motivo_tamanho = 19, f"Teoria da Tendência: Cenário estável. Sugestão: 19 dezenas."
 
-    taxa_confianca = max(min(((len(dezenas_quentes)/15) * 0.4) + (min(max((score_estrategia-8)/3, 0), 1) * 0.6), 1.0), 0.1)
-    
-    return tamanho_matriz, taxa_confianca, motivo, {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes}
+    # 5. CÁLCULO DA TAXA DE CONFIANÇA
+    fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
+    fator_ia = min(max((score_estrategia - 8.0) / 3.0, 0.0), 1.0) 
+    taxa_confianca = max(min((fator_quentes * 0.4) + (fator_ia * 0.6), 1.0), 0.1)
+
+    detalhes = {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes, "score_ia": score_estrategia}
+    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 def exibir_card_volante(jogo, indice):
     dezenas = jogo.get('dezenas', [])
     estrategia = jogo.get('estrategia', 'Padrão').replace("🧬", "🍀")
@@ -618,83 +638,96 @@ def raciocinio_total_ia(historico, memoria):
             notas_finais["Simetria"] += 1.8
     except: pass
 
-    import math
-    def nCr(n, r):
-        if r > n or r < 0: return 0
-        f = math.factorial
-        return f(n) // f(r) // f(n-r)
-
     # =================================================================
-    # 🧠 CÓRTEX ESTRATÉGICO: ALGORITMO BIOLÓGICO DE ROI COMBINATÓRIO
+    # 🧠 CÓRTEX ESTRATÉGICO E OTIMIZADOR DE MATRIZ (LIVRE DE ENGESSAMENTO)
+    # Testa Poder de Vitória real. Nenhuma trava de tamanho ou estratégia.
     # =================================================================
-    melhor_est = max(notas_finais, key=notas_finais.get)
+    janela_backtest = 30
+    historico_sombra = historico[-janela_backtest-10:] if len(historico) >= janela_backtest+10 else historico
     
-    # 1. GRAVIDADE DO CICLO (A fusão perfeita: o ciclo pesa sobre TODAS as táticas)
-    gravidade_ciclo = 100.0 / max(1, len(faltam_ciclo))
-    notas_dezenas = {}
+    forca_vitoria = {"Tendencia": 0.0, "Reversao": 0.0, "Ciclo": 0.0, "Simetria": 0.0}
+    estrategia_teorica = max(notas_finais, key=notas_finais.get) if notas_finais else "Tendencia"
     
-    for n in range(1, 26):
-        # Pontuação base da Estratégia
-        if melhor_est == "Reversao": base = atrasos.get(n, 0)
-        elif melhor_est == "Simetria": base = freq_ult_10.get(n, 0) + (2 if n in moldura_lista else 0)
-        else: base = freq_ult_10.get(n, 0) # Tendencia e Ciclo
-        
-        # Puxão Gravitacional: As que faltam pro ciclo subirão naturalmente
-        peso_ciclo = gravidade_ciclo if n in faltam_ciclo else 0
-        notas_dezenas[n] = base + peso_ciclo
-        
-    # Nenhuma regra limitante. O Top 25 se monta organicamente.
-    rank_v = sorted(range(1, 26), key=lambda x: notas_dezenas[x], reverse=True)
-
-    # 2. MOTOR DE SELEÇÃO NATURAL (Do 15 ao 25 - Decidido pelo Retorno Financeiro)
-    amostra_teste = historico[-30:] if len(historico) > 30 else historico
-    melhor_tamanho = 15
-    maior_forca_evolutiva = -1.0
+    melhor_tamanho = 18 # Fallback de segurança
     
-    for t in range(15, 26): 
-        matriz_teste = set(rank_v[:t])
-        
-        # O Custo Implacável da Matemática
-        custo_matriz_por_sorteio = nCr(t, 15) * 3.50
-        custo_total_backtest = custo_matriz_por_sorteio * len(amostra_teste)
-        
-        premio_total_backtest = 0.0
-        soma_hits = 0
-        
-        for sort in amostra_teste:
-            acertos = len(matriz_teste.intersection(set(sort['dezenas'])))
-            soma_hits += acertos
+    if len(historico_sombra) > janela_backtest:
+        # 1. AVALIAÇÃO DE ESTRATÉGIA (O Motor de Caça)
+        for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
+            h_passado = historico_sombra[:i]
+            sorteio_real = set(historico_sombra[i]['dezenas'])
+            freq_v = Counter([n for h in h_passado[-30:] for n in h['dezenas']])
             
-            # Cálculo EXATO de quantos prêmios a Matriz garante (Análise Combinatória)
-            if acertos >= 11:
-                t15 = nCr(acertos, 15) * nCr(t - acertos, 0)
-                t14 = nCr(acertos, 14) * nCr(t - acertos, 1)
-                t13 = nCr(acertos, 13) * nCr(t - acertos, 2)
-                t12 = nCr(acertos, 12) * nCr(t - acertos, 3)
-                t11 = nCr(acertos, 11) * nCr(t - acertos, 4)
-                
-                premio_sorteio = (t15 * 1500000) + (t14 * 1500) + (t13 * 35) + (t12 * 14) + (t11 * 7)
-                premio_total_backtest += premio_sorteio
-                
-        # 3. A FÓRMULA DE SOBREVIVÊNCIA
-        # ROI: Premiação Fictícia / Custo Real -> Elimina matrizes colossais covardes
-        roi_financeiro = premio_total_backtest / custo_total_backtest if custo_total_backtest > 0 else 0
-        # Densidade: Acertos por tamanho -> Premia a precisão na seca de prêmios máximos
-        densidade_acerto = (soma_hits / len(amostra_teste)) / t
-        
-        forca_evolutiva = roi_financeiro + densidade_acerto
-        
-        # A IA registra a Matriz mais poderosa e sustentável
-        if forca_evolutiva > maior_forca_evolutiva:
-            maior_forca_evolutiva = forca_evolutiva
-            melhor_tamanho = t
+            p_tend = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0), reverse=True)[:18]
+            p_rev = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0))[:18]
+            p_sim = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0) + freq_v.get(26-x, 0), reverse=True)[:18]
+            
+            c_v = set()
+            for h in reversed(h_passado):
+                c_v.update(h['dezenas'])
+                if len(c_v) >= 20: break
+            f_v = set(range(1,26)) - c_v
+            p_ciclo = sorted(range(1, 26), key=lambda x: 100 if x in f_v else freq_v.get(x, 0), reverse=True)[:18]
+            
+            acertos_v = {
+                "Tendencia": len(set(p_tend) & sorteio_real),
+                "Reversao": len(set(p_rev) & sorteio_real),
+                "Simetria": len(set(p_sim) & sorteio_real),
+                "Ciclo": len(set(p_ciclo) & sorteio_real)
+            }
+            
+            for est, acertos in acertos_v.items():
+                if acertos == 15: forca_vitoria[est] += 100.0 
+                elif acertos == 14: forca_vitoria[est] += 30.0 
+                elif acertos == 13: forca_vitoria[est] += 8.0  
+                elif acertos >= 11: forca_vitoria[est] += 1.0  
+                else: forca_vitoria[est] -= 2.0  
 
-    # Trava final estritamente lógica (Se na pior das hipóteses ela surtar, joga pro padrão, mas nunca para 25)
-    if melhor_tamanho > 22: melhor_tamanho = 18
+        # Gatilho de Adrenalina (Ciclo Iminente)
+        qtd_faltam = len(faltam_ciclo)
+        if 1 <= qtd_faltam <= 3:
+            notas_finais["Ciclo"] += 80.0 
+        
+        for est in notas_finais:
+            notas_finais[est] += (forca_vitoria.get(est, 0) * 0.4) 
 
-    # 4. Formação Limpa da Elite
+        # Veredito Biológico da Estratégia
+        melhor_est = max(notas_finais, key=notas_finais.get)
+
+        # -----------------------------------------------------------------
+        # 2. AVALIAÇÃO DE TAMANHO (15 a 25) - A Busca pelo Ponto de Equilíbrio
+        # -----------------------------------------------------------------
+        scores_tamanho = {t: 0.0 for t in range(15, 26)}
+        
+        for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
+            h_passado = historico_sombra[:i]
+            sorteio_real = set(historico_sombra[i]['dezenas'])
+            freq_v = Counter([n for h in h_passado[-30:] for n in h['dezenas']])
+            
+            if melhor_est == "Reversao": rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0))
+            elif melhor_est == "Simetria": rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0) + freq_v.get(26-x, 0), reverse=True)
+            elif melhor_est == "Ciclo": rank_v = sorted(range(1, 26), key=lambda x: 100 if x in f_v else freq_v.get(x, 0), reverse=True)
+            else: rank_v = sorted(range(1, 26), key=lambda x: freq_v.get(x, 0), reverse=True)
+                
+            for t in scores_tamanho:
+                acertos_t = len(set(rank_v[:t]) & sorteio_real)
+                
+                # O Poder Bruto de Captura
+                if acertos_t == 15: pontos = 500.0
+                elif acertos_t == 14: pontos = 100.0
+                elif acertos_t == 13: pontos = 20.0
+                elif acertos_t == 12: pontos = 5.0
+                else: pontos = 0.0 
+                
+                # FATOR DE PUNIÇÃO BIOLÓGICA (Equilíbrio de Energia)
+                # Escala progressiva que obriga a IA a ter uma eficiência monumental para escolher matrizes grandes
+                fator_puni = {15: 1.0, 16: 1.2, 17: 1.5, 18: 2.0, 19: 3.0, 20: 4.5, 21: 6.0, 22: 8.0, 23: 11.0, 24: 15.0, 25: 20.0}
+                
+                scores_tamanho[t] += (pontos / fator_puni[t])
+        
+        # O Veredito de Tamanho: Sem amarras, pura eficiência probabilística.
+        melhor_tamanho = max(scores_tamanho, key=scores_tamanho.get)
+            
     qtd_matriz = melhor_tamanho
-    matriz_base = sorted(rank_v[:qtd_matriz])
 
     # =================================================================
     # EXECUÇÃO DA MATRIZ E NARRATIVA DE AUDITORIA
@@ -717,7 +750,6 @@ def raciocinio_total_ia(historico, memoria):
         tatic_desc = "Tendência Acelerada no fluxo de sorteios."
 
     # Sincronização Dinâmica do Texto
-    estrategia_teorica = ia_memoria.get('estrategia', 'Tendencia')
     texto_estrategia = (
         f"a heurística teórica sugeria '{estrategia_teorica}', mas o algoritmo biológico RECALCULOU o plano para a tática atual devido à maior eficiência de acerto no backtest."
         if melhor_est != estrategia_teorica else 
