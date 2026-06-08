@@ -1678,7 +1678,7 @@ with tabs[2]:
                                 dezenas_disponiveis = ia['matriz_base']
                                 pesos_sublista = [ia['pesos'][i] for i in dezenas_disponiveis]
                                 
-                                for _ in range(150):
+                                for _ in range(5000):
                                     candidato = []
                                     dez_temp = list(dezenas_disponiveis)
                                     pesos_temp = list(pesos_sublista)
