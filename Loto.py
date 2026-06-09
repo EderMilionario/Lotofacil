@@ -262,25 +262,30 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
         elif isinstance(dado_memoria, (int, float)):
             score_estrategia = float(dado_memoria)
 
-    # 4. INSTINTO TEÓRICO (Hipótese Base)
-    if estrategia_atual == "Ciclo":
-        if qtd_ausentes <= 4: tamanho_matriz, motivo_tamanho = 17, f"Teoria do Ciclo: Fechamento iminente ({qtd_ausentes} ausentes). Sugestão: 17 dezenas."
-        elif qtd_ausentes <= 7: tamanho_matriz, motivo_tamanho = 19, f"Teoria do Ciclo: Reta final ({qtd_ausentes} ausentes). Sugestão: 19 dezenas."
-        else: tamanho_matriz, motivo_tamanho = 21, f"Teoria do Ciclo: Cenário inicial ({qtd_ausentes} ausentes). Sugestão: 21 dezenas."
+    # 4. INSTINTO TEÓRICO (Hipótese Base) - SINCRONIZADO COM O CÓRTEX
+    # Se faltam 3 dezenas ou menos, a IA ignora a seleção do painel e FORÇA a teoria do Ciclo.
+    if qtd_ausentes <= 3:
+        estrategia_atual = "Ciclo"
+        tamanho_matriz = 20 # Proteção máxima de interface (NUNCA acima de 20 para evitar erro removeChild)
+        motivo_tamanho = f"Alerta Máximo: Fechamento iminente ({qtd_ausentes} ausentes). A IA ativou o Gatilho de Adrenalina para o Ciclo. Sugestão: 20 dezenas."
+        
+    elif estrategia_atual == "Ciclo":
+        if qtd_ausentes <= 7: tamanho_matriz, motivo_tamanho = 19, f"Teoria do Ciclo: Reta final ({qtd_ausentes} ausentes). Sugestão: 19 dezenas."
+        else: tamanho_matriz, motivo_tamanho = 18, f"Teoria do Ciclo: Cenário inicial ({qtd_ausentes} ausentes). Sugestão enxuta: 18 dezenas."
+            
     elif estrategia_atual == "Simetria":
         if score_estrategia >= 12.5: tamanho_matriz, motivo_tamanho = 18, f"Teoria Simétrica: Assertividade alta ({score_estrategia:.1f} pts). Sugestão: 18 dezenas."
         else: tamanho_matriz, motivo_tamanho = 20, f"Teoria Simétrica: Volatilidade. Sugestão defensiva: 20 dezenas."
             
     elif estrategia_atual == "Reversao":
         if score_estrategia >= 12.0: tamanho_matriz, motivo_tamanho = 19, f"Teoria da Reversão: Confiança em zebras ({score_estrategia:.1f} pts). Sugestão: 19 dezenas."
-        elif score_estrategia < 10.5: tamanho_matriz, motivo_tamanho = 22, f"Teoria da Reversão: Risco extremo. Sugestão ampla: 22 dezenas."
-        else: tamanho_matriz, motivo_tamanho = 21, f"Teoria da Reversão: Padrão. Sugestão: 21 dezenas."
+        elif score_estrategia < 10.5: tamanho_matriz, motivo_tamanho = 20, f"Teoria da Reversão: Risco extremo. Sugestão de defesa: 20 dezenas." 
+        else: tamanho_matriz, motivo_tamanho = 20, f"Teoria da Reversão: Padrão. Sugestão: 20 dezenas." 
         
     else: # Tendencia
         if score_estrategia >= 12.8: tamanho_matriz, motivo_tamanho = 18, f"Teoria da Tendência: Padrão forte ({score_estrategia:.1f} pts). Sugestão: 18 dezenas."
-        elif score_estrategia < 11.2: tamanho_matriz, motivo_tamanho = 21, f"Teoria da Tendência: Desempenho em queda. Sugestão de resgate: 21 dezenas."
+        elif score_estrategia < 11.2: tamanho_matriz, motivo_tamanho = 20, f"Teoria da Tendência: Desempenho em queda. Sugestão de resgate: 20 dezenas." 
         else: tamanho_matriz, motivo_tamanho = 19, f"Teoria da Tendência: Cenário estável. Sugestão: 19 dezenas."
-
     # 5. CÁLCULO DA TAXA DE CONFIANÇA
     fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
     fator_ia = min(max((score_estrategia - 8.0) / 3.0, 0.0), 1.0) 
