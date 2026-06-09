@@ -712,19 +712,18 @@ def raciocinio_total_ia(historico, memoria):
                 acertos_t = len(set(rank_v[:t]) & sorteio_real)
                 
                 # O Poder Bruto de Captura (Retorno Financeiro Real Estimado)
-                if acertos_t == 15: pontos = 2000000.0
-                elif acertos_t == 14: pontos = 1500.0
-                elif acertos_t == 13: pontos = 35.0
-                elif acertos_t == 12: pontos = 14.0
-                elif acertos_t == 11: pontos = 7.0
+                if acertos_t == 15: pontos = 100.0
+                elif acertos_t == 14: pontos = 20.0
+                elif acertos_t == 13: pontos = 5.0
+                elif acertos_t == 12: pontos = 2.0
+                elif acertos_t == 11: pontos = 1.0
                 else: pontos = 0.0 
     
                 # FATOR DE PUNIÇÃO BIOLÓGICA (Combinatória EXATA da Lotofácil)
                 # Reflete quantas apostas de 15 cabem dentro desse tamanho.
                 fator_puni = {
-                    15: 1, 16: 16, 17: 136, 18: 816, 
-                    19: 3876, 20: 15504, 21: 54264, 
-                    22: 170544, 23: 490314, 24: 1307504, 25: 3268760
+                    15: 1.0, 16: 1.5, 17: 3.0, 18: 6.0, 19: 12.0, 20: 25.0, 
+                    21: 500.0, 22: 2500.0, 23: 10000.0, 24: 50000.0, 25: 250000.0
                 }
                 
                 scores_tamanho[t] += (pontos / fator_puni[t])
