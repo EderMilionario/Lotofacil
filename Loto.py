@@ -731,13 +731,22 @@ def raciocinio_total_ia(historico, memoria):
                 elif acertos_t == 13: pontos = 5.0
                 elif acertos_t == 12: pontos = 2.0
                 elif acertos_t == 11: pontos = 1.0
-                else: pontos = 0.0 
+                else: pontos = 0.0  
     
-                # FATOR DE PUNIÇÃO BIOLÓGICA (Combinatória EXATA da Lotofácil)
-                # Reflete quantas apostas de 15 cabem dentro desse tamanho.
+                # FATOR DE PUNIÇÃO REALISTA (Baseado em Fechamentos Otimizados de 14 pts)
+                # Reflete o custo-benefício real que os Planos A e B terão que suportar para manter a IA fluida.
                 fator_puni = {
-                    15: 1.0, 16: 1.5, 17: 3.0, 18: 6.0, 19: 12.0, 20: 25.0, 
-                    21: 500.0, 22: 2500.0, 23: 10000.0, 24: 50000.0, 25: 250000.0
+                    15: 1.0, 
+                    16: 2.0, 
+                    17: 4.0, 
+                    18: 12.0, 
+                    19: 35.0, 
+                    20: 90.0, 
+                    21: 250.0, 
+                    22: 800.0, 
+                    23: 2000.0, 
+                    24: 6000.0, 
+                    25: 15000.0
                 }
                 
                 scores_tamanho[t] += (pontos / fator_puni[t])
