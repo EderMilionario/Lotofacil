@@ -245,13 +245,23 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     media_freq = sum(contagem.values()) / 25
     dezenas_quentes = [num for num, freq in contagem.items() if freq > media_freq]
     
-    # 2. Identificação do Ciclo Faltante
-    numeros_sorteados_ciclo = set()
-    for jogo in reversed(historico):
-        numeros_sorteados_ciclo.update(jogo['dezenas'])
-        if len(numeros_sorteados_ciclo) == 25: break
-    dezenas_ausentes_ciclo = [d for d in range(1, 26) if d not in numeros_sorteados_ciclo]
+    # 2. Identificação do Ciclo Faltante (CORRIGIDO: Leitura para frente)
+    ciclo_atual = set()
+    for jogo in historico:
+        # Atualiza o ciclo com as dezenas do concurso
+        ciclo_atual.update(jogo['dezenas'])
+        # Se bater 25, o ciclo fecha e reinicia no próximo concurso
+        if len(ciclo_atual) == 25:
+            ciclo_atual = set()
+            
+    # As ausentes são as que não estão no ciclo atual
+    dezenas_ausentes_ciclo = [d for d in range(1, 26) if d not in ciclo_atual]
     qtd_ausentes = len(dezenas_ausentes_ciclo)
+    
+    # IMPORTANTE: Se o ciclo acabou de fechar (0 ausentes), significa que no próximo
+    # concurso teremos um ciclo NOVO (25 ausentes). 
+    if qtd_ausentes == 0:
+        qtd_ausentes = 25
 
     # 3. Cálculo de Desempenho Histórico da Estratégia
     score_estrategia = 11.0
