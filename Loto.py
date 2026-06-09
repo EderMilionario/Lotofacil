@@ -267,7 +267,6 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
         if qtd_ausentes <= 4: tamanho_matriz, motivo_tamanho = 17, f"Teoria do Ciclo: Fechamento iminente ({qtd_ausentes} ausentes). Sugestão: 17 dezenas."
         elif qtd_ausentes <= 7: tamanho_matriz, motivo_tamanho = 19, f"Teoria do Ciclo: Reta final ({qtd_ausentes} ausentes). Sugestão: 19 dezenas."
         else: tamanho_matriz, motivo_tamanho = 21, f"Teoria do Ciclo: Cenário inicial ({qtd_ausentes} ausentes). Sugestão: 21 dezenas."
-            
     elif estrategia_atual == "Simetria":
         if score_estrategia >= 12.5: tamanho_matriz, motivo_tamanho = 18, f"Teoria Simétrica: Assertividade alta ({score_estrategia:.1f} pts). Sugestão: 18 dezenas."
         else: tamanho_matriz, motivo_tamanho = 20, f"Teoria Simétrica: Volatilidade. Sugestão defensiva: 20 dezenas."
