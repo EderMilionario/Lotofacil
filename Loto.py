@@ -757,6 +757,27 @@ def raciocinio_total_ia(historico, memoria):
     qtd_matriz = melhor_tamanho
 
     # =================================================================
+    # EXECUÇÃO DA MATRIZ E NARRATIVA DE AUDITORIA
+    # =================================================================
+    # Aqui a IA define os PESOS matemáticos e a DIRETRIZ baseada na escolha final
+    if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
+        estrategia = "Ciclo Otimizado"
+        pesos = {i: 100 if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
+        tatic_desc = "Fechamento de Ciclo engatilhado."
+    elif melhor_est == "Simetria":
+        estrategia = "Simetria de Borda"
+        pesos = {i: freq_recente.get(i, 0) + freq_recente.get(26-i, 0) + (15 if i in moldura_lista else 0) for i in range(1, 26)}
+        tatic_desc = "Simetria Analítica ativada."
+    elif melhor_est == "Reversao":
+        estrategia = "Reversão Estatística"
+        pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 5)) for i in range(1, 26)}
+        tatic_desc = "Reversão Estatística (Caça às Zebras) ativada."
+    else:
+        estrategia = "Tendência de Frequência"
+        pesos = {i: max(1, freq_recente.get(i, 0) + ((freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0)) * 3)) for i in range(1, 26)}
+        tatic_desc = "Tendência Acelerada no fluxo de sorteios."
+
+    # =================================================================
     # 🗣️ NARRATIVA DE AUDITORIA 100% FLUIDA E BASEADA EM DADOS REAIS
     # =================================================================
     qtd_faltam = len(faltam_ciclo)
