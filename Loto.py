@@ -708,9 +708,9 @@ def raciocinio_total_ia(historico, memoria):
         melhor_est = max(notas_finais, key=notas_finais.get)
 
         # -----------------------------------------------------------------
-        # 2. AVALIAÇÃO DE TAMANHO (15 a 25) - A Busca pelo Ponto de Equilíbrio
+        # 2. AVALIAÇÃO DE TAMANHO (16 a 25) - A Busca pelo Ponto de Equilíbrio
         # -----------------------------------------------------------------
-        scores_tamanho = {t: 0.0 for t in range(15, 26)}
+        scores_tamanho = {t: 0.0 for t in range(16, 26)}
         
         for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
             h_passado = historico_sombra[:i]
