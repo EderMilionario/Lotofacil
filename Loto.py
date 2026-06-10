@@ -2220,6 +2220,63 @@ with tabs[4]:
                         st.success(f"✅ Download de {total_concursos} sorteios concluído. Agora clique em CALIBRAR.")
                     except Exception as e:
                         st.error(f"Erro na conexão com API: {e}")
+            # --- NOVOS BOTÕES DE SINCRONIZAÇÃO SELETIVA ---
+            with st.expander("⚙️ Configurar Sincronização Seletiva"):
+                limite_concurso = st.number_input("Limite do Concurso (até onde baixar):", min_value=1, step=1, value=3000)
+                concurso_especifico = st.number_input("Concurso Específico (apenas um):", min_value=1, step=1)
+
+            # BOTÃO B: DOWNLOAD ATÉ CONCURSO X
+            if st.button("📥 2. BAIXAR ATÉ O CONCURSO X", type="secondary", use_container_width=True):
+                with st.spinner(f"Baixando base de dados até o concurso {limite_concurso}..."):
+                    try:
+                        res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
+                        # Filtra apenas o que é menor ou igual ao limite digitado
+                        res_filtrado = [r for r in res_todos if int(r['concurso']) <= limite_concurso]
+                        res_filtrado = sorted(res_filtrado, key=lambda k: int(k['concurso']))
+                        
+                        st.session_state.data["historico_dados"] = []
+                        for res_conc in res_filtrado:
+                            st.session_state.data["historico_dados"].append({
+                                "concurso": int(res_conc['concurso']), 
+                                "dezenas": sorted([int(d) for d in res_conc['dezenas']]), 
+                                "data": res_conc.get('data', '')
+                            })
+                        
+                        salvar_dados(st.session_state.data)
+                        st.success(f"✅ Download até {limite_concurso} concluído!")
+                    except Exception as e:
+                        st.error(f"Erro na sincronização: {e}")
+
+            # BOTÃO C: DOWNLOAD APENAS UM CONCURSO
+            if st.button("📥 3. BAIXAR CONCURSO ESPECÍFICO", type="secondary", use_container_width=True):
+                with st.spinner(f"Buscando concurso {concurso_especifico}..."):
+                    try:
+                        res_todos = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json()
+                        # Filtra apenas o concurso exato
+                        res_unico = [r for r in res_todos if int(r['concurso']) == concurso_especifico]
+                        
+                        if res_unico:
+                            res_conc = res_unico[0]
+                            # Verifica se já existe, se não, adiciona
+                            novo_dado = {
+                                "concurso": int(res_conc['concurso']), 
+                                "dezenas": sorted([int(d) for d in res_conc['dezenas']]), 
+                                "data": res_conc.get('data', '')
+                            }
+                            
+                            # Evita duplicatas
+                            concursos_existentes = [h['concurso'] for h in st.session_state.data["historico_dados"]]
+                            if novo_dado['concurso'] not in concursos_existentes:
+                                st.session_state.data["historico_dados"].append(novo_dado)
+                                st.session_state.data["historico_dados"] = sorted(st.session_state.data["historico_dados"], key=lambda k: k['concurso'])
+                                salvar_dados(st.session_state.data)
+                                st.success(f"✅ Concurso {concurso_especifico} adicionado com sucesso!")
+                            else:
+                                st.warning("Este concurso já consta na base.")
+                        else:
+                            st.error("Concurso não encontrado na API.")
+                    except Exception as e:
+                        st.error(f"Erro na sincronização: {e}")            
 
             # BOTÃO B: CALIBRAR A INTELIGÊNCIA COM O BANCO SALVO (O FANTASMA ADAPTATIVO COMPLETO)
             if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TODO O BANCO)", type="primary", use_container_width=True):
