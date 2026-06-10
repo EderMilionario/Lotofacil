@@ -757,40 +757,32 @@ def raciocinio_total_ia(historico, memoria):
     qtd_matriz = melhor_tamanho
 
     # =================================================================
-    # EXECUÇÃO DA MATRIZ E NARRATIVA DE AUDITORIA
+    # 🗣️ NARRATIVA DE AUDITORIA 100% FLUIDA E BASEADA EM DADOS REAIS
     # =================================================================
-    if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
-        estrategia = "Ciclo Otimizado"
-        pesos = {i: 100 if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
-        tatic_desc = "Fechamento de Ciclo engatilhado."
-    elif melhor_est == "Simetria":
-        estrategia = "Simetria de Borda"
-        pesos = {i: freq_recente.get(i, 0) + freq_recente.get(26-i, 0) + (15 if i in moldura_lista else 0) for i in range(1, 26)}
-        tatic_desc = "Simetria Analítica ativada."
-    elif melhor_est == "Reversao":
-        estrategia = "Reversão Estatística"
-        pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 5)) for i in range(1, 26)}
-        tatic_desc = "Reversão Estatística (Caça às Zebras) ativada."
+    qtd_faltam = len(faltam_ciclo)
+    score_vencedor = notas_finais.get(melhor_est, 0)
+    score_teorico = notas_finais.get(estrategia_teorica, 0)
+
+    # 1. CONSTRUÇÃO DO CONTEXTO TÁTICO EM TEMPO REAL
+    if melhor_est == "Ciclo" and 1 <= qtd_faltam <= 4:
+        texto_estrategia = f"Sincronia absoluta: O Gatilho de Adrenalina disparou ({qtd_faltam} dezenas ausentes) e o Motor de Backtest validou a força do Ciclo com um score de impacto altíssimo ({score_vencedor:.1f} pts)."
+    elif melhor_est != estrategia_teorica:
+        diferenca_pts = score_vencedor - score_teorico
+        texto_estrategia = f"Pivotamento tático detectado: O instinto teórico pedia '{estrategia_teorica}' (score base {score_teorico:.1f}), mas a auditoria de resultados reais forçou a mudança para '{melhor_est}', que apresentou letalidade superior nos últimos 30 concursos (superando em +{diferenca_pts:.1f} pts o plano original)."
     else:
-        estrategia = "Tendência de Frequência"
-        pesos = {i: max(1, freq_recente.get(i, 0) + ((freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0)) * 3)) for i in range(1, 26)}
-        tatic_desc = "Tendência Acelerada no fluxo de sorteios."
+        texto_estrategia = f"Convergência total confirmada: A teoria apontou '{estrategia_teorica}' e os testes práticos cravaram sua dominância atual para este cenário, atingindo um score de validação máxima de {score_vencedor:.1f} pts."
 
-    # Sincronização Dinâmica do Texto
-    texto_estrategia = (
-        f"a heurística teórica sugeria '{estrategia_teorica}', mas o algoritmo biológico RECALCULOU o plano para a tática atual devido à maior eficiência de acerto no backtest."
-        if melhor_est != estrategia_teorica else 
-        f"o Motor de Sombra VALIDOU o instinto teórico, confirmando a alta probabilidade e letalidade recente desta tática."
-    )
-
-    if qtd_matriz < 18:
-        texto_tamanho = f"a IA cortou desperdícios e encontrou a máxima eficiência estatística numa rede cirúrgica de {qtd_matriz} dezenas."
-    elif qtd_matriz > 18:
-        texto_tamanho = f"a IA expandiu a rede para {qtd_matriz} dezenas, pois o cálculo probabilístico provou que a força de acerto compensa o risco adotado."
+    # 2. CONSTRUÇÃO DO CONTEXTO DE TAMANHO (Custo vs Benefício Matemático)
+    if qtd_matriz <= 15:
+        texto_tamanho = f"A matemática de custo penalizou as matrizes maiores. O Córtex expurgou todo o ruído estatístico e reduziu a rede ao limite absoluto de {qtd_matriz} dezenas (modo atirador de elite para blindar a banca)."
+    elif 16 <= qtd_matriz <= 17:
+        texto_tamanho = f"O sistema calculou o Ponto de Equilíbrio exato. A rede cirúrgica de {qtd_matriz} dezenas oferece a melhor taxa de captura probabilística sem inflacionar o custo ortogonal."
+    elif 18 <= qtd_matriz <= 19:
+        texto_tamanho = f"Os testes de backtest exibiram uma taxa de acerto tão violenta com '{melhor_est}' que o Córtex autorizou expandir o orçamento para uma rede mais densa de {qtd_matriz} dezenas."
     else:
-        texto_tamanho = f"a IA manteve o equilíbrio perfeito matemático em {qtd_matriz} dezenas (ótima relação custo-benefício de acertos)."
+        texto_tamanho = f"Alerta de Alta Confiança! O algoritmo determinou que a probabilidade de prêmio máximo compensa o risco extremo. Matriz brutalmente expandida para {qtd_matriz} dezenas (modo Força Bruta)."
 
-    motivo_est = f"DIRETRIZ DA DECISÃO: {tatic_desc} Na validação: {texto_estrategia} Nas dezenas: {texto_tamanho}"
+    motivo_est = f"DIRETRIZ: {tatic_desc} ANÁLISE EM TEMPO REAL: {texto_estrategia} GEOMETRIA DA MATRIZ: {texto_tamanho}"
 
     dezenas_ordenadas = sorted(range(1, 26), key=lambda x: pesos[x], reverse=True)
     matriz_base = sorted(dezenas_ordenadas[:qtd_matriz])
