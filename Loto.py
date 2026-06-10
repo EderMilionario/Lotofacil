@@ -1960,7 +1960,7 @@ with tabs[4]:
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
     
     # =====================================================================
-    # 🧠 MOTOR DE AUDITORIA E APRENDIZADO UNIFICADO (Resolve Pontos 1 a 5, 11 e 12)
+    # 🧠 MOTOR DE AUDITORIA E APRENDIZADO UNIFICADO (Pico de Letalidade)
     # =====================================================================
     # Esta função obriga todas as formas de entrada (Massa, API e Manual)
     # a passarem pelo mesmo funil, garantindo que a IA aprenda sempre igual 
@@ -1978,9 +1978,10 @@ with tabs[4]:
             "Reversão Estatística": "Reversao", "Simetria de Borda": "Simetria"
         }
         
-        # 🧠 Variáveis para a Matemática do Lote (Evita Amnésia na IA)
+        # 🧠 Variáveis para a Matemática do Lote
         soma_pontos_est = {}
         qtd_jogos_est = {}
+        max_pontos_est = {} # ⬅️ NOVO: Rastreador do Pico de Letalidade
         
         for j in st.session_state.data.get("jogos_salvos", []):
             alvo_do_jogo = j.get('concurso_alvo')
@@ -1997,9 +1998,12 @@ with tabs[4]:
                 est_raw = j.get('estrategia', '')
                 est_usada = mapa_estrategias.get(est_raw, est_raw)
                 
-                # Acumula os pontos do lote inteiro
+                # Acumula os dados para a IA aprender
                 soma_pontos_est[est_usada] = soma_pontos_est.get(est_usada, 0) + pontos
                 qtd_jogos_est[est_usada] = qtd_jogos_est.get(est_usada, 0) + 1
+                
+                # ⬅️ NOVO: Grava o maior acerto que a estratégia conseguiu neste lote
+                max_pontos_est[est_usada] = max(max_pontos_est.get(est_usada, 0), pontos)
                 
                 if pontos >= 11:
                     j['status'] = "Premiado"
@@ -2008,25 +2012,35 @@ with tabs[4]:
                 else:
                     j['status'] = "Não Premiado"
         
-        # --- O CÉREBRO APRENDE AQUI (Uma única vez por sorteio!) ---
-        for est, soma_pts in soma_pontos_est.items():
-            media_lote = soma_pts / qtd_jogos_est[est]
+        # --- O CÉREBRO APRENDE AQUI (Foco no Pico de Acerto e Memória Recente) ---
+        for est in qtd_jogos_est:
+            max_pts = max_pontos_est.get(est, 0)
+            
+            # Nota baseada na Letalidade Máxima (O que importa é o prêmio grande)
+            if max_pts == 15: nota_lote = 15.0
+            elif max_pts == 14: nota_lote = 13.5
+            elif max_pts == 13: nota_lote = 12.0
+            elif max_pts == 12: nota_lote = 11.0
+            elif max_pts == 11: nota_lote = 10.5
+            else: nota_lote = 9.5 # Abaixo de 11 é falha
             
             if est in st.session_state.data.get("ia_memoria", {}):
                 mem_ia = st.session_state.data["ia_memoria"][est]
                 if isinstance(mem_ia, dict):
-                    if mem_ia["usos"] >= 30:
-                        media_atual = mem_ia["pontos"] / 30.0
-                        mem_ia["pontos"] = (media_atual * 29.0) + media_lote
-                        mem_ia["usos"] = 30
-                    else:
-                        mem_ia["pontos"] += media_lote
-                        mem_ia["usos"] += 1
+                    
+                    # O CÓRTEX DE ESQUECIMENTO DINÂMICO
+                    # Se acumular mais de 20 concursos, reduz o peso antigo em 10%
+                    # Isso garante que a IA seja "viva" e valorize as tendências atuais!
+                    if mem_ia["usos"] >= 20:
+                        mem_ia["usos"] *= 0.90
+                        mem_ia["pontos"] *= 0.90
                         
-                relatorio.append(f"A métrica para **{est}** calibrou pesos (Concurso {concurso}: Média do lote {media_lote:.2f} pts).")
+                    mem_ia["pontos"] += nota_lote
+                    mem_ia["usos"] += 1
+                    
+            relatorio.append(f"A métrica para **{est}** calibrou pesos (Concurso {concurso}: Pico máximo de {max_pts} pts).")
                 
         return lucro_total, relatorio
-
     # Função auxiliar para mapear prêmios da API
     def extrair_rateios_api(premiacoes):
         rateios = {}
