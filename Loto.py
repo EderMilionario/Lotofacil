@@ -634,20 +634,11 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except: pass
 
     # =================================================================
-    # 🧬 MOTOR DE FÍSICA: A TEORIA DOS BALDES (Proporção 60/40)
+    # 🧬 MOTOR DE FÍSICA: RANKING ABSOLUTO (Fim dos Baldes)
     # =================================================================
-    def aplicar_fisica_baldes(pesos_calc, sorteio_anterior):
-        rep = [n for n in range(1, 26) if n in sorteio_anterior]
-        aus = [n for n in range(1, 26) if n not in sorteio_anterior]
-        
-        rep_ord = sorted(rep, key=lambda x: pesos_calc.get(x, 0), reverse=True)
-        aus_ord = sorted(aus, key=lambda x: pesos_calc.get(x, 0), reverse=True)
-        
-        ranking = []
-        while rep_ord or aus_ord:
-            if rep_ord: ranking.extend(rep_ord[:3]); rep_ord = rep_ord[3:]
-            if aus_ord: ranking.extend(aus_ord[:2]); aus_ord = aus_ord[2:]
-        return ranking
+    def aplicar_fisica_absoluta(pesos_calc):
+        """A IA tem liberdade total para escalar as dezenas. Ordena puramente pelo peso estratégico real."""
+        return sorted(range(1, 26), key=lambda x: pesos_calc.get(x, 0), reverse=True)
 
     # =================================================================
     # 🧠 CÓRTEX ESTRATÉGICO: SIMULAÇÃO PERFEITA (BACKTEST ESPELHADO)
@@ -664,7 +655,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             sorteio_real = set(historico_sombra[i]['dezenas'])
             ultimo_passado = h_passado[-1]['dezenas'] if h_passado else list(range(1,16))
             
-            # Recálculo exato das variáveis para o momento no tempo (Unificação Matemática)
             freq_v = Counter([n for h in h_passado[-50:] for n in h['dezenas']])
             freq_max_v = max(freq_v.values()) if freq_v else 1
             
@@ -691,10 +681,11 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             w_sim = {x: freq_v.get(x, 0) + freq_v.get(26-x, 0) + (15 if x in moldura_lista else 0) for x in range(1, 26)}
             w_ciclo = {x: 100 if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
             
-            p_tend = aplicar_fisica_baldes(w_tend, ultimo_passado)[:18]
-            p_rev = aplicar_fisica_baldes(w_rev, ultimo_passado)[:18]
-            p_sim = aplicar_fisica_baldes(w_sim, ultimo_passado)[:18]
-            p_ciclo = aplicar_fisica_baldes(w_ciclo, ultimo_passado)[:18]
+            # Aqui a IA testa o verdadeiro poder de fogo sem a trava dos baldes
+            p_tend = aplicar_fisica_absoluta(w_tend)[:18]
+            p_rev = aplicar_fisica_absoluta(w_rev)[:18]
+            p_sim = aplicar_fisica_absoluta(w_sim)[:18]
+            p_ciclo = aplicar_fisica_absoluta(w_ciclo)[:18]
             
             acertos_v = {
                 "Tendencia": len(set(p_tend) & sorteio_real),
@@ -750,12 +741,12 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             elif melhor_est == "Ciclo": w_final = {x: 100 if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
             else: w_final = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 3)) for x in range(1, 26)}
                 
-            rank_v = aplicar_fisica_baldes(w_final, ultimo_passado)
+            rank_v = aplicar_fisica_absoluta(w_final)
                 
             for t in scores_tamanho:
                 acertos_t = len(set(rank_v[:t]) & sorteio_real)
                 
-                # RECOMPENSA CORRIGIDA: Justifica o risco de investir em matrizes maiores (19, 20, 21)
+                # RECOMPENSA CORRIGIDA: Justifica o risco de investir em matrizes maiores apenas se trouxer o grande prêmio
                 if acertos_t == 15: pontos = 500.0  
                 elif acertos_t == 14: pontos = 60.0  
                 elif acertos_t == 13: pontos = 10.0
@@ -778,6 +769,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     # =================================================================
     if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
         estrategia = "Ciclo Otimizado"
+        # O peso 100 garante que as ausentes ficarão no topo absoluto da nova Física
         pesos = {i: 100 if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
         tatic_desc = "Fechamento de Ciclo engatilhado."
     elif melhor_est == "Simetria":
@@ -793,8 +785,8 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         pesos = {i: max(1, freq_recente.get(i, 0) + ((freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0)) * 3)) for i in range(1, 26)}
         tatic_desc = "Tendência Acelerada no fluxo de sorteios."
 
-    ultimo_sorteio_real = historico[-1]['dezenas'] if historico else list(range(1,16))
-    dezenas_ordenadas = aplicar_fisica_baldes(pesos, ultimo_sorteio_real)
+    # Aplica o ranking absoluto para a Matriz Final que será entregue aos Geradores A e B
+    dezenas_ordenadas = aplicar_fisica_absoluta(pesos)
     matriz_base = sorted(dezenas_ordenadas[:qtd_matriz])
 
     # =================================================================
@@ -1987,11 +1979,8 @@ with tabs[4]:
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
     
     # =====================================================================
-    # 🧠 MOTOR DE AUDITORIA E APRENDIZADO UNIFICADO (Pico de Letalidade)
+    # 🧠 MOTOR DE AUDITORIA E APRENDIZADO UNIFICADO (Densidade de Lucro)
     # =====================================================================
-    # Esta função obriga todas as formas de entrada (Massa, API e Manual)
-    # a passarem pelo mesmo funil, garantindo que a IA aprenda sempre igual 
-    # e que o dinheiro sempre retorne para a banca.
     def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
         if rateios is None: rateios = {}
         v11, v12, v13, v14, v15 = rateios.get(11, 7.0), rateios.get(12, 14.0), rateios.get(13, 35.0), rateios.get(14, 1500.0), rateios.get(15, 1500000.0)
@@ -2005,10 +1994,11 @@ with tabs[4]:
             "Reversão Estatística": "Reversao", "Simetria de Borda": "Simetria"
         }
         
-        # 🧠 Variáveis para a Matemática do Lote
+        # 🧠 Variáveis para a Matemática Fiel do Lote
         soma_pontos_est = {}
         qtd_jogos_est = {}
-        max_pontos_est = {} # ⬅️ NOVO: Rastreador do Pico de Letalidade
+        max_pontos_est = {} 
+        qtd_premiados_est = {} # ⬅️ NOVO: Rastreador de Consistência (ROI)
         
         for j in st.session_state.data.get("jogos_salvos", []):
             alvo_do_jogo = j.get('concurso_alvo')
@@ -2025,39 +2015,44 @@ with tabs[4]:
                 est_raw = j.get('estrategia', '')
                 est_usada = mapa_estrategias.get(est_raw, est_raw)
                 
-                # Acumula os dados para a IA aprender
                 soma_pontos_est[est_usada] = soma_pontos_est.get(est_usada, 0) + pontos
                 qtd_jogos_est[est_usada] = qtd_jogos_est.get(est_usada, 0) + 1
-                
-                # ⬅️ NOVO: Grava o maior acerto que a estratégia conseguiu neste lote
                 max_pontos_est[est_usada] = max(max_pontos_est.get(est_usada, 0), pontos)
                 
                 if pontos >= 11:
                     j['status'] = "Premiado"
                     lucro_total += j['premio_valor']
                     st.session_state.data["banca"] += j['premio_valor']
+                    # ⬅️ NOVO: Marca um acerto na Zona de Lucro para calcular o ROI depois
+                    qtd_premiados_est[est_usada] = qtd_premiados_est.get(est_usada, 0) + 1
                 else:
                     j['status'] = "Não Premiado"
         
-        # --- O CÉREBRO APRENDE AQUI (Foco no Pico de Acerto e Memória Recente) ---
+        # --- O CÉREBRO APRENDE AQUI (Foco em Densidade de Acertos/ROI + Picos) ---
         for est in qtd_jogos_est:
+            total_jogos = qtd_jogos_est.get(est, 0)
+            jogos_premiados = qtd_premiados_est.get(est, 0)
             max_pts = max_pontos_est.get(est, 0)
             
-            # Nota baseada na Letalidade Máxima (O que importa é o prêmio grande)
-            if max_pts == 15: nota_lote = 15.0
-            elif max_pts == 14: nota_lote = 13.5
-            elif max_pts == 13: nota_lote = 12.0
-            elif max_pts == 12: nota_lote = 11.0
-            elif max_pts == 11: nota_lote = 10.5
-            else: nota_lote = 9.5 # Abaixo de 11 é falha
+            # Taxa de conversão do lote (quantos bilhetes deram lucro?)
+            taxa_conversao = (jogos_premiados / total_jogos) if total_jogos > 0 else 0.0
+            
+            # Base da nota é a consistência (para a IA não ser enganada pela sorte cega)
+            # Uma taxa de conversão impecável fará a base saltar de 9.5 para até 13.0
+            nota_lote = 9.5 + (taxa_conversao * 3.5) 
+            
+            # Bônus Letal para picos REAIS que arrastaram prêmios robustos
+            if max_pts == 15: nota_lote += 5.0
+            elif max_pts == 14: nota_lote += 3.5
+            elif max_pts == 13: nota_lote += 1.5
+            
+            # Trava matemática: a nota nunca passa de 15.0 para não estourar a memória
+            nota_lote = min(nota_lote, 15.0) 
             
             if est in st.session_state.data.get("ia_memoria", {}):
                 mem_ia = st.session_state.data["ia_memoria"][est]
                 if isinstance(mem_ia, dict):
                     
-                    # O CÓRTEX DE ESQUECIMENTO DINÂMICO
-                    # Se acumular mais de 20 concursos, reduz o peso antigo em 10%
-                    # Isso garante que a IA seja "viva" e valorize as tendências atuais!
                     if mem_ia["usos"] >= 20:
                         mem_ia["usos"] *= 0.90
                         mem_ia["pontos"] *= 0.90
@@ -2065,7 +2060,7 @@ with tabs[4]:
                     mem_ia["pontos"] += nota_lote
                     mem_ia["usos"] += 1
                     
-            relatorio.append(f"A métrica para **{est}** calibrou pesos (Concurso {concurso}: Pico máximo de {max_pts} pts).")
+            relatorio.append(f"Métrica calibrada para **{est}** (Concurso {concurso}: {jogos_premiados}/{total_jogos} bilhetes premiados | Pico máximo: {max_pts} pts).")
                 
         return lucro_total, relatorio
     # Função auxiliar para mapear prêmios da API
