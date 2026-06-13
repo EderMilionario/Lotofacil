@@ -2301,30 +2301,26 @@ with tabs[4]:
             # BOTÃO B: CALIBRAR A INTELIGÊNCIA COM O BANCO SALVO (O FANTASMA ADAPTATIVO COMPLETO)
             if st.button("🧠 2. CALIBRAR INTELIGÊNCIA (LER TODO O BANCO)", type="primary", use_container_width=True):
                 historico_completo = st.session_state.data.get("historico_dados", [])
-                # Mapeamento para garantir que o nome da estratégia gere a chave correta na memória
-                mapa_chaves = {
-                    "Tendência de Frequência": "Tendencia",
-                    "Reversão Estatística": "Reversao",
-                    "Ciclo Otimizado": "Ciclo",
-                    "Simetria de Borda": "Simetria"
-                }
                 
                 if not historico_completo:
                     st.error("O banco de dados está vazio! Clique no botão de Baixar primeiro.")
                 else:
-                    # Limpeza total da mente da IA e Banca para recomeçar a simulação financeira
+                    # 🛡️ PROTEÇÃO DE ATIVOS: Guarda os bilhetes reais gerados por você antes de formatar a simulação
+                    bilhetes_reais = st.session_state.data.get("jogos_salvos", [])
+                    
+                    # Limpeza total da mente da IA para recomeçar a simulação financeira
                     st.session_state.data["ia_memoria"] = {
                         "Tendencia": {"usos": 0, "pontos": 0}, 
                         "Reversao": {"usos": 0, "pontos": 0},
                         "Ciclo": {"usos": 0, "pontos": 0},
                         "Simetria": {"usos": 0, "pontos": 0}
                     }
+                    # O sistema zera a banca financeira da simulação do passado, mas os bilhetes reais continuam intactos
                     st.session_state.data["banca"] = 10000.00
                     st.session_state.data["historico_aportes"] = 0.0
                     st.session_state.data["historico_saques"] = 0.0
-                    st.session_state.data["jogos_salvos"] = []
                     
-                    with st.spinner("Calibrando a IA com o Histórico Completo. Isso usa apenas processamento local..."):
+                    with st.spinner("Calibrando o motor preditivo. Processamento local em andamento..."):
                         barra_calib = st.progress(0)
                         porcentagem_texto = st.empty()
                         
@@ -2336,9 +2332,9 @@ with tabs[4]:
                             num = dado_atual['concurso']
                             dezenas_sorteadas = dado_atual['dezenas']
                             
-                            # --- O FANTASMA ADAPTATIVO DA IA (Exatamente a sua lógica) ---
-                            # Pega o histórico até o sorteio anterior ao atual para não ver o futuro
+                            # --- O FANTASMA ADAPTATIVO DA IA ---
                             historico_para_ia = historico_completo[:i]
+                            jogos_simulados = []
                             
                             if len(historico_para_ia) >= 10:
                                 try:
@@ -2346,19 +2342,12 @@ with tabs[4]:
                                     matriz_base = ia_temp.get('matriz_base', [])
                                     estrategia_rodada = ia_temp.get('estrategia_usada', 'Tendencia')
                                     tamanho_matriz = len(matriz_base)
-                                    jogos_simulados = []
                                             
-                                    # ==========================================================
-                                    # 🧠 SIMULAÇÃO REALISTA: FAST-TRACK ESTOCÁSTICO
-                                    # Gera bilhetes para alimentar o ROI e a Memória da IA.
-                                    # É matematicamente equivalente à média do fechamento, mas evita travamentos.
-                                    # ==========================================================
                                     limite_jogos = 50 if tamanho_matriz >= 18 else (15 if tamanho_matriz <= 17 else 30)
                                     pesos = ia_temp.get('pesos', {})
                                     
                                     for _ in range(limite_jogos):
                                         if tamanho_matriz <= 20:
-                                            # Amostragem direta da matriz base (Garante a Média de Aprendizado)
                                             candidato = random.sample(matriz_base, 15)
                                         else:
                                             # Roleta Estocástica para matrizes gigantes
@@ -2378,37 +2367,36 @@ with tabs[4]:
                                             "estrategia": estrategia_rodada, "justificativa": "Fantasma (Fast-Track Estocástico)"
                                         })
                                             
-                                    # CORREÇÃO FINANCEIRA ABSOLUTA E AUTOMÁTICA
+                                    # CORREÇÃO FINANCEIRA DA SIMULAÇÃO
                                     custo_treinamento = len(jogos_simulados) * 3.50
                                     st.session_state.data["banca"] -= custo_treinamento
                                     lucro_acumulado_massa -= custo_treinamento    
                                             
-                                    # Substitui os jogos salvos temporariamente para a função auditar
-                                    st.session_state.data["jogos_salvos"] = jogos_simulados
-                                            
                                 except Exception as e:
-                                    st.session_state.data["jogos_salvos"] = []
-                            else:
-                                st.session_state.data["jogos_salvos"] = []
+                                    pass
                             
-                            # Auditoria Pericial Unificada (A IA aprende se deu certo ou errado)
+                            # 🛡️ MESA DE AUDITORIA HÍBRIDA: Coloca os fantasmas E os seus bilhetes reais na mesa
+                            st.session_state.data["jogos_salvos"] = jogos_simulados + bilhetes_reais
+                            
+                            # A auditoria confere o concurso atual. Se um bilhete real seu bater com o 'num', ele é auditado.
                             lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, rateios=None)
                             lucro_acumulado_massa += lucro_parcial
                             
-                            # Atualização da barra de progresso (a cada 20 loops para não pesar a UI)
+                            # Atualização da barra de progresso
                             if i % 20 == 0:
                                 pct = (i + 1) / total_concursos
                                 barra_calib.progress(pct)
-                                porcentagem_texto.text(f"Progresso da Calibragem: {pct*100:.1f}%")
+                                porcentagem_texto.text(f"Progresso da Calibração: {pct*100:.1f}%")
                         
-                        # Limpa os jogos no final, pois foi só simulação de memória (os dados financeiros ficaram na banca)
-                        st.session_state.data["jogos_salvos"] = [] 
+                        # 🛡️ RESTAURAÇÃO DE ATIVOS: Ao fim de todo o passado, joga os fantasmas fora e guarda só os reais
+                        st.session_state.data["jogos_salvos"] = bilhetes_reais 
                         salvar_dados(st.session_state.data)
                         
                         barra_calib.progress(1.0)
-                        porcentagem_texto.text("Progresso da Calibragem: 100.0%")
-                        st.success(f"🚀 Calibração Inteligente Concluída! Saldo Final Simulado na Banca: R$ {st.session_state.data['banca']:,.2f}")
-                        st.balloons() 
+                        porcentagem_texto.text("Progresso da Calibração: 100.0%")
+                        
+                        # Mensagem Profissional, seca e direta (Sem Balões)
+                        st.success(f"TERMINAL: Calibração Preditiva Concluída. Matriz atualizada. Saldo Final Simulado: R$ {st.session_state.data['banca']:,.2f}")
     col_sync1, col_sync2 = st.columns(2)
     
     with col_sync1:
