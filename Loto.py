@@ -611,33 +611,35 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             perf[est] = float(dado_memoria)
             
     notas_finais = perf.copy()
+
+    # 🛑 TRAVA LETAL DO CICLO: Impossibilita o ciclo de ser ativado antes da hora
+    if len(faltam_ciclo) > 6:
+        notas_finais["Ciclo"] = -9999.0
     
     # --- GATILHOS CONTEXTUAIS (Adrenalina e Anomalias) ---
     qtd_faltam = len(faltam_ciclo)
-    if qtd_faltam > 0 and qtd_faltam <= 7:
-        if jogos_ciclo >= 3: notas_finais["Ciclo"] += 2.0 + ((7 - qtd_faltam) * 0.3) + (jogos_ciclo * 0.2)
-        else: notas_finais["Ciclo"] -= 3.5 
-    elif qtd_faltam >= 18 or jogos_ciclo <= 1: notas_finais["Ciclo"] -= 4.0 
-        
+    if qtd_faltam > 0 and qtd_faltam <= 4:
+        if jogos_ciclo >= 3: notas_finais["Ciclo"] += 50.0 + ((7 - qtd_faltam) * 2.0) # Bônus massivo para forçar a escolha
+    
     try:
         if len(historico) >= 2:
             repetidas_ultimo = len(set(historico[-1]['dezenas']).intersection(set(historico[-2]['dezenas'])))
             if (repetidas_ultimo <= 7) or (repetidas_ultimo >= 11) or (soma_ultimo > 210) or (soma_ultimo < 175):
-                notas_finais["Reversao"] += 2.0 
+                notas_finais["Reversao"] += 5.0 
             elif 8 <= repetidas_ultimo <= 10 and (180 <= media_soma <= 205):
-                notas_finais["Tendencia"] += 1.5
+                notas_finais["Tendencia"] += 3.0
     except: pass
         
     try:
         moldura_ultimo = sum(1 for n in historico[-1]['dezenas'] if n in moldura_lista)
-        if moldura_ultimo <= 8 or moldura_ultimo >= 12: notas_finais["Simetria"] += 1.8
+        if moldura_ultimo <= 8 or moldura_ultimo >= 12: notas_finais["Simetria"] += 4.0
     except: pass
 
     # =================================================================
-    # 🧬 MOTOR DE FÍSICA: RANKING ABSOLUTO (Fim dos Baldes)
+    # 🧬 MOTOR DE FÍSICA: RANKING ABSOLUTO COM DESEMPATE ESTATÍSTICO
     # =================================================================
     def aplicar_fisica_absoluta(pesos_calc):
-        """A IA tem liberdade total para escalar as dezenas. Ordena puramente pelo peso estratégico real."""
+        """A IA tem liberdade total. Ordena pelo peso real e desempata pela frequência histórica."""
         return sorted(range(1, 26), key=lambda x: (pesos_calc.get(x, 0), freq_recente.get(x, 0)), reverse=True)
 
     # =================================================================
@@ -653,7 +655,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
             h_passado = historico_sombra[:i]
             sorteio_real = set(historico_sombra[i]['dezenas'])
-            ultimo_passado = h_passado[-1]['dezenas'] if h_passado else list(range(1,16))
             
             freq_v = Counter([n for h in h_passado[-50:] for n in h['dezenas']])
             freq_max_v = max(freq_v.values()) if freq_v else 1
@@ -675,13 +676,13 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                 if len(c_v) >= 20: break
             f_v = set(range(1,26)) - c_v
 
-            # PESOS DO SIMULADOR IDÊNTICOS AO JOGO FINAL
-            w_tend = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 3)) for x in range(1, 26)}
-            w_rev = {x: max(1, (freq_max_v - freq_v.get(x, 0)) + (atrasos_v.get(x, 0) * 5)) for x in range(1, 26)}
-            w_sim = {x: freq_v.get(x, 0) + freq_v.get(26-x, 0) + (15 if x in moldura_lista else 0) for x in range(1, 26)}
-            w_ciclo = {x: 100 if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
+            # PESOS DO SIMULADOR (AGRESSIVOS E IDÊNTICOS AO JOGO FINAL)
+            w_tend = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 5)) for x in range(1, 26)}
+            w_rev = {x: max(1, (freq_max_v - freq_v.get(x, 0)) + (atrasos_v.get(x, 0) * 8)) for x in range(1, 26)}
+            w_sim = {x: (freq_v.get(x, 0) + freq_v.get(26-x, 0)) * (1.5 if x in moldura_lista else 1.0) for x in range(1, 26)}
+            w_ciclo = {x: 1000 + freq_v.get(x, 0) if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
             
-            # Aqui a IA testa o verdadeiro poder de fogo sem a trava dos baldes
+            # Matrizes do Backtest
             p_tend = aplicar_fisica_absoluta(w_tend)[:18]
             p_rev = aplicar_fisica_absoluta(w_rev)[:18]
             p_sim = aplicar_fisica_absoluta(w_sim)[:18]
@@ -695,26 +696,27 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             }
             
             for est, acertos in acertos_v.items():
-                if acertos == 15: forca_vitoria[est] += 100.0 
-                elif acertos == 14: forca_vitoria[est] += 30.0 
-                elif acertos == 13: forca_vitoria[est] += 8.0  
-                elif acertos >= 11: forca_vitoria[est] += 1.0  
-                else: forca_vitoria[est] -= 2.0  
+                if acertos == 15: forca_vitoria[est] += 200.0 
+                elif acertos == 14: forca_vitoria[est] += 50.0 
+                elif acertos == 13: forca_vitoria[est] += 10.0  
+                elif acertos >= 11: forca_vitoria[est] += 2.0  
+                else: forca_vitoria[est] -= 3.0  
 
-        if 1 <= len(faltam_ciclo) <= 3: notas_finais["Ciclo"] += 80.0 
-        for est in notas_finais: notas_finais[est] += (forca_vitoria.get(est, 0) * 0.4) 
+        # Adiciona a pontuação da simulação nas notas finais
+        for est in notas_finais: 
+            if notas_finais[est] != -9999.0: # Ignora se o ciclo estiver travado
+                notas_finais[est] += (forca_vitoria.get(est, 0) * 0.5) 
 
         melhor_est = max(notas_finais, key=notas_finais.get)
 
         # -----------------------------------------------------------------
-        # AVALIAÇÃO DE TAMANHO (CORREÇÃO DA "MATEMÁTICA DO MEDO")
+        # AVALIAÇÃO DE TAMANHO (A Matemática do Ponto de Equilíbrio Realista)
         # -----------------------------------------------------------------
-        scores_tamanho = {t: 0.0 for t in range(16, 22)} # Segura até 21 para Streamlit não travar
+        scores_tamanho = {t: 0.0 for t in range(16, 22)} 
         
         for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
             h_passado = historico_sombra[:i]
             sorteio_real = set(historico_sombra[i]['dezenas'])
-            ultimo_passado = h_passado[-1]['dezenas'] if h_passado else list(range(1,16))
             
             freq_v = Counter([n for h in h_passado[-50:] for n in h['dezenas']])
             freq_max_v = max(freq_v.values()) if freq_v else 1
@@ -736,25 +738,27 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                 if len(c_v) >= 20: break
             f_v = set(range(1,26)) - c_v
             
-            if melhor_est == "Reversao": w_final = {x: max(1, (freq_max_v - freq_v.get(x, 0)) + (atrasos_v.get(x, 0) * 5)) for x in range(1, 26)}
-            elif melhor_est == "Simetria": w_final = {x: freq_v.get(x, 0) + freq_v.get(26-x, 0) + (15 if x in moldura_lista else 0) for x in range(1, 26)}
-            elif melhor_est == "Ciclo": w_final = {x: 100 if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
-            else: w_final = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 3)) for x in range(1, 26)}
+            # Replica os pesos agressivos baseados na estratégia que venceu
+            if melhor_est == "Reversao": w_final = {x: max(1, (freq_max_v - freq_v.get(x, 0)) + (atrasos_v.get(x, 0) * 8)) for x in range(1, 26)}
+            elif melhor_est == "Simetria": w_final = {x: (freq_v.get(x, 0) + freq_v.get(26-x, 0)) * (1.5 if x in moldura_lista else 1.0) for x in range(1, 26)}
+            elif melhor_est == "Ciclo": w_final = {x: 1000 + freq_v.get(x, 0) if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
+            else: w_final = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 5)) for x in range(1, 26)}
                 
             rank_v = aplicar_fisica_absoluta(w_final)
                 
             for t in scores_tamanho:
                 acertos_t = len(set(rank_v[:t]) & sorteio_real)
                 
-                # RECOMPENSA CORRIGIDA: Justifica o risco de investir em matrizes maiores apenas se trouxer o grande prêmio
-                if acertos_t == 15: pontos = 500.0  
-                elif acertos_t == 14: pontos = 60.0  
-                elif acertos_t == 13: pontos = 10.0
-                elif acertos_t == 12: pontos = 3.0
+                # Recompensas reajustadas para forçar a IA a buscar os 14/15
+                if acertos_t == 15: pontos = 1000.0  
+                elif acertos_t == 14: pontos = 200.0  
+                elif acertos_t == 13: pontos = 30.0
+                elif acertos_t == 12: pontos = 5.0
                 elif acertos_t == 11: pontos = 1.0
                 else: pontos = 0.0  
     
-                fator_puni = {16: 2.0, 17: 4.0, 18: 12.0, 19: 35.0, 20: 90.0, 21: 250.0}
+                # Punições calibradas para permitir que matrizes de 19/20 operem se trouxerem lucro
+                fator_puni = {16: 1.0, 17: 1.5, 18: 3.0, 19: 8.0, 20: 20.0, 21: 50.0}
                 scores_tamanho[t] += (pontos / fator_puni[t])
         
         melhor_tamanho = max(scores_tamanho, key=scores_tamanho.get)
@@ -765,24 +769,24 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     qtd_matriz = melhor_tamanho
 
     # =================================================================
-    # CONSTRUÇÃO DA MATRIZ DEFINITIVA
+    # CONSTRUÇÃO DA MATRIZ DEFINITIVA (PESOS REAIS E AGRESSIVOS)
     # =================================================================
     if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
         estrategia = "Ciclo Otimizado"
-        # O peso 100 garante que as ausentes ficarão no topo absoluto da nova Física
+        # O peso 1000 quebra o enfileiramento cego e usa a frequência de desempate
         pesos = {i: 1000 + freq_recente.get(i, 0) if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
-        tatic_desc = "Fechamento de Ciclo engatilhado."
+        tatic_desc = "Fechamento de Ciclo engatilhado (Reta Final)."
     elif melhor_est == "Simetria":
         estrategia = "Simetria de Borda"
-        pesos = {i: freq_recente.get(i, 0) + freq_recente.get(26-i, 0) + (15 if i in moldura_lista else 0) for i in range(1, 26)}
+        pesos = {i: (freq_recente.get(i, 0) + freq_recente.get(26-i, 0)) * (1.5 if i in moldura_lista else 1.0) for i in range(1, 26)}
         tatic_desc = "Simetria Analítica ativada."
     elif melhor_est == "Reversao":
         estrategia = "Reversão Estatística"
-        pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 5)) for i in range(1, 26)}
+        pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 8)) for i in range(1, 26)}
         tatic_desc = "Reversão Estatística (Caça às Zebras) ativada."
     else:
         estrategia = "Tendência de Frequência"
-        pesos = {i: max(1, freq_recente.get(i, 0) + ((freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0)) * 3)) for i in range(1, 26)}
+        pesos = {i: max(1, freq_recente.get(i, 0) + ((freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0)) * 5)) for i in range(1, 26)}
         tatic_desc = "Tendência Acelerada no fluxo de sorteios."
 
     # Aplica o ranking absoluto para a Matriz Final que será entregue aos Geradores A e B
@@ -799,18 +803,18 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         texto_estrategia = f"Sincronia absoluta: O Gatilho disparou ({len(faltam_ciclo)} ausentes) e o Backtest validou a força do Ciclo ({score_vencedor:.1f} pts)."
     elif melhor_est != estrategia_teorica:
         diferenca_pts = score_vencedor - score_teorico
-        texto_estrategia = f"Pivotamento tático detectado: O instinto teórico sugeriu '{estrategia_teorica}', mas a auditoria real validou a superioridade de '{melhor_est}' (+{diferenca_pts:.1f} pts sobre o plano original)."
+        texto_estrategia = f"Pivotamento tático detectado: O instinto sugeriu '{estrategia_teorica}', mas o motor encontrou letalidade na '{melhor_est}' (+{diferenca_pts:.1f} pts)."
     else:
-        texto_estrategia = f"Convergência confirmada: O instinto inicial pedia '{estrategia_teorica}' e os testes cravaram sua dominância absoluta ({score_vencedor:.1f} pts)."
+        texto_estrategia = f"Convergência confirmada: O instinto pedia '{estrategia_teorica}' e os testes cravaram sua dominância absoluta ({score_vencedor:.1f} pts)."
 
     if qtd_matriz <= 15:
-        texto_tamanho = f"O Córtex expurgou ruídos estatísticos e blindou a verba reduzindo ao limite de {qtd_matriz} dezenas."
+        texto_tamanho = f"Expurgo de ruídos: O sistema cravou a malha no limite exato de {qtd_matriz} dezenas."
     elif qtd_matriz == tamanho_instinto:
-        texto_tamanho = f"O sistema ratificou a matemática inicial e manteve o Ponto de Equilíbrio em {qtd_matriz} dezenas."
+        texto_tamanho = f"Ponto de Equilíbrio ratificado: Geometria mantida em {qtd_matriz} dezenas."
     elif qtd_matriz < tamanho_instinto:
-        texto_tamanho = f"Geometria Refinada: A sugestão era {tamanho_instinto}, mas o sistema encontrou maior eficiência cravando a rede em {qtd_matriz} dezenas."
+        texto_tamanho = f"Corte de Verba: Sistema cravou a malha em {qtd_matriz} dezenas visando eficiência."
     else:
-        texto_tamanho = f"Alerta de Alta Confiança! A IA detectou uma probabilidade letal de acertos maciços e expandiu a malha para {qtd_matriz} dezenas."
+        texto_tamanho = f"Alerta de Letalidade Máxima: A IA detectou 14/15 pts na simulação e expandiu a malha para {qtd_matriz} dezenas para o Plano A operar."
 
     motivo_est = f"DIRETRIZ: {tatic_desc} ANÁLISE EM TEMPO REAL: {texto_estrategia} GEOMETRIA DA MATRIZ: {texto_tamanho}"
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
