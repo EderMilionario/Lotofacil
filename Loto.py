@@ -556,7 +556,7 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO MULTI-ESTRATÉGICO DA IA (Motor Híbrido Proporcional Lotofácil)
+# CÉREBRO MULTI-ESTRATÉGICO DA IA (Motor Híbrido Letal - Teto 20 Dezenas)
 # =====================================================================
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
@@ -636,21 +636,44 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except: pass
 
     # =================================================================
-    # 🧬 MOTOR DE FÍSICA PROPORCIONAL: A REGRA DO 9/6 OFICIAL
+    # 🧬 O MOTOR ISOLADO: CADA POTE É JULGADO PELA SUA PRÓPRIA FÍSICA
     # =================================================================
-    def montar_matriz_proporcional(tamanho_alvo, pesos_estrategia, u_15, a_10):
-        """Obrigatória a separação entre quentes e frias para espelhar o globo da Caixa."""
-        prop = {16:(10,6), 17:(10,7), 18:(11,7), 19:(12,7), 20:(12,8), 21:(13,8)}.get(tamanho_alvo, (11,7))
-        q_rep, q_aus = prop
+    def rankear_repetidas(rep_list, f_dict, f_u10, f_p10, simetria=False):
+        """Julga as repetidas EXCLUSIVAMENTE pelo momentum (Força/Aceleração)."""
+        pesos = {}
+        for x in rep_list:
+            base = max(1, f_dict.get(x, 0) + ((f_u10.get(x, 0) - f_p10.get(x, 0)) * 5))
+            if simetria and x in moldura_lista: base *= 1.5
+            pesos[x] = base
+        return sorted(rep_list, key=lambda x: (pesos.get(x, 0), f_dict.get(x, 0)), reverse=True)
+
+    def rankear_ausentes(aus_list, f_dict, f_max, atrasos_d, faltam_c, simetria=False):
+        """Julga as ausentes EXCLUSIVAMENTE pelo atraso e ciclo (Zebras reais)."""
+        pesos = {}
+        for x in aus_list:
+            if x in faltam_c and len(faltam_c) <= 6:
+                base = 1000 + f_dict.get(x, 0) # Prioridade máxima para fechar ciclo
+            else:
+                base = max(1, (f_max - f_dict.get(x, 0)) + (atrasos_d.get(x, 0) * 8))
+            if simetria and x in moldura_lista: base *= 1.5
+            pesos[x] = base
+        return sorted(aus_list, key=lambda x: (pesos.get(x, 0), f_dict.get(x, 0)), reverse=True)
+
+    def montar_matriz_hibrida(tamanho, est_vencedora, top_r, top_a):
+        """Funde a elite das repetidas e a elite das ausentes na proporção exata da Lotofácil."""
+        base_prop = {16: (10,6), 17: (10,7), 18: (11,7), 19: (11,8), 20: (12,8)}
+        r, a = base_prop.get(tamanho, (11,7))
         
-        # Desempate letal: Peso da estratégia primeiro, frequência real depois.
-        top_rep = sorted(u_15, key=lambda x: (pesos_estrategia.get(x, 0), freq_recente.get(x, 0)), reverse=True)[:q_rep]
-        top_aus = sorted(a_10, key=lambda x: (pesos_estrategia.get(x, 0), freq_recente.get(x, 0)), reverse=True)[:q_aus]
-        
-        return sorted(top_rep + top_aus)
+        # A estratégia apenas empurra a proporção para o lado que está mais forte no dia
+        if est_vencedora == "Tendencia" and a > 5:
+            r += 1; a -= 1
+        elif est_vencedora in ["Reversao", "Ciclo"] and r > 9:
+            r -= 1; a += 1
+            
+        return sorted(top_r[:r] + top_a[:a])
 
     # =================================================================
-    # 🧠 CÓRTEX ESTRATÉGICO: SIMULAÇÃO PERFEITA (BACKTEST PROPORCIONAL)
+    # 🧠 CÓRTEX ESTRATÉGICO: SIMULAÇÃO COM BLOQUEIO EM 20 DEZENAS
     # =================================================================
     janela_backtest = 30
     historico_sombra = historico[-janela_backtest-10:] if len(historico) >= janela_backtest+10 else historico
@@ -684,23 +707,19 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                     if n in h['dezenas']: dez_enc_v[n] = True
                     elif not dez_enc_v[n]: atrasos_v[n] += 1
             
-            c_v = set()
-            for h in reversed(h_passado):
-                c_v.update(h['dezenas'])
-                if len(c_v) >= 20: break
-            f_v = set(range(1,26)) - c_v
+            f_v = set(range(1,26)) - {n for h in reversed(h_passado[:20]) for n in h['dezenas']}
 
-            # PESOS DO SIMULADOR (CÁLCULOS AGRESSIVOS DE ELITE)
-            w_tend = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 5)) for x in range(1, 26)}
-            w_rev = {x: max(1, (freq_max_v - freq_v.get(x, 0)) + (atrasos_v.get(x, 0) * 8)) for x in range(1, 26)}
-            w_sim = {x: (freq_v.get(x, 0) + freq_v.get(26-x, 0)) * (1.5 if x in moldura_lista else 1.0) for x in range(1, 26)}
-            w_ciclo = {x: 1000 + freq_v.get(x, 0) if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
+            # Rankeia os potes de forma perita
+            top_rep_normal = rankear_repetidas(u_passado, freq_v, f_u_10, f_p_10)
+            top_aus_normal = rankear_ausentes(a_passado, freq_v, freq_max_v, atrasos_v, f_v)
+            top_rep_sim = rankear_repetidas(u_passado, freq_v, f_u_10, f_p_10, simetria=True)
+            top_aus_sim = rankear_ausentes(a_passado, freq_v, freq_max_v, atrasos_v, f_v, simetria=True)
             
-            # Matrizes do Backtest cravadas em 18 dezenas proporcionais
-            p_tend = montar_matriz_proporcional(18, w_tend, u_passado, a_passado)
-            p_rev = montar_matriz_proporcional(18, w_rev, u_passado, a_passado)
-            p_sim = montar_matriz_proporcional(18, w_sim, u_passado, a_passado)
-            p_ciclo = montar_matriz_proporcional(18, w_ciclo, u_passado, a_passado)
+            # Matrizes do Backtest (Tamanho 18 como base de avaliação)
+            p_tend = montar_matriz_hibrida(18, "Tendencia", top_rep_normal, top_aus_normal)
+            p_rev = montar_matriz_hibrida(18, "Reversao", top_rep_normal, top_aus_normal)
+            p_ciclo = montar_matriz_hibrida(18, "Ciclo", top_rep_normal, top_aus_normal)
+            p_sim = montar_matriz_hibrida(18, "Simetria", top_rep_sim, top_aus_sim)
             
             acertos_v = {
                 "Tendencia": len(set(p_tend) & sorteio_real),
@@ -723,9 +742,9 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         melhor_est = max(notas_finais, key=notas_finais.get)
 
         # -----------------------------------------------------------------
-        # AVALIAÇÃO DE TAMANHO: DA MATRIZ 16 A 21 (RISCO/RECOMPENSA REALISTA)
+        # AVALIAÇÃO DE TAMANHO (O TETO DE 20 DEZENAS OFICIAL)
         # -----------------------------------------------------------------
-        scores_tamanho = {t: 0.0 for t in range(16, 22)} 
+        scores_tamanho = {t: 0.0 for t in range(16, 21)} # BLOQUEADO FISICAMENTE EM 20
         
         for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
             h_passado = historico_sombra[:i]
@@ -746,20 +765,14 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                     if n in h['dezenas']: dez_enc_v[n] = True
                     elif not dez_enc_v[n]: atrasos_v[n] += 1
             
-            c_v = set()
-            for h in reversed(h_passado):
-                c_v.update(h['dezenas'])
-                if len(c_v) >= 20: break
-            f_v = set(range(1,26)) - c_v
+            f_v = set(range(1,26)) - {n for h in reversed(h_passado[:20]) for n in h['dezenas']}
             
-            if melhor_est == "Reversao": w_final = {x: max(1, (freq_max_v - freq_v.get(x, 0)) + (atrasos_v.get(x, 0) * 8)) for x in range(1, 26)}
-            elif melhor_est == "Simetria": w_final = {x: (freq_v.get(x, 0) + freq_v.get(26-x, 0)) * (1.5 if x in moldura_lista else 1.0) for x in range(1, 26)}
-            elif melhor_est == "Ciclo": w_final = {x: 1000 + freq_v.get(x, 0) if x in f_v else freq_v.get(x, 0) for x in range(1, 26)}
-            else: w_final = {x: max(1, freq_v.get(x, 0) + ((f_u_10.get(x, 0) - f_p_10.get(x, 0)) * 5)) for x in range(1, 26)}
+            simetria_ativa = (melhor_est == "Simetria")
+            top_r_teste = rankear_repetidas(u_passado, freq_v, f_u_10, f_p_10, simetria=simetria_ativa)
+            top_a_teste = rankear_ausentes(a_passado, freq_v, freq_max_v, atrasos_v, f_v, simetria=simetria_ativa)
                 
             for t in scores_tamanho:
-                # O simulador testa cada tamanho (16 a 21) usando a fusão proporcional
-                rank_t = montar_matriz_proporcional(t, w_final, u_passado, a_passado)
+                rank_t = montar_matriz_hibrida(t, melhor_est, top_r_teste, top_a_teste)
                 acertos_t = len(set(rank_t) & sorteio_real)
                 
                 if acertos_t == 15: pontos = 1000.0  
@@ -769,8 +782,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                 elif acertos_t == 11: pontos = 1.0
                 else: pontos = 0.0  
     
-                # Punições calibradas para viabilizar matrizes maiores (20/21) QUANDO justificarem 15 pts no backtest
-                fator_puni = {16: 1.0, 17: 1.2, 18: 2.0, 19: 4.0, 20: 8.0, 21: 15.0}
+                fator_puni = {16: 1.0, 17: 1.2, 18: 2.0, 19: 4.0, 20: 8.0}
                 scores_tamanho[t] += (pontos / fator_puni[t])
         
         melhor_tamanho = max(scores_tamanho, key=scores_tamanho.get)
@@ -778,36 +790,37 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         melhor_tamanho = tamanho_instinto
         melhor_est = estrategia_instinto
 
-    qtd_matriz = melhor_tamanho
+    qtd_matriz = min(melhor_tamanho, 20) # Trava final garantida para o Plano A
 
     # =================================================================
-    # CONSTRUÇÃO DA MATRIZ DEFINITIVA PARA O JOGO REAL (PLANO A E B)
+    # CONSTRUÇÃO DA MATRIZ DEFINITIVA PARA O JOGO REAL
     # =================================================================
     ultimo_sorteio_oficial = historico[-1]['dezenas'] if historico else list(range(1,16))
     ausentes_oficiais = [x for x in range(1, 26) if x not in ultimo_sorteio_oficial]
+    
+    simetria_final = (melhor_est == "Simetria")
+    top_rep_oficial = rankear_repetidas(ultimo_sorteio_oficial, freq_recente, freq_ult_10, freq_pen_10, simetria=simetria_final)
+    top_aus_oficial = rankear_ausentes(ausentes_oficiais, freq_recente, freq_recente_max, atrasos, faltam_ciclo, simetria=simetria_final)
 
     if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
         estrategia = "Ciclo Otimizado"
-        pesos = {i: 1000 + freq_recente.get(i, 0) if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
         tatic_desc = "Fechamento de Ciclo engatilhado (Reta Final)."
     elif melhor_est == "Simetria":
         estrategia = "Simetria de Borda"
-        pesos = {i: (freq_recente.get(i, 0) + freq_recente.get(26-i, 0)) * (1.5 if i in moldura_lista else 1.0) for i in range(1, 26)}
         tatic_desc = "Simetria Analítica ativada."
     elif melhor_est == "Reversao":
         estrategia = "Reversão Estatística"
-        pesos = {i: max(1, (freq_recente_max - freq_recente.get(i, 0)) + (atrasos.get(i, 0) * 8)) for i in range(1, 26)}
         tatic_desc = "Reversão Estatística (Caça às Zebras) ativada."
     else:
         estrategia = "Tendência de Frequência"
-        pesos = {i: max(1, freq_recente.get(i, 0) + ((freq_ult_10.get(i, 0) - freq_pen_10.get(i, 0)) * 5)) for i in range(1, 26)}
         tatic_desc = "Tendência Acelerada no fluxo de sorteios."
 
-    # A MATRIZ DE ELITE FINAL QUE VAI PARA O GERADOR
-    matriz_base = montar_matriz_proporcional(qtd_matriz, pesos, ultimo_sorteio_oficial, ausentes_oficiais)
+    # A MATRIZ DE ELITE FINAL QUE VAI PARA O GERADOR (Mistura Perfeita 9/6)
+    matriz_base = montar_matriz_hibrida(qtd_matriz, melhor_est, top_rep_oficial, top_aus_oficial)
+    pesos_visuais = {x: 100 if x in matriz_base else 0 for x in range(1, 26)} # Ajuste para o painel não travar
 
     # =================================================================
-    # 🗣️ NARRATIVA DE AUDITORIA 100% FLUIDA E SINCRONIZADA
+    # 🗣️ NARRATIVA DE AUDITORIA 100% FLUIDA
     # =================================================================
     score_vencedor = notas_finais.get(melhor_est, 0)
     score_teorico = notas_finais.get(estrategia_teorica, 0)
@@ -827,13 +840,13 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     elif qtd_matriz < tamanho_instinto:
         texto_tamanho = f"Corte de Verba: Sistema cravou a malha em {qtd_matriz} dezenas visando eficiência."
     else:
-        texto_tamanho = f"Letalidade Híbrida: O Córtex detectou alta probabilidade de prêmio e expandiu a malha geométrica para {qtd_matriz} dezenas."
+        texto_tamanho = f"Letalidade Híbrida: O Córtex expandiu a malha geométrica para o teto de {qtd_matriz} dezenas."
 
     motivo_est = f"DIRETRIZ: {tatic_desc} ANÁLISE EM TEMPO REAL: {texto_estrategia} GEOMETRIA DA MATRIZ: {texto_tamanho}"
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
 
     return {
-        "estrategia": estrategia, "cod_estrategia": melhor_est, "estrategia_usada": melhor_est, "motivo_est": motivo_est, "pesos": pesos, "freq": freq_recente, 
+        "estrategia": estrategia, "cod_estrategia": melhor_est, "estrategia_usada": melhor_est, "motivo_est": motivo_est, "pesos": pesos_visuais, "freq": freq_recente, 
         "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
         "soma": media_soma, "impares": media_impares, "primos": media_primos, 
         "moldura": media_moldura, "alvo": alvo, "qtd_matriz": qtd_matriz, 
