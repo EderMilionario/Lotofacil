@@ -619,7 +619,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     # --- GATILHOS CONTEXTUAIS (Adrenalina e Anomalias) ---
     qtd_faltam = len(faltam_ciclo)
     if qtd_faltam > 0 and qtd_faltam <= 4:
-        if jogos_ciclo >= 3: notas_finais["Ciclo"] += 50.0 + ((7 - qtd_faltam) * 2.0) # Bônus massivo para forçar a escolha
+        if jogos_ciclo >= 3: notas_finais["Ciclo"] += 50.0 + ((7 - qtd_faltam) * 2.0)
     
     try:
         if len(historico) >= 2:
@@ -649,7 +649,14 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     historico_sombra = historico[-janela_backtest-10:] if len(historico) >= janela_backtest+10 else historico
     
     forca_vitoria = {"Tendencia": 0.0, "Reversao": 0.0, "Ciclo": 0.0, "Simetria": 0.0}
-    estrategia_teorica = estrategia_instinto 
+    
+    # 🔗 SINCRONIZAÇÃO COM O DIAGNÓSTICO INICIAL (Correção do Bug Visual)
+    # Garante que o Córtex lembre que o instinto pediu 20 dezenas na reta final do ciclo
+    if qtd_faltam > 0 and qtd_faltam <= 3:
+        estrategia_teorica = "Ciclo"
+        tamanho_instinto = 20
+    else:
+        estrategia_teorica = estrategia_instinto 
     
     if len(historico_sombra) > janela_backtest:
         for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
