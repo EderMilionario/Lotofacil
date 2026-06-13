@@ -638,7 +638,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     # =================================================================
     def aplicar_fisica_absoluta(pesos_calc):
         """A IA tem liberdade total para escalar as dezenas. Ordena puramente pelo peso estratégico real."""
-        return sorted(range(1, 26), key=lambda x: pesos_calc.get(x, 0), reverse=True)
+        return sorted(range(1, 26), key=lambda x: (pesos_calc.get(x, 0), freq_recente.get(x, 0)), reverse=True)
 
     # =================================================================
     # 🧠 CÓRTEX ESTRATÉGICO: SIMULAÇÃO PERFEITA (BACKTEST ESPELHADO)
@@ -770,7 +770,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
         estrategia = "Ciclo Otimizado"
         # O peso 100 garante que as ausentes ficarão no topo absoluto da nova Física
-        pesos = {i: 100 if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
+        pesos = {i: 1000 + freq_recente.get(i, 0) if i in faltam_ciclo else freq_recente.get(i, 0) for i in range(1, 26)}
         tatic_desc = "Fechamento de Ciclo engatilhado."
     elif melhor_est == "Simetria":
         estrategia = "Simetria de Borda"
