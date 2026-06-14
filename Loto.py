@@ -556,7 +556,7 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO MULTI-ESTRATÉGICO DA IA (Motor Híbrido Letal - Teto 20 Dezenas)
+# CÉREBRO MULTI-ESTRATÉGICO DA IA (Motor Zonas A/B/C - Limite 20 Dezenas)
 # =====================================================================
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
@@ -612,11 +612,11 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             
     notas_finais = perf.copy()
 
-    # 🛑 TRAVA LETAL DO CICLO: Impossibilita o ciclo de ser ativado antes da hora
+    # 🛑 TRAVA LETAL DO CICLO
     if len(faltam_ciclo) > 6:
         notas_finais["Ciclo"] = -9999.0
     
-    # --- GATILHOS CONTEXTUAIS (Adrenalina e Anomalias) ---
+    # --- GATILHOS CONTEXTUAIS ---
     qtd_faltam = len(faltam_ciclo)
     if qtd_faltam > 0 and qtd_faltam <= 4:
         if jogos_ciclo >= 3: notas_finais["Ciclo"] += 50.0 + ((7 - qtd_faltam) * 2.0)
@@ -635,222 +635,120 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         if moldura_ultimo <= 8 or moldura_ultimo >= 12: notas_finais["Simetria"] += 4.0
     except: pass
 
-    # =================================================================
-    # 🧬 O MOTOR ISOLADO: CADA POTE É JULGADO PELA SUA PRÓPRIA FÍSICA
-    # =================================================================
-    def rankear_repetidas(rep_list, f_dict, f_u10, f_p10, simetria=False):
-        """Julga as repetidas EXCLUSIVAMENTE pelo momentum (Força/Aceleração)."""
-        pesos = {}
-        for x in rep_list:
-            base = max(1, f_dict.get(x, 0) + ((f_u10.get(x, 0) - f_p10.get(x, 0)) * 5))
-            if simetria and x in moldura_lista: base *= 1.5
-            pesos[x] = base
-        return sorted(rep_list, key=lambda x: (pesos.get(x, 0), f_dict.get(x, 0)), reverse=True)
+    melhor_est = max(notas_finais, key=notas_finais.get)
 
-    def rankear_ausentes(aus_list, f_dict, f_max, atrasos_d, faltam_c, simetria=False):
-        """Julga as ausentes EXCLUSIVAMENTE pelo atraso e ciclo (Zebras reais)."""
-        pesos = {}
-        for x in aus_list:
-            if x in faltam_c and len(faltam_c) <= 6:
-                base = 1000 + f_dict.get(x, 0) # Prioridade máxima para fechar ciclo
-            else:
-                base = max(1, (f_max - f_dict.get(x, 0)) + (atrasos_d.get(x, 0) * 8))
-            if simetria and x in moldura_lista: base *= 1.5
-            pesos[x] = base
-        return sorted(aus_list, key=lambda x: (pesos.get(x, 0), f_dict.get(x, 0)), reverse=True)
+    # =================================================================
+    # 🧬 MOTOR DE FÍSICA APLICADA: MAPEAMENTO DE ZONAS A, B e C
+    # =================================================================
+    # A Lotofácil exige análise da curva de 15 concursos para as zonas reais
+    hist_15 = historico[-15:] if len(historico) >= 15 else historico
+    freq_15 = Counter([n for h in hist_15 for n in h['dezenas']])
+    
+    # Ranqueia todas as 25 dezenas com base puramente em Força vs Atraso para dividir o volante
+    volante_ordenado = sorted(range(1, 26), key=lambda x: (freq_15.get(x, 0), -atrasos.get(x, 0)), reverse=True)
+    
+    zona_A = volante_ordenado[:6]    # Elite Quente (6)
+    zona_B = volante_ordenado[6:19]  # Miolo Normal (13)
+    zona_C = volante_ordenado[19:]   # Zebras/Frias (6)
 
-    def montar_matriz_hibrida(tamanho, est_vencedora, top_r, top_a):
-        """Funde a elite das repetidas e a elite das ausentes na proporção exata da Lotofácil."""
-        base_prop = {16: (10,6), 17: (10,7), 18: (11,7), 19: (11,8), 20: (12,8)}
-        r, a = base_prop.get(tamanho, (11,7))
+    def montar_matriz_zonas(tamanho_alvo, estrategia_ativa):
+        """Constrói a matriz garantindo que o meio do volante (Zona B) esteja presente."""
+        # Proporções estritas da física do globo: (Qtd Zona A, Qtd Zona B, Qtd Zona C)
+        proporcoes = {
+            16: (4, 9, 3),
+            17: (4, 10, 3),
+            18: (5, 10, 3),
+            19: (5, 11, 3),
+            20: (6, 11, 3)
+        }
+        qa, qb, qc = proporcoes.get(tamanho_alvo, (5, 10, 3))
         
-        # A estratégia apenas empurra a proporção para o lado que está mais forte no dia
-        if est_vencedora == "Tendencia" and a > 5:
-            r += 1; a -= 1
-        elif est_vencedora in ["Reversao", "Ciclo"] and r > 9:
-            r -= 1; a += 1
-            
-        return sorted(top_r[:r] + top_a[:a])
-
-    # =================================================================
-    # 🧠 CÓRTEX ESTRATÉGICO: SIMULAÇÃO COM BLOQUEIO EM 20 DEZENAS
-    # =================================================================
-    janela_backtest = 30
-    historico_sombra = historico[-janela_backtest-10:] if len(historico) >= janela_backtest+10 else historico
-    
-    forca_vitoria = {"Tendencia": 0.0, "Reversao": 0.0, "Ciclo": 0.0, "Simetria": 0.0}
-    
-    if qtd_faltam > 0 and qtd_faltam <= 3:
-        estrategia_teorica = "Ciclo"
-        tamanho_instinto = 20
-    else:
-        estrategia_teorica = estrategia_instinto 
-    
-    if len(historico_sombra) > janela_backtest:
-        for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
-            h_passado = historico_sombra[:i]
-            sorteio_real = set(historico_sombra[i]['dezenas'])
-            u_passado = h_passado[-1]['dezenas'] if h_passado else list(range(1,16))
-            a_passado = [x for x in range(1, 26) if x not in u_passado]
-            
-            freq_v = Counter([n for h in h_passado[-50:] for n in h['dezenas']])
-            freq_max_v = max(freq_v.values()) if freq_v else 1
-            
-            u_10, p_10 = h_passado[-10:], h_passado[-20:-10]
-            f_u_10 = Counter([n for h in u_10 for n in h['dezenas']])
-            f_p_10 = Counter([n for h in p_10 for n in h['dezenas']])
-            
-            atrasos_v = {n: 0 for n in range(1, 26)}
-            dez_enc_v = {n: False for n in range(1, 26)}
-            for h in reversed(h_passado):
-                for n in range(1, 26):
-                    if n in h['dezenas']: dez_enc_v[n] = True
-                    elif not dez_enc_v[n]: atrasos_v[n] += 1
-            
-            f_v = set(range(1,26)) - {n for h in reversed(h_passado[:20]) for n in h['dezenas']}
-
-            # Rankeia os potes de forma perita
-            top_rep_normal = rankear_repetidas(u_passado, freq_v, f_u_10, f_p_10)
-            top_aus_normal = rankear_ausentes(a_passado, freq_v, freq_max_v, atrasos_v, f_v)
-            top_rep_sim = rankear_repetidas(u_passado, freq_v, f_u_10, f_p_10, simetria=True)
-            top_aus_sim = rankear_ausentes(a_passado, freq_v, freq_max_v, atrasos_v, f_v, simetria=True)
-            
-            # Matrizes do Backtest (Tamanho 18 como base de avaliação)
-            p_tend = montar_matriz_hibrida(18, "Tendencia", top_rep_normal, top_aus_normal)
-            p_rev = montar_matriz_hibrida(18, "Reversao", top_rep_normal, top_aus_normal)
-            p_ciclo = montar_matriz_hibrida(18, "Ciclo", top_rep_normal, top_aus_normal)
-            p_sim = montar_matriz_hibrida(18, "Simetria", top_rep_sim, top_aus_sim)
-            
-            acertos_v = {
-                "Tendencia": len(set(p_tend) & sorteio_real),
-                "Reversao": len(set(p_rev) & sorteio_real),
-                "Simetria": len(set(p_sim) & sorteio_real),
-                "Ciclo": len(set(p_ciclo) & sorteio_real)
-            }
-            
-            for est, acertos in acertos_v.items():
-                if acertos == 15: forca_vitoria[est] += 200.0 
-                elif acertos == 14: forca_vitoria[est] += 50.0 
-                elif acertos == 13: forca_vitoria[est] += 10.0  
-                elif acertos >= 11: forca_vitoria[est] += 2.0  
-                else: forca_vitoria[est] -= 3.0  
-
-        for est in notas_finais: 
-            if notas_finais[est] != -9999.0: 
-                notas_finais[est] += (forca_vitoria.get(est, 0) * 0.5) 
-
-        melhor_est = max(notas_finais, key=notas_finais.get)
-
-        # -----------------------------------------------------------------
-        # AVALIAÇÃO DE TAMANHO (O TETO DE 20 DEZENAS OFICIAL)
-        # -----------------------------------------------------------------
-        scores_tamanho = {t: 0.0 for t in range(16, 21)} # BLOQUEADO FISICAMENTE EM 20
+        # Ajuste de peso interno das zonas baseado na estratégia
+        peso_tendencia = lambda x: freq_recente.get(x, 0) + ((freq_ult_10.get(x, 0) - freq_pen_10.get(x, 0)) * 5)
+        peso_reversao = lambda x: atrasos.get(x, 0) * 8
+        peso_simetria = lambda x: (1.5 if x in moldura_lista else 1.0)
         
-        for i in range(len(historico_sombra) - janela_backtest, len(historico_sombra)):
-            h_passado = historico_sombra[:i]
-            sorteio_real = set(historico_sombra[i]['dezenas'])
-            u_passado = h_passado[-1]['dezenas'] if h_passado else list(range(1,16))
-            a_passado = [x for x in range(1, 26) if x not in u_passado]
-            
-            freq_v = Counter([n for h in h_passado[-50:] for n in h['dezenas']])
-            freq_max_v = max(freq_v.values()) if freq_v else 1
-            u_10, p_10 = h_passado[-10:], h_passado[-20:-10]
-            f_u_10 = Counter([n for h in u_10 for n in h['dezenas']])
-            f_p_10 = Counter([n for h in p_10 for n in h['dezenas']])
-            
-            atrasos_v = {n: 0 for n in range(1, 26)}
-            dez_enc_v = {n: False for n in range(1, 26)}
-            for h in reversed(h_passado):
-                for n in range(1, 26):
-                    if n in h['dezenas']: dez_enc_v[n] = True
-                    elif not dez_enc_v[n]: atrasos_v[n] += 1
-            
-            f_v = set(range(1,26)) - {n for h in reversed(h_passado[:20]) for n in h['dezenas']}
-            
-            simetria_ativa = (melhor_est == "Simetria")
-            top_r_teste = rankear_repetidas(u_passado, freq_v, f_u_10, f_p_10, simetria=simetria_ativa)
-            top_a_teste = rankear_ausentes(a_passado, freq_v, freq_max_v, atrasos_v, f_v, simetria=simetria_ativa)
-                
-            for t in scores_tamanho:
-                rank_t = montar_matriz_hibrida(t, melhor_est, top_r_teste, top_a_teste)
-                acertos_t = len(set(rank_t) & sorteio_real)
-                
-                if acertos_t == 15: pontos = 1000.0  
-                elif acertos_t == 14: pontos = 200.0  
-                elif acertos_t == 13: pontos = 30.0
-                elif acertos_t == 12: pontos = 5.0
-                elif acertos_t == 11: pontos = 1.0
-                else: pontos = 0.0  
-    
-                fator_puni = {16: 1.0, 17: 1.2, 18: 2.0, 19: 4.0, 20: 8.0}
-                scores_tamanho[t] += (pontos / fator_puni[t])
+        # Ordenação inteligente dentro de cada Zona
+        if estrategia_ativa == "Tendencia":
+            a_sort = sorted(zona_A, key=peso_tendencia, reverse=True)
+            b_sort = sorted(zona_B, key=peso_tendencia, reverse=True)
+            c_sort = sorted(zona_C, key=peso_tendencia, reverse=True)
+        elif estrategia_ativa == "Reversao":
+            a_sort = sorted(zona_A, key=peso_reversao, reverse=True)
+            b_sort = sorted(zona_B, key=peso_reversao, reverse=True)
+            c_sort = sorted(zona_C, key=peso_reversao, reverse=True)
+        elif estrategia_ativa == "Simetria":
+            a_sort = sorted(zona_A, key=peso_simetria, reverse=True)
+            b_sort = sorted(zona_B, key=peso_simetria, reverse=True)
+            c_sort = sorted(zona_C, key=peso_simetria, reverse=True)
+        else:
+            a_sort, b_sort, c_sort = zona_A, zona_B, zona_C
+
+        matriz_bruta = a_sort[:qa] + b_sort[:qb] + c_sort[:qc]
         
-        melhor_tamanho = max(scores_tamanho, key=scores_tamanho.get)
+        # 🎯 INTERVENÇÃO SNIPER DO CICLO
+        if qtd_faltam > 0 and qtd_faltam <= 3:
+            for num in faltam_ciclo:
+                if num not in matriz_bruta:
+                    # Remove o mais fraco da Zona correspondente e insere a dezena do ciclo
+                    if num in zona_A: matriz_bruta[-1] = num
+                    elif num in zona_B: matriz_bruta[-2] = num
+                    else: matriz_bruta[-3] = num
+
+        return sorted(list(set(matriz_bruta)))[:tamanho_alvo] # Retorna a fusão exata
+
+    # =================================================================
+    # 🧠 ANÁLISE DE VOLATILIDADE PARA DEFINIR O TAMANHO (Limite 20)
+    # =================================================================
+    # O Córtex analisa os últimos 5 jogos para ver se a Lotofácil está caótica ou calma
+    repeticoes_recentes = []
+    try:
+        for j in range(1, min(6, len(historico))):
+            rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
+            repeticoes_recentes.append(rep)
+        media_volatilidade = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
+    except:
+        media_volatilidade = 9.0
+
+    # Decisão de Tamanho Baseada em Risco Real (Proibido 21)
+    if media_volatilidade < 8.0 or media_volatilidade > 10.0:
+        # Cenário Caótico: Abre a rede para proteger o Plano A
+        qtd_matriz = 20 if notas_finais.get(melhor_est, 0) > 15 else 19
     else:
-        melhor_tamanho = tamanho_instinto
-        melhor_est = estrategia_instinto
+        # Cenário Estável: Aperta a rede para economizar verba
+        qtd_matriz = 18 if notas_finais.get(melhor_est, 0) > 10 else 17
 
-    qtd_matriz = min(melhor_tamanho, 20) # Trava final garantida para o Plano A
+    # Sobrescrita caso o instinto do usuário exija um tamanho específico, mas travado em 20
+    if tamanho_instinto and 16 <= tamanho_instinto <= 20:
+        qtd_matriz = tamanho_instinto
 
     # =================================================================
-    # CONSTRUÇÃO DA MATRIZ DEFINITIVA PARA O JOGO REAL
+    # CONSTRUÇÃO DA MATRIZ DEFINITIVA
     # =================================================================
-    ultimo_sorteio_oficial = historico[-1]['dezenas'] if historico else list(range(1,16))
-    ausentes_oficiais = [x for x in range(1, 26) if x not in ultimo_sorteio_oficial]
+    matriz_base = montar_matriz_zonas(qtd_matriz, melhor_est)
     
-    simetria_final = (melhor_est == "Simetria")
-    top_rep_oficial = rankear_repetidas(ultimo_sorteio_oficial, freq_recente, freq_ult_10, freq_pen_10, simetria=simetria_final)
-    top_aus_oficial = rankear_ausentes(ausentes_oficiais, freq_recente, freq_recente_max, atrasos, faltam_ciclo, simetria=simetria_final)
+    # Pesos visuais apenas para não travar o painel UI
+    pesos_visuais = {x: 100 if x in matriz_base else 0 for x in range(1, 26)} 
 
-    if melhor_est == "Ciclo" and len(faltam_ciclo) > 0:
-        estrategia = "Ciclo Otimizado"
-        tatic_desc = "Fechamento de Ciclo engatilhado (Reta Final)."
-    elif melhor_est == "Simetria":
-        estrategia = "Simetria de Borda"
-        tatic_desc = "Simetria Analítica ativada."
-    elif melhor_est == "Reversao":
-        estrategia = "Reversão Estatística"
-        tatic_desc = "Reversão Estatística (Caça às Zebras) ativada."
-    else:
-        estrategia = "Tendência de Frequência"
-        tatic_desc = "Tendência Acelerada no fluxo de sorteios."
+    # Narrativa Analítica
+    if melhor_est == "Ciclo": tatic_desc = "Fechamento de Ciclo engatilhado (Reta Final)."
+    elif melhor_est == "Simetria": tatic_desc = "Simetria Analítica ativada."
+    elif melhor_est == "Reversao": tatic_desc = "Reversão Estatística (Caça às Zebras) ativada."
+    else: tatic_desc = "Tendência Acelerada no fluxo de sorteios."
 
-    # A MATRIZ DE ELITE FINAL QUE VAI PARA O GERADOR (Mistura Perfeita 9/6)
-    matriz_base = montar_matriz_hibrida(qtd_matriz, melhor_est, top_rep_oficial, top_aus_oficial)
-    pesos_visuais = {x: 100 if x in matriz_base else 0 for x in range(1, 26)} # Ajuste para o painel não travar
+    if qtd_matriz <= 17: texto_tamanho = f"Cenário estável. Rede de captura otimizada para {qtd_matriz} dezenas."
+    elif qtd_matriz == 18: texto_tamanho = f"Ponto de Equilíbrio Matemático mantido em {qtd_matriz} dezenas."
+    else: texto_tamanho = f"Volatilidade alta detectada. Malha de segurança expandida para {qtd_matriz} dezenas."
 
-    # =================================================================
-    # 🗣️ NARRATIVA DE AUDITORIA 100% FLUIDA
-    # =================================================================
-    score_vencedor = notas_finais.get(melhor_est, 0)
-    score_teorico = notas_finais.get(estrategia_teorica, 0)
-
-    if melhor_est == "Ciclo" and 1 <= len(faltam_ciclo) <= 4:
-        texto_estrategia = f"Sincronia absoluta: O Gatilho disparou ({len(faltam_ciclo)} ausentes) e o Backtest validou a força do Ciclo ({score_vencedor:.1f} pts)."
-    elif melhor_est != estrategia_teorica:
-        diferenca_pts = score_vencedor - score_teorico
-        texto_estrategia = f"Pivotamento tático detectado: O instinto sugeriu '{estrategia_teorica}', mas o motor encontrou letalidade na '{melhor_est}' (+{diferenca_pts:.1f} pts)."
-    else:
-        texto_estrategia = f"Convergência confirmada: O instinto pedia '{estrategia_teorica}' e os testes cravaram sua dominância absoluta ({score_vencedor:.1f} pts)."
-
-    if qtd_matriz <= 15:
-        texto_tamanho = f"Expurgo de ruídos: O sistema cravou a malha no limite exato de {qtd_matriz} dezenas."
-    elif qtd_matriz == tamanho_instinto:
-        texto_tamanho = f"Ponto de Equilíbrio ratificado: Geometria mantida em {qtd_matriz} dezenas."
-    elif qtd_matriz < tamanho_instinto:
-        texto_tamanho = f"Corte de Verba: Sistema cravou a malha em {qtd_matriz} dezenas visando eficiência."
-    else:
-        texto_tamanho = f"Letalidade Híbrida: O Córtex expandiu a malha geométrica para o teto de {qtd_matriz} dezenas."
-
+    texto_estrategia = f"Análise Mapeada Zonas A/B/C validou o uso focado da estratégia {melhor_est}."
     motivo_est = f"DIRETRIZ: {tatic_desc} ANÁLISE EM TEMPO REAL: {texto_estrategia} GEOMETRIA DA MATRIZ: {texto_tamanho}"
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
 
     return {
-        "estrategia": estrategia, "cod_estrategia": melhor_est, "estrategia_usada": melhor_est, "motivo_est": motivo_est, "pesos": pesos_visuais, "freq": freq_recente, 
-        "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
-        "soma": media_soma, "impares": media_impares, "primos": media_primos, 
-        "moldura": media_moldura, "alvo": alvo, "qtd_matriz": qtd_matriz, 
-        "matriz_base": matriz_base, "perf": perf
+        "estrategia": melhor_est, "cod_estrategia": melhor_est, "estrategia_usada": melhor_est, "motivo_est": motivo_est, 
+        "pesos": pesos_visuais, "freq": freq_recente, "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
+        "soma": media_soma, "impares": media_impares, "primos": media_primos, "moldura": media_moldura, 
+        "alvo": alvo, "qtd_matriz": qtd_matriz, "matriz_base": matriz_base, "perf": perf
     }
 # =====================================================================
 # INTERFACE PRINCIPAL
