@@ -1186,25 +1186,55 @@ with tabs[1]:
             # =================================================================
             # 🎯 CORREÇÃO APLICADA AQUI: RETROSPECTIVA LENDO DO COFRE (LEDGER)
             # =================================================================
-            st.markdown("#### 🎯 Retrospectiva Crítica dos Bilhetes (Histórico Permanente)")
+            st.markdown("#### 🎯 Retrospectiva Crítica Permanente (Cofre Intacto)")
             
-            # Em vez de ler da lista volátil, lê do banco fixo
+            # Lendo do banco fixo, garantindo que o histórico permaneça mesmo após apagar os jogos
             ledger_retro = st.session_state.data["ledger_track"]
-            qtd_conferidos_retro = ledger_retro["bilhetes"]
             
-            avg_hits = ledger_retro["soma_total_acertos"] / qtd_conferidos_retro if qtd_conferidos_retro > 0 else 0.0
-            t11 = ledger_retro["pts_11"]
-            t12 = ledger_retro["pts_12"]
-            t13 = ledger_retro["pts_13"]
-            t14 = ledger_retro["pts_14"]
-            t15 = ledger_retro["pts_15"]
+            # 1. Cálculos de Desempenho dos Bilhetes (15 dezenas)
+            qtd_conferidos_retro = ledger_retro.get("bilhetes", 0)
+            soma_acertos_bilhetes = ledger_retro.get("soma_total_acertos", 0)
+            avg_hits = soma_acertos_bilhetes / qtd_conferidos_retro if qtd_conferidos_retro > 0 else 0.0
+            
+            # 2. Cálculos de Desempenho das Matrizes Base (17 a 20 dezenas)
+            # Usamos .get() para segurança caso essas chaves estejam vazias no começo
+            qtd_matrizes = ledger_retro.get("qtd_matrizes_conferidas", 0)
+            soma_acertos_matriz = ledger_retro.get("soma_acertos_matriz", 0)
+            avg_matriz = soma_acertos_matriz / qtd_matrizes if qtd_matrizes > 0 else 0.0
 
+            # 3. Pontuações isoladas
+            t11 = ledger_retro.get("pts_11", 0)
+            t12 = ledger_retro.get("pts_12", 0)
+            t13 = ledger_retro.get("pts_13", 0)
+            t14 = ledger_retro.get("pts_14", 0)
+            t15 = ledger_retro.get("pts_15", 0)
+
+            # 4. Construção do Painel Visual
             with st.container(border=True):
-                cd_1, cd_2, cd_3, cd_4 = st.columns(4)
-                cd_1.metric("Média de Acertos nos Bilhetes", f"{avg_hits:.2f} / 15", help="Média real de todos os bilhetes já conferidos.")
-                cd_2.metric("Bilhetes com 11-12 Pts", f"{t11 + t12} prêmios", delta=f"11 Pts: {t11} | 12 Pts: {t12}", delta_color="off")
-                cd_3.metric("Bilhetes com 13 Pts", f"{t13} prêmios", help="Quantidade real de bilhetes premiados com 13.")
-                cd_4.metric("Prêmios Máximos (14-15 Pts)", f"{t14 + t15} prêmios", delta=f"14 Pts: {t14} | 15 Pts: {t15}", delta_color="inverse")
+                # Linha Superior: As Médias Globais
+                st.markdown("##### 📈 Desempenho Médio do Motor")
+                col_m1, col_m2 = st.columns(2)
+                col_m1.metric(
+                    "🧩 Média de Acertos na Matriz Base", 
+                    f"{avg_matriz:.2f} Pts", 
+                    help="Média real de acertos dentro das malhas de 17 a 20 dezenas criadas pela IA."
+                )
+                col_m2.metric(
+                    "🎟️ Média de Acertos nos Bilhetes", 
+                    f"{avg_hits:.2f} / 15", 
+                    help="Média real de todos os bilhetes finais gerados e já conferidos."
+                )
+                
+                st.divider() # Linha divisória elegante
+                
+                # Linha Inferior: Distribuição cirúrgica dos prêmios
+                st.markdown("##### 🎯 Distribuição Exata de Prêmios (Bilhetes Vencedores)")
+                c11, c12, c13, c14, c15 = st.columns(5)
+                c11.metric("11 Pontos", f"{t11}", help="Bilhetes premiados com exatos 11 pontos.")
+                c12.metric("12 Pontos", f"{t12}", help="Bilhetes premiados com exatos 12 pontos.")
+                c13.metric("13 Pontos", f"{t13}", help="Bilhetes premiados com exatos 13 pontos.")
+                c14.metric("💎 14 Pontos", f"{t14}", help="Bilhetes premiados com exatos 14 pontos.")
+                c15.metric("👑 15 Pontos", f"{t15}", help="Prêmio Máximo! Bilhetes com 15 pontos.")
 
 
             # =================================================================
