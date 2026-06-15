@@ -1672,6 +1672,27 @@ with tabs[3]:
                     sorteio_real = set(resultado_oficial["dezenas"])
                     acertos_elite = len(elite_group.intersection(sorteio_real))
                     
+                    # =====================================================================
+                    # 🎯 TRAVA DE SEGURANÇA: GRAVAÇÃO DA MATRIZ NO COFRE
+                    # Salva a pontuação permanentemente antes de você apagar os jogos
+                    # =====================================================================
+                    if "matrizes_computadas" not in st.session_state.data:
+                        st.session_state.data["matrizes_computadas"] = []
+                        
+                    # Cria um selo único para este concurso para nunca contar a matriz duas vezes
+                    selo_concurso = f"matriz_alvo_{alvo_foco}"
+                    
+                    if selo_concurso not in st.session_state.data["matrizes_computadas"]:
+                        st.session_state.data["matrizes_computadas"].append(selo_concurso)
+                        
+                        # Injeta no Cofre Intacto
+                        ledger = st.session_state.data["ledger_track"]
+                        ledger["qtd_matrizes_conferidas"] = ledger.get("qtd_matrizes_conferidas", 0) + 1
+                        ledger["soma_acertos_matriz"] = ledger.get("soma_acertos_matriz", 0) + acertos_elite
+                        
+                        salvar_dados(st.session_state.data)
+                    # =====================================================================
+                    
                     with col_a1:
                         st.metric(label=f"Acertos da Matriz (Sorteio {alvo_foco})", value=f"{acertos_elite} / {tamanho_matriz}")
                     with col_a2:
