@@ -883,114 +883,114 @@ with tabs[1]:
     
     # Daqui para baixo, você mantém o resto da sua Aba 2 intacta (Motores, Projeção Financeira, Matriz, etc).
 
-            # =================================================================
-            # 🔮 PAINEL BONITO: DESEMPENHO BRUTO DA MATRIZ BASE (GRUPO DE ELITE)
-            # =================================================================
-            with st.container(border=True):
-                st.markdown("#### 🧬 Potencial Bruto: Força da Matriz Base")
-                st.write("Avalia quantos pontos a matriz bruta atual (antes dos desdobramentos) teria segurado nos últimos 30 concursos.")
+    # =================================================================
+    # 🔮 PAINEL BONITO: DESEMPENHO BRUTO DA MATRIZ BASE (GRUPO DE ELITE)
+    # =================================================================
+    with st.container(border=True):
+        st.markdown("#### 🧬 Potencial Bruto: Força da Matriz Base")
+        st.write("Avalia quantos pontos a matriz bruta atual (antes dos desdobramentos) teria segurado nos últimos 30 concursos.")
                 
-                historico_base = st.session_state.data.get("historico_dados", [])
-                ultimos_30 = historico_base[-30:] if historico_base else []
+        historico_base = st.session_state.data.get("historico_dados", [])
+        ultimos_30 = historico_base[-30:] if historico_base else []
                 
-                try:
-                    matriz_atual = set(ia['matriz_base']) 
-                    tamanho_matriz = len(matriz_atual)
+        try:
+            matriz_atual = set(ia['matriz_base']) 
+            tamanho_matriz = len(matriz_atual)
                     
-                    if ultimos_30 and tamanho_matriz > 0:
-                        acertos_matriz = []
+            if ultimos_30 and tamanho_matriz > 0:
+                acertos_matriz = []
                         
-                        for sorteio in ultimos_30:
-                            sorteio_set = set(sorteio['dezenas'])
-                            hits = len(matriz_atual.intersection(sorteio_set))
-                            acertos_matriz.append(hits)
+                for sorteio in ultimos_30:
+                    sorteio_set = set(sorteio['dezenas'])
+                    hits = len(matriz_atual.intersection(sorteio_set))
+                    acertos_matriz.append(hits)
                             
-                        media_acertos = sum(acertos_matriz) / len(acertos_matriz)
-                        freq_14_15 = sum(1 for x in acertos_matriz if x >= 14)
+                media_acertos = sum(acertos_matriz) / len(acertos_matriz)
+                freq_14_15 = sum(1 for x in acertos_matriz if x >= 14)
                         
-                        col_m1, col_m2, col_m3 = st.columns(3)
+                col_m1, col_m2, col_m3 = st.columns(3)
                         
-                        col_m1.metric(
-                            label="Tamanho da Matriz", 
-                            value=f"{tamanho_matriz} Dezenas", 
-                            delta="Matriz Ativa"
-                        )
-                        col_m2.metric(
-                            label="Média de Retenção", 
-                            value=f"{media_acertos:.2f} / 15", 
-                            help="Média de dezenas sorteadas que caíram DENTRO da matriz."
-                        )
-                        col_m3.metric(
-                            label="Frequência de 14-15 Pts", 
-                            value=f"{freq_14_15} vezes", 
-                            delta="Nos últimos 30 concursos", 
-                            delta_color="normal"
-                        )
+                col_m1.metric(
+                    label="Tamanho da Matriz", 
+                    value=f"{tamanho_matriz} Dezenas", 
+                    delta="Matriz Ativa"
+                )
+                col_m2.metric(
+                    label="Média de Retenção", 
+                    value=f"{media_acertos:.2f} / 15", 
+                    help="Média de dezenas sorteadas que caíram DENTRO da matriz."
+                )
+                col_m3.metric(
+                    label="Frequência de 14-15 Pts", 
+                    value=f"{freq_14_15} vezes", 
+                    delta="Nos últimos 30 concursos", 
+                    delta_color="normal"
+                )
                         
-                        st.caption(f"**Termómetro de Eficiência da Matriz (Média atual: {media_acertos:.1f} pontos)**")
-                        pct_eficiencia = min(media_acertos / 15.0, 1.0)
-                        st.progress(pct_eficiencia)
+                st.caption(f"**Termómetro de Eficiência da Matriz (Média atual: {media_acertos:.1f} pontos)**")
+                pct_eficiencia = min(media_acertos / 15.0, 1.0)
+                st.progress(pct_eficiencia)
                         
-                except Exception as e:
-                    st.info("Gere a estratégia da IA para visualizar o desempenho da Matriz Base.")
+        except Exception as e:
+            st.info("Gere a estratégia da IA para visualizar o desempenho da Matriz Base.")
             
-            # --- PAINEL DE CALIBRAÇÃO DO SCORE COMPOSTO ---
-            st.markdown("#### ⚙️ Calibração Atual do Motor (Score Composto Profissional)")
-            with st.container(border=True):
-                c_e1, c_e2, c_e3, c_e4 = st.columns(4)
-                c_e1.metric("🔥 Peso: Frequência", "x1.0", help="Multiplicador base para as dezenas mais quentes do momento.")
-                c_e2.metric("🦓 Peso: Atraso (Zebra)", "x3.0", help="Multiplicador agressivo para forçar a entrada de zebras reais.")
+    # --- PAINEL DE CALIBRAÇÃO DO SCORE COMPOSTO ---
+    st.markdown("#### ⚙️ Calibração Atual do Motor (Score Composto Profissional)")
+    with st.container(border=True):
+        c_e1, c_e2, c_e3, c_e4 = st.columns(4)
+        c_e1.metric("🔥 Peso: Frequência", "x1.0", help="Multiplicador base para as dezenas mais quentes do momento.")
+        c_e2.metric("🦓 Peso: Atraso (Zebra)", "x3.0", help="Multiplicador agressivo para forçar a entrada de zebras reais.")
                 
-                status_ciclo = "🚨 MÁXIMA" if len(ia['faltam_ciclo']) <= 5 else "Aguardando"
-                c_e3.metric("🎯 Prioridade de Ciclo", status_ciclo, help="Ganha peso 500 caso o ciclo esteja a 5 dezenas ou menos do fim.")
-                c_e4.metric("🌪️ Risco / Volatilidade", f"{ia.get('volatilidade', 9.0):.1f}", help="Define o tamanho da matriz baseada no caos dos últimos 5 sorteios.")
+        status_ciclo = "🚨 MÁXIMA" if len(ia['faltam_ciclo']) <= 5 else "Aguardando"
+        c_e3.metric("🎯 Prioridade de Ciclo", status_ciclo, help="Ganha peso 500 caso o ciclo esteja a 5 dezenas ou menos do fim.")
+        c_e4.metric("🌪️ Risco / Volatilidade", f"{ia.get('volatilidade', 9.0):.1f}", help="Define o tamanho da matriz baseada no caos dos últimos 5 sorteios.")
         
-            st.markdown("#### 🔍 Dossiê Completo da Inteligência Artificial")
-            top5_quentes = sorted(ia['freq'].items(), key=lambda x: x[1], reverse=True)[:5]
-            str_quentes = ", ".join([f"{k:02d} ({v}x)" for k, v in top5_quentes])
+    st.markdown("#### 🔍 Dossiê Completo da Inteligência Artificial")
+    top5_quentes = sorted(ia['freq'].items(), key=lambda x: x[1], reverse=True)[:5]
+    str_quentes = ", ".join([f"{k:02d} ({v}x)" for k, v in top5_quentes])
         
-            top5_atrasos = sorted(ia['atrasos'].items(), key=lambda x: x[1], reverse=True)[:5]
-            str_atrasos = ", ".join([f"{k:02d} ({v} conc.)" for k, v in top5_atrasos])
+    top5_atrasos = sorted(ia['atrasos'].items(), key=lambda x: x[1], reverse=True)[:5]
+    str_atrasos = ", ".join([f"{k:02d} ({v} conc.)" for k, v in top5_atrasos])
         
-            html_dossie = f"""
-            <div style="background: linear-gradient(145deg, #ffffff, #f0f4f8); border-left: 6px solid #1f77b4; padding: 20px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); color: #2c3e50; font-family: sans-serif;">
-                <div style="margin-bottom: 12px; font-size: 15px;"><strong>🔥 Top 5 Dezenas mais Quentes:</strong> <span style="color: #d32f2f; font-weight: 700; background: #ffebee; padding: 3px 8px; border-radius: 5px;">{str_quentes}</span></div>
-                <div style="margin-bottom: 12px; font-size: 15px;"><strong>🧊 Top 5 Maiores Atrasos:</strong> <span style="color: #2e7d32; font-weight: 700; background: #e8f5e9; padding: 3px 8px; border-radius: 5px;">{str_atrasos}</span></div>
-                <div style="font-size: 15px;"><strong>⏳ Status do Ciclo:</strong> Aberto há {ia['ciclo_tam']} concursos. <span style="color: #f57c00; font-weight: 700; background: #fff3e0; padding: 3px 8px; border-radius: 5px;">Faltam {len(ia['faltam_ciclo'])} dezenas para fechar: {ia['faltam_ciclo']}</span></div>
-            </div>
-            """
-            st.markdown(html_dossie, unsafe_allow_html=True)
+    html_dossie = f"""
+    <div style="background: linear-gradient(145deg, #ffffff, #f0f4f8); border-left: 6px solid #1f77b4; padding: 20px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); color: #2c3e50; font-family: sans-serif;">
+        <div style="margin-bottom: 12px; font-size: 15px;"><strong>🔥 Top 5 Dezenas mais Quentes:</strong> <span style="color: #d32f2f; font-weight: 700; background: #ffebee; padding: 3px 8px; border-radius: 5px;">{str_quentes}</span></div>
+        <div style="margin-bottom: 12px; font-size: 15px;"><strong>🧊 Top 5 Maiores Atrasos:</strong> <span style="color: #2e7d32; font-weight: 700; background: #e8f5e9; padding: 3px 8px; border-radius: 5px;">{str_atrasos}</span></div>
+        <div style="font-size: 15px;"><strong>⏳ Status do Ciclo:</strong> Aberto há {ia['ciclo_tam']} concursos. <span style="color: #f57c00; font-weight: 700; background: #fff3e0; padding: 3px 8px; border-radius: 5px;">Faltam {len(ia['faltam_ciclo'])} dezenas para fechar: {ia['faltam_ciclo']}</span></div>
+    </div>
+    """
+    st.markdown(html_dossie, unsafe_allow_html=True)
 
-            # --- PAINEL DE DESEMPENHO DOS JOGOS ATIVOS ---
-            jogos_ativos = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Aguardando Sorteio"]
-            if jogos_ativos:
-                st.markdown("---")
-                dezenas_ativos = [n for j in jogos_ativos for n in j["dezenas"]]
-                render_performance_grid(dezenas_ativos, "🧬 Dezenas que a IA selecionou para os seus Jogos Ativos")
-            else:
-                st.info("Nenhum jogo ativo na fila no momento.")
+    # --- PAINEL DE DESEMPENHO DOS JOGOS ATIVOS ---
+    jogos_ativos = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Aguardando Sorteio"]
+    if jogos_ativos:
+        st.markdown("---")
+        dezenas_ativos = [n for j in jogos_ativos for n in j["dezenas"]]
+        render_performance_grid(dezenas_ativos, "🧬 Dezenas que a IA selecionou para os seus Jogos Ativos")
+    else:
+        st.info("Nenhum jogo ativo na fila no momento.")
 
-            # --- NOVO PAINEL DE PESOS ESTILIZADO ---
-            st.markdown("#### ⚖️ Grade Dinâmica de Pesos Absolutos (Heatmap da IA)")
+    # --- NOVO PAINEL DE PESOS ESTILIZADO ---
+    st.markdown("#### ⚖️ Grade Dinâmica de Pesos Absolutos (Heatmap da IA)")
         
-            html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; font-family: sans-serif; margin-bottom: 30px;'>"
-            for n in range(1, 26):
-                p_val = ia['pesos'].get(n, 0.0)
-                no_grupo = n in ia['matriz_base']
+    html_pesos = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; font-family: sans-serif; margin-bottom: 30px;'>"
+    for n in range(1, 26):
+        p_val = ia['pesos'].get(n, 0.0)
+        no_grupo = n in ia['matriz_base']
                 
-                bg_color = "linear-gradient(135deg, #d1e7dd 0%, #b3dac6 100%)" if no_grupo else "#fdfdfd"
-                border_color = "#0f5132" if no_grupo else "#e2e8f0"
-                text_color = "#0f5132" if no_grupo else "#475569"
-                shadow = "box-shadow: 0 4px 6px rgba(0,0,0,0.08);" if no_grupo else "box-shadow: 0 2px 4px rgba(0,0,0,0.03);"
+        bg_color = "linear-gradient(135deg, #d1e7dd 0%, #b3dac6 100%)" if no_grupo else "#fdfdfd"
+        border_color = "#0f5132" if no_grupo else "#e2e8f0"
+        text_color = "#0f5132" if no_grupo else "#475569"
+        shadow = "box-shadow: 0 4px 6px rgba(0,0,0,0.08);" if no_grupo else "box-shadow: 0 2px 4px rgba(0,0,0,0.03);"
                 
-                label_elite = "<div style='background-color:#0f5132; color:white; font-size:10px; font-weight:bold; letter-spacing: 0.5px; padding:3px 0; border-radius:0 0 8px 8px; margin-top: 8px;'>ELITE</div>" if no_grupo else "<div style='height: 20px; margin-top: 8px;'></div>"
+        label_elite = "<div style='background-color:#0f5132; color:white; font-size:10px; font-weight:bold; letter-spacing: 0.5px; padding:3px 0; border-radius:0 0 8px 8px; margin-top: 8px;'>ELITE</div>" if no_grupo else "<div style='height: 20px; margin-top: 8px;'></div>"
             
-                html_pesos += f"<div style='background: {bg_color}; border: 1px solid {border_color}; {shadow} border-radius: 10px; text-align: center; color: {text_color}; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;'><div style='padding: 12px 10px 0 10px;'><span style='font-size: 24px; font-weight: 800;'>{n:02d}</span><br><span style='font-size: 13px; font-weight: 500; opacity: 0.9;'>Peso: {p_val:.1f}</span></div>{label_elite}</div>"
+        html_pesos += f"<div style='background: {bg_color}; border: 1px solid {border_color}; {shadow} border-radius: 10px; text-align: center; color: {text_color}; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;'><div style='padding: 12px 10px 0 10px;'><span style='font-size: 24px; font-weight: 800;'>{n:02d}</span><br><span style='font-size: 13px; font-weight: 500; opacity: 0.9;'>Peso: {p_val:.1f}</span></div>{label_elite}</div>"
         
-            html_pesos += "</div>"
-            st.markdown(html_pesos, unsafe_allow_html=True)
+    html_pesos += "</div>"
+    st.markdown(html_pesos, unsafe_allow_html=True)
 
-    else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
+else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
 
 # --- TAB 3: GERADOR AUTÔNOMO ---
 with tabs[2]:
