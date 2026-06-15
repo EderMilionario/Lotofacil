@@ -792,6 +792,14 @@ with tabs[1]:
             "bilhetes": 0, "premiados_geral": 0, "elite": 0, "custo": 0.0, "retorno": 0.0,
             "pts_11": 0, "pts_12": 0, "pts_13": 0, "pts_14": 0, "pts_15": 0, "soma_total_acertos": 0
         }
+
+    # === MIGRADOR DE SEGURANÇA (EVITA KEYERROR) ===
+    # Garante que as chaves novas existam no seu banco de dados antigo
+    keys_necessarias = ["soma_total_acertos", "pts_11", "pts_12", "pts_13", "pts_14", "pts_15"]
+    for key in keys_necessarias:
+        if key not in st.session_state.data["ledger_track"]:
+            st.session_state.data["ledger_track"][key] = 0
+    # ===============================================
         
     # 2. Varredura Inteligente: Suga os dados e joga no Cofre
     precisa_salvar = False
