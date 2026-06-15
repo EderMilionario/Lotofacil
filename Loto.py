@@ -1369,6 +1369,25 @@ with tabs[2]:
                                         step=3.5,
                                         help="O sistema tentará montar a melhor rede matemática possível sem ultrapassar este valor.")
             
+            # =====================================================================
+            # 🎛️ NOVO SWITCH ELEGANTE DE FORÇAR MOTOR
+            # =====================================================================
+            st.markdown("<hr style='margin: 15px 0;'>", unsafe_allow_html=True)
+            col_switch1, col_switch2 = st.columns([1.5, 2])
+            with col_switch1:
+                # O st.toggle cria um interruptor moderno no estilo iOS/Android
+                escolha_forcar = st.toggle(
+                    "🚀 **Forçar Motor B (Híbrido)**", 
+                    value=st.session_state.get('forcar_motor', False), 
+                    key="toggle_forcar_aba3"
+                )
+                # Sincroniza o interruptor desta tela com a variável global que o gerador lê
+                st.session_state['forcar_motor'] = escolha_forcar
+            with col_switch2:
+                st.caption("⚙️ **Ative esta chave** para ignorar a garantia 100% matemática (Plano A) e ir direto para a extração otimizada de **Força Bruta Ortogonal**.")
+            st.markdown("<hr style='margin: 15px 0; margin-bottom: 25px;'>", unsafe_allow_html=True)
+            # =====================================================================
+            
             if st.button("🧬 DISPARAR MOTOR ORTOGONAL DE GERAÇÃO E FECHAMENTO", type="primary", use_container_width=True):
                 if st.session_state.data['banca'] < orcamento:
                     st.error("Banca insuficiente para a operação. Faça um aporte.")
@@ -1387,7 +1406,7 @@ with tabs[2]:
                     # =====================================================================
                     # 🛡️ PLANO A: GARANTIA MATEMÁTICA ABSOLUTA
                     # =====================================================================                   
-                    # CHAVE DE FORÇAR: Se a chave estiver ligada na Aba 2, pulamos o Plano A
+                    # CHAVE DE FORÇAR: Lê o status do nosso novo botão elegante!
                     if st.session_state.get('forcar_motor', False):
                         sucesso_matematico = False
                         msg_status = "Modo Forçado: Motor Exato (Plano A) ignorado pelo usuário."
@@ -1597,7 +1616,6 @@ with tabs[2]:
             numero_real_jogo = inicio + idx + 1
             with cols[idx % 3]:
                 exibir_card_volante(jogo, numero_real_jogo)
-
 
 # --- TAB 4: FILA DE SORTEIO ---
 with tabs[3]:
