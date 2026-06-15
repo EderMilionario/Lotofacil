@@ -231,14 +231,10 @@ def motor_garantia_exata_dinamica(ia, orcamento, conf_calc):
     return False, [], "Verba insuficiente para o Fechamento 100% Exato. Acionando Plano B (Ortogonal)."
 
 def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
-    """
-    Calcula a temperatura do jogo e o laudo TEÓRICO (Instinto Inicial).
-    Baseado 100% no comportamento de Ciclos e Score de Estratégias.
-    """
     if not historico:
         return 18, 0.50, "Histórico vazio. Usando matriz base de 18 dezenas por segurança.", {}
 
-    # 1. Análise de Volatilidade e Quentes
+    # 1. Análise de Frequência
     ultimos_10 = historico[-10:]
     todas_dezenas = [d for jogo in ultimos_10 for d in jogo['dezenas']]
     contagem = Counter(todas_dezenas)
@@ -256,39 +252,43 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     if qtd_ausentes == 0:
         qtd_ausentes = 25
 
-    # 3. Cálculo de Desempenho Histórico
-    score_estrategia = 11.0
-    if pontuacao_estrategias and estrategia_atual in pontuacao_estrategias:
-        dado_memoria = pontuacao_estrategias[estrategia_atual]
-        if isinstance(dado_memoria, dict) and dado_memoria.get("usos", 0) > 0:
-            score_estrategia = dado_memoria["pontos"] / dado_memoria["usos"]
-        elif isinstance(dado_memoria, (int, float)):
-            score_estrategia = float(dado_memoria)
+    # 3. Medição Real da Volatilidade (Quantas repetem do anterior)
+    repeticoes_recentes = []
+    for j in range(1, min(6, len(historico))):
+        rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
+        repeticoes_recentes.append(rep)
+    volatilidade_real = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
 
-    # 4. INSTINTO TEÓRICO PROFISSIONAL (Base de dimensionamento)
+    # 4. INSTINTO TEÓRICO: CONJUNTO (Sem Caixinhas)
+    # A IA não ignora a volatilidade só porque o ciclo tá fechando. Tudo é pesado junto.
     if qtd_ausentes <= 3:
-        tamanho_matriz = 18 if score_estrategia >= 11.5 else 19
-        motivo_tamanho = f"🚨 FECHAMENTO DE CICLO ({qtd_ausentes} ausentes). Padrão imperativo. Sugestão Profissional: Matriz forte de {tamanho_matriz} dezenas."
-    elif 4 <= qtd_ausentes <= 7:
-        tamanho_matriz = 18 if score_estrategia >= 12.0 else 19
-        motivo_tamanho = f"⚖️ TRANSIÇÃO DE CICLO ({qtd_ausentes} ausentes). Confiança média. Sugestão: Matriz de {tamanho_matriz} dezenas."
+        tamanho_matriz = 18 if volatilidade_real >= 9.0 else 19
+        motivo_tamanho = f"🚨 FECHAMENTO DE CICLO ({qtd_ausentes} ausentes). Mas respeitando o cenário (Repetições: {volatilidade_real:.1f}). Sugestão: {tamanho_matriz} dezenas."
+    
+    elif volatilidade_real < 8.0: 
+        # CAOS ABSOLUTO: Poucas repetições, as zebras estão soltas
+        tamanho_matriz = 20
+        motivo_tamanho = f"🌪️ REVERSÃO/CAOS DETECTADO (Repetições caíram para {volatilidade_real:.1f}). Sugestão de resgate: Abrir malha para {tamanho_matriz} dezenas."
+    
+    elif volatilidade_real > 9.5:
+        # TENDÊNCIA FORTE: Muitas repetições, jogo óbvio
+        tamanho_matriz = 17
+        motivo_tamanho = f"🎯 TENDÊNCIA CLARA (Repetições altas: {volatilidade_real:.1f}). Jogo previsível. Sugestão cirúrgica: {tamanho_matriz} dezenas."
+    
     else:
-        tamanho_matriz = 19 if score_estrategia >= 11.5 else 20
-        motivo_tamanho = f"🌪️ INÍCIO/CAOS DE CICLO ({qtd_ausentes} ausentes). Cenário imprevisível. Sugestão defensiva: Ampliar para {tamanho_matriz} dezenas."
+        # SIMETRIA: Mercado balanceado
+        tamanho_matriz = 19
+        motivo_tamanho = f"⚖️ CENÁRIO HÍBRIDO NORMAL (Repetições: {volatilidade_real:.1f}). Sugestão de equilíbrio: {tamanho_matriz} dezenas."
         
-    # Micro-ajuste Teórico
-    if estrategia_atual == "Reversao":
-        tamanho_matriz = min(tamanho_matriz + 1, 20)
-        motivo_tamanho += " (+1 Dezena alocada devido ao risco da estratégia de Reversão)."
-        
-    tamanho_matriz = max(17, min(tamanho_matriz, 20)) # Trava de Segurança
+    tamanho_matriz = max(17, min(tamanho_matriz, 20)) # Blindagem
 
     # 5. CÁLCULO DA TAXA DE CONFIANÇA
     fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
-    fator_ia = min(max((score_estrategia - 8.0) / 3.0, 0.0), 1.0) 
+    score_memoria = pontuacao_estrategias.get(estrategia_atual, {}).get("pontos", 11) if pontuacao_estrategias else 11
+    fator_ia = min(max((score_memoria - 8.0) / 3.0, 0.0), 1.0) 
     taxa_confianca = max(min((fator_quentes * 0.4) + (fator_ia * 0.6), 1.0), 0.1)
 
-    detalhes = {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes, "score_ia": score_estrategia}
+    detalhes = {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes, "volatilidade": volatilidade_real}
     return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 def exibir_card_volante(jogo, indice):
     dezenas = jogo.get('dezenas', [])
@@ -542,114 +542,66 @@ def cb_carregar_cofre():
             st.toast("Cofre sincronizado com sucesso!", icon="✅")
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
-def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
-    if not historico: return None
-    
-    # 🧠 1. DADOS DE BASE DA LOTOFÁCIL
-    historico_recente = historico[-50:] if len(historico) >= 50 else historico
-    freq_recente = Counter([n for h in historico_recente for n in h['dezenas']])
-    
-    ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
-    media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 190
-    
-    primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
-    moldura_lista = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
-    media_impares = sum([sum(1 for n in h['dezenas'] if n % 2 != 0) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 8
-    media_primos = sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 5
-    media_moldura = sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 10
+def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
+    if not historico:
+        return 18, 0.50, "Histórico vazio. Usando matriz base de 18 dezenas por segurança.", {}
 
-    # 🧠 2. MAPEAMENTO DE ATRASOS E CICLO
-    atrasos = {n: 0 for n in range(1, 26)}
-    dezena_encontrada = {n: False for n in range(1, 26)}
-    for h in reversed(historico):
-        for n in range(1, 26):
-            if n in h['dezenas']: dezena_encontrada[n] = True
-            elif not dezena_encontrada[n]: atrasos[n] += 1
-
+    # 1. Análise de Frequência
+    ultimos_10 = historico[-10:]
+    todas_dezenas = [d for jogo in ultimos_10 for d in jogo['dezenas']]
+    contagem = Counter(todas_dezenas)
+    media_freq = sum(contagem.values()) / 25
+    dezenas_quentes = [num for num, freq in contagem.items() if freq > media_freq]
+    
+    # 2. Identificação do Ciclo Implacável
     ciclo_atual = set()
-    jogos_ciclo = 0
-    for h in historico:
-        ciclo_atual.update(h['dezenas'])
-        jogos_ciclo += 1
+    for jogo in historico:
+        ciclo_atual.update(jogo['dezenas'])
         if len(ciclo_atual) == 25:
-            ciclo_atual = set() 
-            jogos_ciclo = 0
-    faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
+            ciclo_atual = set()
+            
+    qtd_ausentes = 25 - len(ciclo_atual)
+    if qtd_ausentes == 0:
+        qtd_ausentes = 25
 
-    # 🧠 3. MOTOR DE TAMANHO (CÓRTEX DE DECISÃO FINAL E OVERRIDE)
+    # 3. Medição Real da Volatilidade (Quantas repetem do anterior)
     repeticoes_recentes = []
-    try:
-        for j in range(1, min(6, len(historico))):
-            rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
-            repeticoes_recentes.append(rep)
-        media_volatilidade = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
-    except:
-        media_volatilidade = 9.0
+    for j in range(1, min(6, len(historico))):
+        rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
+        repeticoes_recentes.append(rep)
+    volatilidade_real = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
 
-    qtd_faltam = len(faltam_ciclo)
+    # 4. INSTINTO TEÓRICO: CONJUNTO (Sem Caixinhas)
+    # A IA não ignora a volatilidade só porque o ciclo tá fechando. Tudo é pesado junto.
+    if qtd_ausentes <= 3:
+        tamanho_matriz = 18 if volatilidade_real >= 9.0 else 19
+        motivo_tamanho = f"🚨 FECHAMENTO DE CICLO ({qtd_ausentes} ausentes). Mas respeitando o cenário (Repetições: {volatilidade_real:.1f}). Sugestão: {tamanho_matriz} dezenas."
     
-    # Inicia com o instinto do Ciclo
-    if qtd_faltam <= 3:
-        qtd_matriz = 18 
-    elif 4 <= qtd_faltam <= 7:
-        qtd_matriz = 19
+    elif volatilidade_real < 8.0: 
+        # CAOS ABSOLUTO: Poucas repetições, as zebras estão soltas
+        tamanho_matriz = 20
+        motivo_tamanho = f"🌪️ REVERSÃO/CAOS DETECTADO (Repetições caíram para {volatilidade_real:.1f}). Sugestão de resgate: Abrir malha para {tamanho_matriz} dezenas."
+    
+    elif volatilidade_real > 9.5:
+        # TENDÊNCIA FORTE: Muitas repetições, jogo óbvio
+        tamanho_matriz = 17
+        motivo_tamanho = f"🎯 TENDÊNCIA CLARA (Repetições altas: {volatilidade_real:.1f}). Jogo previsível. Sugestão cirúrgica: {tamanho_matriz} dezenas."
+    
     else:
-        qtd_matriz = 20
+        # SIMETRIA: Mercado balanceado
+        tamanho_matriz = 19
+        motivo_tamanho = f"⚖️ CENÁRIO HÍBRIDO NORMAL (Repetições: {volatilidade_real:.1f}). Sugestão de equilíbrio: {tamanho_matriz} dezenas."
         
-    justificativa_override = ""
+    tamanho_matriz = max(17, min(tamanho_matriz, 20)) # Blindagem
 
-    # AUDITORIA PROFISSIONAL: A IA ajusta o tamanho com base no caos atual
-    if media_volatilidade > 10.5: # Muito Caos (Poucas repetidas)
-        qtd_matriz_final = min(qtd_matriz + 1, 20)
-        if qtd_matriz_final != qtd_matriz:
-            justificativa_override = f" | ⚠️ OVERRIDE IA: Volatilidade extrema detectada ({media_volatilidade:.1f}). Matriz ampliada para {qtd_matriz_final} Dz para segurar variância."
-        qtd_matriz = qtd_matriz_final
-        
-    elif media_volatilidade < 7.8 and qtd_faltam > 3: # Muito Previsível
-        qtd_matriz_final = max(qtd_matriz - 1, 17)
-        if qtd_matriz_final != qtd_matriz:
-            justificativa_override = f" | 🎯 OVERRIDE IA: Padrão altamente previsível ({media_volatilidade:.1f}). Matriz esmagada para {qtd_matriz_final} Dz para maximizar ROI e reduzir custos."
-        qtd_matriz = qtd_matriz_final
+    # 5. CÁLCULO DA TAXA DE CONFIANÇA
+    fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
+    score_memoria = pontuacao_estrategias.get(estrategia_atual, {}).get("pontos", 11) if pontuacao_estrategias else 11
+    fator_ia = min(max((score_memoria - 8.0) / 3.0, 0.0), 1.0) 
+    taxa_confianca = max(min((fator_quentes * 0.4) + (fator_ia * 0.6), 1.0), 0.1)
 
-    qtd_matriz = max(17, min(qtd_matriz, 20)) # Blindagem final absoluta
-
-    # 🧠 4. SCORE COMPOSTO PROFISSIONAL (A Fórmula Universal)
-    pesos_reais = {}
-    for x in range(1, 26):
-        forca_frequencia = freq_recente.get(x, 0)
-        forca_atraso = atrasos.get(x, 0) * 3 
-        forca_ciclo = 500 if x in faltam_ciclo and len(faltam_ciclo) <= 5 else 0
-        pesos_reais[x] = forca_frequencia + forca_atraso + forca_ciclo
-
-    # 🧠 5. SELEÇÃO DA MATRIZ BASE
-    dezenas_ordenadas = sorted(range(1, 26), key=lambda n: pesos_reais[n], reverse=True)
-    matriz_base = sorted(dezenas_ordenadas[:qtd_matriz])
-
-    # 🧠 6. NOMENCLATURAS E NARRATIVA DO PAINEL
-    estrategia_ativa = "Score Composto Dinâmico"
-    if qtd_faltam <= 3: 
-        tatic_desc = "Prioridade Máxima: Caça ao Fechamento de Ciclo."
-        cod_est = "Ciclo"
-    elif media_volatilidade < 7.8:
-        tatic_desc = "Padrão Engessado: Explorando Tendência Absoluta."
-        cod_est = "Tendencia"
-    elif media_volatilidade > 10.5:
-        tatic_desc = "Caos Detectado: Invocando Reversão e Defesa de Zebras."
-        cod_est = "Reversao"
-    else:
-        tatic_desc = "Cenário Híbrido: Balanço Perfeito entre Frequência e Atraso."
-        cod_est = "Simetria"
-
-    texto_geometria = f"Malha otimizada para {qtd_matriz} dezenas."
-    motivo_est = f"DIRETRIZ: {tatic_desc} GEOMETRIA: {texto_geometria}{justificativa_override}"
-    alvo = (historico[-1]['concurso'] + 1) if historico else 1
-
-    return {
-        "estrategia": estrategia_ativa, "cod_estrategia": cod_est, "estrategia_usada": cod_est, "motivo_est": motivo_est, 
-        "pesos": pesos_reais, "freq": freq_recente, "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
-        "soma": media_soma, "impares": media_impares, "primos": media_primos, "moldura": media_moldura, 
-        "alvo": alvo, "qtd_matriz": qtd_matriz, "matriz_base": matriz_base, "perf": {}, "volatilidade": media_volatilidade
-    }
+    detalhes = {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes, "volatilidade": volatilidade_real}
+    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
 # =====================================================================
 # INTERFACE PRINCIPAL
 # =====================================================================
