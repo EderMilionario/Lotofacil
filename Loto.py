@@ -1381,8 +1381,7 @@ with tabs[2]:
                     value=st.session_state.get('forcar_motor', False), 
                     key="toggle_forcar_aba3"
                 )
-                # Sincroniza o interruptor desta tela com a variável global que o gerador lê
-                st.session_state['forcar_motor'] = escolha_forcar
+                # ❌ A LINHA QUE DAVA ERRO FOI APAGADA DAQUI!
             with col_switch2:
                 st.caption("⚙️ **Ative esta chave** para ignorar a garantia 100% matemática (Plano A) e ir direto para a extração otimizada de **Força Bruta Ortogonal**.")
             st.markdown("<hr style='margin: 15px 0; margin-bottom: 25px;'>", unsafe_allow_html=True)
@@ -1406,8 +1405,8 @@ with tabs[2]:
                     # =====================================================================
                     # 🛡️ PLANO A: GARANTIA MATEMÁTICA ABSOLUTA
                     # =====================================================================                   
-                    # CHAVE DE FORÇAR: Lê o status do nosso novo botão elegante!
-                    if st.session_state.get('forcar_motor', False):
+                    # ✅ CORREÇÃO APLICADA AQUI: Ele agora lê as duas chaves sem dar conflito!
+                    if escolha_forcar or st.session_state.get('forcar_motor', False):
                         sucesso_matematico = False
                         msg_status = "Modo Forçado: Motor Exato (Plano A) ignorado pelo usuário."
                         st.info("🚨 **MOTOR B FORÇADO:** O usuário bloqueou o Plano A. Pulando direto para o Motor Ortogonal...")
