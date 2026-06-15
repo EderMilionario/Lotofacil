@@ -990,7 +990,7 @@ with tabs[1]:
     html_pesos += "</div>"
     st.markdown(html_pesos, unsafe_allow_html=True)
 
- else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
+        else: st.warning("Aguardando inserção de dados do Cofre na Aba 1.")
 
 # --- TAB 3: GERADOR AUTÔNOMO ---
 with tabs[2]:
