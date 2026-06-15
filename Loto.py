@@ -542,66 +542,124 @@ def cb_carregar_cofre():
             st.toast("Cofre sincronizado com sucesso!", icon="✅")
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
-def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
-    if not historico:
-        return 18, 0.50, "Histórico vazio. Usando matriz base de 18 dezenas por segurança.", {}
+# =====================================================================
+# CÉREBRO PREDITIVO (CONJUNTO DINÂMICO E DESENROLADO)
+# =====================================================================
+from collections import Counter
 
-    # 1. Análise de Frequência
-    ultimos_10 = historico[-10:]
-    todas_dezenas = [d for jogo in ultimos_10 for d in jogo['dezenas']]
-    contagem = Counter(todas_dezenas)
-    media_freq = sum(contagem.values()) / 25
-    dezenas_quentes = [num for num, freq in contagem.items() if freq > media_freq]
+def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
+    if not historico: return None
     
-    # 2. Identificação do Ciclo Implacável
+    # 🧠 1. DADOS DE BASE DA LOTOFÁCIL
+    historico_recente = historico[-50:] if len(historico) >= 50 else historico
+    freq_recente = Counter([n for h in historico_recente for n in h['dezenas']])
+    
+    ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
+    media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 190
+    
+    primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
+    moldura_lista = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
+    media_impares = sum([sum(1 for n in h['dezenas'] if n % 2 != 0) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 8
+    media_primos = sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 5
+    media_moldura = sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 10
+
+    # 🧠 2. MAPEAMENTO DE ATRASOS E CICLO
+    atrasos = {n: 0 for n in range(1, 26)}
+    dezena_encontrada = {n: False for n in range(1, 26)}
+    for h in reversed(historico):
+        for n in range(1, 26):
+            if n in h['dezenas']: dezena_encontrada[n] = True
+            elif not dezena_encontrada[n]: atrasos[n] += 1
+
     ciclo_atual = set()
-    for jogo in historico:
-        ciclo_atual.update(jogo['dezenas'])
+    jogos_ciclo = 0
+    for h in historico:
+        ciclo_atual.update(h['dezenas'])
+        jogos_ciclo += 1
         if len(ciclo_atual) == 25:
-            ciclo_atual = set()
-            
-    qtd_ausentes = 25 - len(ciclo_atual)
-    if qtd_ausentes == 0:
-        qtd_ausentes = 25
+            ciclo_atual = set() 
+            jogos_ciclo = 0
+    faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
 
-    # 3. Medição Real da Volatilidade (Quantas repetem do anterior)
+    # 🧠 3. MEDIÇÃO DA VOLATILIDADE (A bússola consertada)
     repeticoes_recentes = []
-    for j in range(1, min(6, len(historico))):
-        rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
-        repeticoes_recentes.append(rep)
-    volatilidade_real = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
+    try:
+        for j in range(1, min(6, len(historico))):
+            rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
+            repeticoes_recentes.append(rep)
+        media_volatilidade = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
+    except:
+        media_volatilidade = 9.0
 
-    # 4. INSTINTO TEÓRICO: CONJUNTO (Sem Caixinhas)
-    # A IA não ignora a volatilidade só porque o ciclo tá fechando. Tudo é pesado junto.
-    if qtd_ausentes <= 3:
-        tamanho_matriz = 18 if volatilidade_real >= 9.0 else 19
-        motivo_tamanho = f"🚨 FECHAMENTO DE CICLO ({qtd_ausentes} ausentes). Mas respeitando o cenário (Repetições: {volatilidade_real:.1f}). Sugestão: {tamanho_matriz} dezenas."
-    
-    elif volatilidade_real < 8.0: 
-        # CAOS ABSOLUTO: Poucas repetições, as zebras estão soltas
-        tamanho_matriz = 20
-        motivo_tamanho = f"🌪️ REVERSÃO/CAOS DETECTADO (Repetições caíram para {volatilidade_real:.1f}). Sugestão de resgate: Abrir malha para {tamanho_matriz} dezenas."
-    
-    elif volatilidade_real > 9.5:
-        # TENDÊNCIA FORTE: Muitas repetições, jogo óbvio
-        tamanho_matriz = 17
-        motivo_tamanho = f"🎯 TENDÊNCIA CLARA (Repetições altas: {volatilidade_real:.1f}). Jogo previsível. Sugestão cirúrgica: {tamanho_matriz} dezenas."
-    
-    else:
-        # SIMETRIA: Mercado balanceado
-        tamanho_matriz = 19
-        motivo_tamanho = f"⚖️ CENÁRIO HÍBRIDO NORMAL (Repetições: {volatilidade_real:.1f}). Sugestão de equilíbrio: {tamanho_matriz} dezenas."
+    qtd_faltam = len(faltam_ciclo)
+
+    # =====================================================================
+    # 🧠 4. A MÁGICA DO CONJUNTO (Nenhuma estratégia zera a outra)
+    # =====================================================================
+    if qtd_faltam <= 3:
+        cod_est = "Ciclo Supremo"
+        peso_freq = 1.5      # Mantém força nas quentes
+        peso_atraso = 2.0    # Mantém olho nas zebras
+        peso_ciclo = 1000    # Tiro de bazuca nas que faltam
+        qtd_matriz = 18
+        tatic_desc = "Foco em Ciclo, mas mesclando Quentes e Atrasos da base."
         
-    tamanho_matriz = max(17, min(tamanho_matriz, 20)) # Blindagem
+    elif media_volatilidade < 8.0:
+        # CAOS/REVERSÃO: Atrasadas mandam, mas as quentes não morrem!
+        cod_est = "Reversao Hibrida"
+        peso_freq = 0.8      # Diminui as quentes, mas elas AINDA PONTUAM
+        peso_atraso = 4.5    # Turbina as Zebras fortemente
+        peso_ciclo = 0
+        qtd_matriz = 20      # Matriz gigante
+        tatic_desc = f"Baixa repetição ({media_volatilidade:.1f}). Foco brutal em Zebras, com arrasto de Quentes."
+        
+    elif media_volatilidade > 9.5:
+        # TENDÊNCIA: Quentes mandam, mas as zebras não são ignoradas!
+        cod_est = "Tendencia Hibrida"
+        peso_freq = 3.8      # Turbina as quentes
+        peso_atraso = 0.8    # Zebras perdem força, mas AINDA PONTUAM
+        peso_ciclo = 0
+        qtd_matriz = 17      # Matriz cirúrgica
+        tatic_desc = f"Alta repetição ({media_volatilidade:.1f}). Surfando Tendência, com micro-reserva para Zebras."
+        
+    else:
+        # MERCADO NORMAL
+        cod_est = "Simetria Conjunta"
+        peso_freq = 2.0
+        peso_atraso = 2.5
+        peso_ciclo = 0
+        qtd_matriz = 19
+        tatic_desc = f"Mercado padrão ({media_volatilidade:.1f}). Balanço de Conjunto entre Quentes e Atrasos."
 
-    # 5. CÁLCULO DA TAXA DE CONFIANÇA
-    fator_quentes = min(len(dezenas_quentes) / 15, 1.0)
-    score_memoria = pontuacao_estrategias.get(estrategia_atual, {}).get("pontos", 11) if pontuacao_estrategias else 11
-    fator_ia = min(max((score_memoria - 8.0) / 3.0, 0.0), 1.0) 
-    taxa_confianca = max(min((fator_quentes * 0.4) + (fator_ia * 0.6), 1.0), 0.1)
+    qtd_matriz = max(17, min(qtd_matriz, 20)) 
 
-    detalhes = {"dezenas_quentes": len(dezenas_quentes), "ausentes_ciclo": qtd_ausentes, "volatilidade": volatilidade_real}
-    return tamanho_matriz, taxa_confianca, motivo_tamanho, detalhes
+    # =====================================================================
+    # 🧠 5. CÁLCULO FINAL (A soma universal do conjunto)
+    # =====================================================================
+    pesos_reais = {}
+    for x in range(1, 26):
+        # A conta final mistura TUDO. Nunca engessa!
+        forca_f = freq_recente.get(x, 0) * peso_freq
+        forca_a = atrasos.get(x, 0) * peso_atraso
+        forca_c = peso_ciclo if x in faltam_ciclo and qtd_faltam <= 3 else 0
+        
+        pesos_reais[x] = forca_f + forca_a + forca_c
+
+    # 🧠 6. SELEÇÃO DA MATRIZ BASE
+    dezenas_ordenadas = sorted(range(1, 26), key=lambda n: pesos_reais[n], reverse=True)
+    matriz_base = sorted(dezenas_ordenadas[:qtd_matriz])
+
+    # 🧠 7. RETORNO INTACTO 
+    texto_geometria = f"Malha elástica definida em {qtd_matriz} dezenas."
+    motivo_est = f"DIRETRIZ: {tatic_desc} GEOMETRIA: {texto_geometria}"
+    alvo = (historico[-1]['concurso'] + 1) if historico else 1
+
+    return {
+        "estrategia": cod_est, "cod_estrategia": cod_est, "estrategia_usada": cod_est, "motivo_est": motivo_est, 
+        "pesos": pesos_reais, "freq": freq_recente, "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
+        "soma": media_soma, "impares": media_impares, "primos": media_primos, "moldura": media_moldura, 
+        "alvo": alvo, "qtd_matriz": qtd_matriz, "matriz_base": matriz_base, "perf": {}, "volatilidade": media_volatilidade
+    }
 # =====================================================================
 # INTERFACE PRINCIPAL
 # =====================================================================
