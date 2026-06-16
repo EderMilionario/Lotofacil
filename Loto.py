@@ -234,7 +234,6 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     if not historico:
         return 18, 0.50, "Histórico vazio. Usando matriz base.", {}
 
-    # 1. Identificação do Ciclo
     ciclo_atual = set()
     for jogo in historico:
         ciclo_atual.update(jogo['dezenas'])
@@ -243,14 +242,12 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     qtd_ausentes = 25 - len(ciclo_atual)
     if qtd_ausentes == 0: qtd_ausentes = 25
 
-    # 2. Medição da Volatilidade Real
     repeticoes_recentes = []
     for j in range(1, min(6, len(historico))):
         rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
         repeticoes_recentes.append(rep)
     vol_real = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
 
-    # 3. Definição Baseada nas Regras da Arquitetura Bipartida (Cotas)
     if qtd_ausentes <= 3:
         tamanho_matriz = 18
         motivo = f"🚨 ALERTA DE CICLO ({qtd_ausentes} faltam). Cerco Técnico: Matriz 18."
@@ -264,7 +261,7 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
         tamanho_matriz = 19
         motivo = f"⚖️ SIMETRIA (Repetições: {vol_real:.1f}). Escudo Padrão: Matriz 19."
 
-    taxa_confianca = 0.85 
+    taxa_confianca = 0.90 
     detalhes = {"ausentes_ciclo": qtd_ausentes, "volatilidade": vol_real}
     
     return tamanho_matriz, taxa_confianca, motivo, detalhes
@@ -521,14 +518,14 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO PREDITIVO: COTAS BIPARTIDAS COM PESO MACRO PRESERVADO
+# CÉREBRO PREDITIVO: COTAS BIPARTIDAS COM ESCALA NORMALIZADA (0-100)
 # =====================================================================
 from collections import Counter
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
-    # --- 🧠 1. BASE DE DADOS CLÁSSICA ---
+    # 🧠 DADOS DE BASE (Mecânica Fixa do Sistema)
     ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
     media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 190
     primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
@@ -537,7 +534,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     media_primos = sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 5
     media_moldura = sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 10
 
-    # A FREQUÊNCIA MACRO: A base intocável do sistema
     freq_recente = Counter([n for h in historico[-50:] for n in h['dezenas']])
     
     atrasos = {n: 0 for n in range(1, 26)}
@@ -558,7 +554,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
     qtd_faltam = len(faltam_ciclo)
 
-    # --- 🧠 2. DEFINIÇÃO DAS COTAS E CENÁRIOS ---
+    # 🧠 DEFINIÇÃO DO CENÁRIO E DAS COTAS
     ultimo_sorteio = historico[-1]['dezenas']
     repetidas = list(ultimo_sorteio) 
     ausentes = [n for n in range(1, 26) if n not in repetidas] 
@@ -575,30 +571,25 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     if qtd_faltam <= 3:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
-        cota_rep = 11
-        cota_aus = 7
-        tatic_desc = "Cerco Técnico (Fim de Ciclo). Cotas: 11 Repetidas + 7 Ausentes (VIPs Trancadas)."
+        cota_rep, cota_aus = 11, 7
+        tatic_desc = "Cerco Técnico (Fim de Ciclo). Cotas: 11 Repetidas + 7 Ausentes."
     elif media_volatilidade < 8.0:
         cod_est = "Reversao Hibrida"
         qtd_matriz = 20
-        cota_rep = 11
-        cota_aus = 9
-        tatic_desc = f"Caos/Reversão ({media_volatilidade:.1f} rep). Rede 20. Cotas: 11 Repetidas + 9 Ausentes."
+        cota_rep, cota_aus = 11, 9
+        tatic_desc = f"Caos/Reversão ({media_volatilidade:.1f} rep). Cotas: 11 Repetidas + 9 Ausentes."
     elif media_volatilidade > 9.5:
         cod_est = "Tendencia Hibrida"
         qtd_matriz = 17
-        cota_rep = 12
-        cota_aus = 5
-        tatic_desc = f"Tendência ({media_volatilidade:.1f} rep). Sniper 17. Cotas: 12 Repetidas + 5 Ausentes."
+        cota_rep, cota_aus = 12, 5
+        tatic_desc = f"Tendência ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 5 Ausentes."
     else:
         cod_est = "Simetria Conjunta"
         qtd_matriz = 19
-        cota_rep = 11
-        cota_aus = 8
-        tatic_desc = f"Equilíbrio ({media_volatilidade:.1f} rep). Escudo 19. Cotas: 11 Repetidas + 8 Ausentes."
+        cota_rep, cota_aus = 11, 8
+        tatic_desc = f"Equilíbrio ({media_volatilidade:.1f} rep). Cotas: 11 Repetidas + 8 Ausentes."
 
-    # --- 🧠 3. TORNEIOS COM BASE MACRO CORRIGIDA ---
-    
+    # 🧠 O NOVO BISTURI NORMALIZADO (ESCALA 0 a 100)
     sequencias_ativas = {n: 0 for n in range(1, 26)}
     for n in range(1, 26):
         count = 0
@@ -610,69 +601,53 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     historico_momentum = historico[-12:] if len(historico) >= 12 else historico
     freq_momentum = Counter([n for h in historico_momentum for n in h['dezenas']])
     
-    # 🎯 CORREÇÃO: Torneio de Repetidas
+    # Avaliação das Repetidas (Peso Macro + Micro + Comportamento balanceados)
     scores_repetidas = {}
     for n in repetidas:
-        base_macro = freq_recente.get(n, 0)  # A força histórica NUNCA é esquecida (Ex: 35 pts da Dezena 01)
-        base_micro = freq_momentum.get(n, 0) # Força recente
+        macro_norm = (freq_recente.get(n, 0) / 50.0) * 35.0  # Vale 35% da nota final
+        micro_norm = (freq_momentum.get(n, 0) / 12.0) * 40.0 # Vale 40% da nota final
+        
         seq = sequencias_ativas.get(n, 0)
+        if seq == 1: inercia_pts = 10.0
+        elif seq == 2: inercia_pts = 25.0 # Ponto ótimo de inércia
+        elif seq == 3: inercia_pts = 20.0
+        elif seq == 4: inercia_pts = 5.0
+        else: inercia_pts = -15.0         # Exaustão punida severamente
         
-        if seq == 1: seq_mod = 1.0
-        elif seq == 2: seq_mod = 2.5
-        elif seq == 3: seq_mod = 3.0
-        elif seq == 4: seq_mod = 1.0
-        elif seq >= 6: seq_mod = -3.0 # Penalidade agora é suave, tira pontos mas não zera a dezena
-        else: seq_mod = 0.0
-        
-        # A conta soma tudo: Histórico + Recente + Ajuste Fino
-        scores_repetidas[n] = base_macro + (base_micro * 1.5) + seq_mod
+        scores_repetidas[n] = macro_norm + micro_norm + inercia_pts
 
-    # 🎯 CORREÇÃO: Torneio de Ausentes
+    # Avaliação das Ausentes
     scores_ausentes = {}
     for n in ausentes:
-        base_macro = freq_recente.get(n, 0) # Zebra tem que ter histórico, senão é lixo
+        macro_norm = (freq_recente.get(n, 0) / 50.0) * 40.0 # Zebra tem que ter histórico, senão é lixo estatístico
         delay = atrasos.get(n, 0)
         
-        if delay == 1: delay_score = 3.0
-        elif delay == 2: delay_score = 6.0
-        elif delay == 3: delay_score = 5.0
-        elif delay == 4: delay_score = 2.0
-        elif delay >= 5: delay_score = -3.0 # Penalidade suave para comas estatísticos
-        else: delay_score = 0.0
+        if delay == 1: delay_pts = 15.0
+        elif delay == 2: delay_pts = 30.0 # Ponto áureo de retorno da zebra
+        elif delay == 3: delay_pts = 20.0
+        elif delay == 4: delay_pts = 5.0
+        else: delay_pts = -20.0           # Coma estatístico punido severamente
         
         if qtd_faltam <= 3 and n in faltam_ciclo:
-            delay_score += 1000.0
+            delay_pts += 500.0            # Override Absoluto de Ciclo
             
-        scores_ausentes[n] = base_macro + delay_score
+        scores_ausentes[n] = macro_norm + delay_pts
 
-    # Magnetismo Geométrico (Ajuste Fino de Desempate)
-    lideres_rep = sorted(repetidas, key=lambda n: scores_repetidas[n], reverse=True)[:2]
-    lideres_aus = sorted(ausentes, key=lambda n: scores_ausentes[n], reverse=True)[:2]
-    polos_magneticos = set(lideres_rep + lideres_aus)
-    
-    for n in repetidas:
-        if (n - 1) in polos_magneticos or (n + 1) in polos_magneticos:
-            scores_repetidas[n] += 0.5
-
-    for n in ausentes:
-        if (n - 1) in polos_magneticos or (n + 1) in polos_magneticos:
-            scores_ausentes[n] += 0.5
-
-    # --- 🧠 4. ORDENAÇÃO E FUSÃO DA ELITE ---
+    # 🧠 ORDENAÇÃO E FUSÃO DA ELITE
     repetidas_ordenadas = sorted(repetidas, key=lambda n: scores_repetidas[n], reverse=True)
     ausentes_ordenadas = sorted(ausentes, key=lambda n: scores_ausentes[n], reverse=True)
     
     matriz_base = sorted(repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus])
 
-    # --- 🧠 5. EXPORTAÇÃO DE PESOS PARA O MOTOR B (ABA 3) ---
+    # 🧠 EXPORTAÇÃO PARA AS OUTRAS ABAS (Blindada para não dar crash)
     pesos_reais = {}
     for x in range(1, 26):
         if x in matriz_base:
+            # Garante que a matriz passe no motor Ortogonal da Aba 3
             pesos_reais[x] = 100.0 + (scores_repetidas.get(x, 0) if x in repetidas else scores_ausentes.get(x, 0))
         else:
             pesos_reais[x] = freq_recente.get(x, 0)
 
-    # --- 🧠 6. CONTRATO DE SAÍDA ---
     texto_geometria = f"Malha cirúrgica por cotas de {qtd_matriz} dezenas."
     motivo_est = f"DIRETRIZ: {tatic_desc} GEOMETRIA: {texto_geometria}"
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
