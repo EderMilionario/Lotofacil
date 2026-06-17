@@ -234,6 +234,7 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     if not historico:
         return 18, 0.50, "Histórico vazio. Usando matriz base.", {}
 
+    # 1. Identificação do Ciclo
     ciclo_atual = set()
     for jogo in historico:
         ciclo_atual.update(jogo['dezenas'])
@@ -242,12 +243,14 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     qtd_ausentes = 25 - len(ciclo_atual)
     if qtd_ausentes == 0: qtd_ausentes = 25
 
+    # 2. Volatilidade e Repetições (A bússola do cenário)
     repeticoes_recentes = []
     for j in range(1, min(6, len(historico))):
         rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
         repeticoes_recentes.append(rep)
     vol_real = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
 
+    # 3. Definição do Tamanho Dinâmico da Matriz
     if qtd_ausentes <= 3:
         tamanho_matriz = 18
         motivo = f"🚨 ALERTA DE CICLO ({qtd_ausentes} faltam). Cerco Técnico: Matriz 18."
@@ -518,14 +521,15 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO PREDITIVO: COTAS BIPARTIDAS COM ESCALA NORMALIZADA (0-100)
+# CÉREBRO PREDITIVO: ACELERAÇÃO RSI + ESPELHAMENTO + TRAVA GEOMÉTRICA
+# Compatibilidade Total com Abas 2, 3, 4 e 5
 # =====================================================================
 from collections import Counter
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
-    # 🧠 DADOS DE BASE (Mecânica Fixa do Sistema)
+    # --- 🧠 1. MÉTRICAS BASE EXIGIDAS PELAS OUTRAS ABAS ---
     ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
     media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 190
     primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
@@ -554,7 +558,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
     qtd_faltam = len(faltam_ciclo)
 
-    # 🧠 DEFINIÇÃO DO CENÁRIO E DAS COTAS
+    # --- 🧠 2. DEFINIÇÃO ESCALÁVEL DO TAMANHO E COTAS ---
     ultimo_sorteio = historico[-1]['dezenas']
     repetidas = list(ultimo_sorteio) 
     ausentes = [n for n in range(1, 26) if n not in repetidas] 
@@ -568,28 +572,32 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except:
         media_volatilidade = 9.0
 
+    # Escala Dinâmica Proporcional (Espelhamento Exato do Comportamento da Caixa)
     if qtd_faltam <= 3:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
         cota_rep, cota_aus = 11, 7
-        tatic_desc = "Cerco Técnico (Fim de Ciclo). Cotas: 11 Repetidas + 7 Ausentes."
+        tatic_desc = "Cerco Fim de Ciclo. Cotas: 11 Repetidas + 7 Ausentes."
     elif media_volatilidade < 8.0:
         cod_est = "Reversao Hibrida"
         qtd_matriz = 20
-        cota_rep, cota_aus = 11, 9
-        tatic_desc = f"Caos/Reversão ({media_volatilidade:.1f} rep). Cotas: 11 Repetidas + 9 Ausentes."
+        cota_rep, cota_aus = 12, 8
+        tatic_desc = f"Caos ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 8 Ausentes."
     elif media_volatilidade > 9.5:
         cod_est = "Tendencia Hibrida"
         qtd_matriz = 17
-        cota_rep, cota_aus = 12, 5
-        tatic_desc = f"Tendência ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 5 Ausentes."
+        cota_rep, cota_aus = 11, 6
+        tatic_desc = f"Tendência ({media_volatilidade:.1f} rep). Cotas: 11 Repetidas + 6 Ausentes."
     else:
         cod_est = "Simetria Conjunta"
         qtd_matriz = 19
-        cota_rep, cota_aus = 11, 8
-        tatic_desc = f"Equilíbrio ({media_volatilidade:.1f} rep). Cotas: 11 Repetidas + 8 Ausentes."
+        cota_rep, cota_aus = 12, 7
+        tatic_desc = f"Equilíbrio ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 7 Ausentes."
 
-    # 🧠 O NOVO BISTURI NORMALIZADO (ESCALA 0 a 100)
+    # --- 🧠 3. PILAR: ÍNDICE DE ACELERAÇÃO (RSI LOTÉRICO) ---
+    freq_5 = Counter([n for h in historico[-5:] for n in h['dezenas']])
+    freq_15 = Counter([n for h in historico[-15:] for n in h['dezenas']])
+    
     sequencias_ativas = {n: 0 for n in range(1, 26)}
     for n in range(1, 26):
         count = 0
@@ -598,65 +606,121 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             else: break
         sequencias_ativas[n] = count
 
-    historico_momentum = historico[-12:] if len(historico) >= 12 else historico
-    freq_momentum = Counter([n for h in historico_momentum for n in h['dezenas']])
+    unified_scores = {}
     
-    # Avaliação das Repetidas (Peso Macro + Micro + Comportamento balanceados)
-    scores_repetidas = {}
+    # Avaliação das Repetidas (Aceleração + Prevenção de Exaustão)
     for n in repetidas:
-        macro_norm = (freq_recente.get(n, 0) / 50.0) * 35.0  # Vale 35% da nota final
-        micro_norm = (freq_momentum.get(n, 0) / 12.0) * 40.0 # Vale 40% da nota final
+        f_curta = freq_5.get(n, 0)
+        f_media = freq_15.get(n, 0)
+        
+        # Fórmula RSI: Penaliza quem saiu muito na média, mas beneficia quem está forte no curtíssimo prazo
+        aceleracao = (f_curta * 3.0) - (f_media * 0.5) 
         
         seq = sequencias_ativas.get(n, 0)
-        if seq == 1: inercia_pts = 10.0
-        elif seq == 2: inercia_pts = 25.0 # Ponto ótimo de inércia
-        elif seq == 3: inercia_pts = 20.0
-        elif seq == 4: inercia_pts = 5.0
-        else: inercia_pts = -15.0         # Exaustão punida severamente
+        inercia = 5.0 if 2 <= seq <= 3 else (-10.0 if seq >= 5 else 0.0)
         
-        scores_repetidas[n] = macro_norm + micro_norm + inercia_pts
+        unified_scores[n] = 50.0 + aceleracao + inercia + (freq_recente.get(n, 0) * 0.1)
 
-    # Avaliação das Ausentes
-    scores_ausentes = {}
+    # Avaliação das Ausentes (Ponto de Retorno)
     for n in ausentes:
-        macro_norm = (freq_recente.get(n, 0) / 50.0) * 40.0 # Zebra tem que ter histórico, senão é lixo estatístico
         delay = atrasos.get(n, 0)
         
-        if delay == 1: delay_pts = 15.0
-        elif delay == 2: delay_pts = 30.0 # Ponto áureo de retorno da zebra
-        elif delay == 3: delay_pts = 20.0
-        elif delay == 4: delay_pts = 5.0
-        else: delay_pts = -20.0           # Coma estatístico punido severamente
+        if delay == 1: delay_pts = 10.0
+        elif delay == 2 or delay == 3: delay_pts = 20.0
+        elif delay >= 5: delay_pts = -15.0
+        else: delay_pts = 0.0
         
+        score_base = 50.0 + delay_pts + (freq_recente.get(n, 0) * 0.2)
+        
+        # Override de Ciclo: Blindagem absoluta
         if qtd_faltam <= 3 and n in faltam_ciclo:
-            delay_pts += 500.0            # Override Absoluto de Ciclo
+            score_base += 1000.0
             
-        scores_ausentes[n] = macro_norm + delay_pts
+        unified_scores[n] = score_base
 
-    # 🧠 ORDENAÇÃO E FUSÃO DA ELITE
-    repetidas_ordenadas = sorted(repetidas, key=lambda n: scores_repetidas[n], reverse=True)
-    ausentes_ordenadas = sorted(ausentes, key=lambda n: scores_ausentes[n], reverse=True)
+    repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
+    ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
     
-    matriz_base = sorted(repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus])
+    matriz_bruta = repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus]
 
-    # 🧠 EXPORTAÇÃO PARA AS OUTRAS ABAS (Blindada para não dar crash)
+    # --- 🧠 4. PILAR: A TRAVA GEOMÉTRICA (Evita Buracos no Volante) ---
+    # Limita o acúmulo de dezenas na mesma linha com base no tamanho da matriz
+    linhas = {
+        1: [1, 2, 3, 4, 5],
+        2: [6, 7, 8, 9, 10],
+        3: [11, 12, 13, 14, 15],
+        4: [16, 17, 18, 19, 20],
+        5: [21, 22, 23, 24, 25]
+    }
+    
+    max_por_linha = 4 if qtd_matriz <= 18 else 5
+    
+    # Loop de correção geométrica
+    for _ in range(5):
+        contagem_linhas = {l: 0 for l in range(1, 6)}
+        for n in matriz_bruta:
+            for l, dezenas_linha in linhas.items():
+                if n in dezenas_linha:
+                    contagem_linhas[l] += 1
+                    
+        linhas_excedentes = [l for l, count in contagem_linhas.items() if count > max_por_linha]
+        if not linhas_excedentes:
+            break # Matriz alinhada geometricamente
+            
+        for linha_excedente in linhas_excedentes:
+            # 1. Pega as dezenas da linha excedente que estão na matriz e NÃO são dezenas do ciclo VIP
+            dezenas_in = [n for n in matriz_bruta if n in linhas[linha_excedente] and not (qtd_faltam <= 3 and n in faltam_ciclo)]
+            if not dezenas_in: continue
+            
+            # Rebaixa a mais fraca
+            pior_dezena = min(dezenas_in, key=lambda x: unified_scores[x])
+            
+            # 2. Puxa a melhor dezena de fora que pertence à linha mais vazia
+            linha_carente = min(contagem_linhas, key=contagem_linhas.get)
+            dezenas_out = [n for n in linhas[linha_carente] if n not in matriz_bruta]
+            if not dezenas_out: continue
+            
+            melhor_dezena_substituta = max(dezenas_out, key=lambda x: unified_scores[x])
+            
+            # Efetua a troca geométrica
+            matriz_bruta.remove(pior_dezena)
+            matriz_bruta.append(melhor_dezena_substituta)
+            contagem_linhas[linha_excedente] -= 1
+            contagem_linhas[linha_carente] += 1
+
+    matriz_final = sorted(matriz_bruta)
+
+    # --- 🧠 5. EXPORTAÇÃO ESTÁVEL DO DICIONÁRIO (Para as Abas 3 e 4) ---
     pesos_reais = {}
     for x in range(1, 26):
-        if x in matriz_base:
-            # Garante que a matriz passe no motor Ortogonal da Aba 3
-            pesos_reais[x] = 100.0 + (scores_repetidas.get(x, 0) if x in repetidas else scores_ausentes.get(x, 0))
+        if x in matriz_final:
+            pesos_reais[x] = 100.0 + unified_scores[x]
         else:
             pesos_reais[x] = freq_recente.get(x, 0)
 
-    texto_geometria = f"Malha cirúrgica por cotas de {qtd_matriz} dezenas."
+    texto_geometria = f"Malha cirúrgica de {qtd_matriz} dez. c/ Trava Geométrica Ativada."
     motivo_est = f"DIRETRIZ: {tatic_desc} GEOMETRIA: {texto_geometria}"
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
 
     return {
-        "estrategia": cod_est, "cod_estrategia": cod_est, "estrategia_usada": cod_est, "motivo_est": motivo_est, 
-        "pesos": pesos_reais, "freq": freq_recente, "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
-        "soma": media_soma, "impares": media_impares, "primos": media_primos, "moldura": media_moldura, 
-        "alvo": alvo, "qtd_matriz": qtd_matriz, "matriz_base": matriz_base, "perf": {}, "volatilidade": media_volatilidade
+        "estrategia": cod_est, 
+        "cod_estrategia": cod_est, 
+        "estrategia_usada": cod_est, 
+        "motivo_est": motivo_est, 
+        "pesos": pesos_reais, 
+        "freq": freq_recente, 
+        "atrasos": atrasos, 
+        "ciclo_tam": jogos_ciclo, 
+        "faltam_ciclo": faltam_ciclo,
+        "soma": media_soma, 
+        "impares": media_impares, 
+        "primos": media_primos, 
+        "moldura": media_moldura, 
+        "alvo": alvo, 
+        "qtd_matriz": qtd_matriz, 
+        "matriz_base": matriz_final, 
+        "perf": {}, 
+        "volatilidade": media_volatilidade
     }
 # =====================================================================
 # INTERFACE PRINCIPAL
@@ -1363,65 +1427,62 @@ with tabs[1]:
 with tabs[2]:
     exibir_mini_painel_financeiro()
     
-    st.markdown("### 🚀 Engenharia Combinatória por Verba")
+    st.markdown("### 🚀 Engenharia Combinatória")
     
-    # PAINEL DE GESTÃO DE BANCA
+    # =====================================================================
+    # PAINEL DE GESTÃO DE BANCA (COMPACTO E PROFISSIONAL)
+    # =====================================================================
     with st.container(border=True):
-        col_saldo, col_div, col_aporte = st.columns([1.5, 0.2, 2])
+        col_saldo, col_acoes = st.columns([1.5, 1])
         
         with col_saldo:
-            st.metric("💰 Saldo Disponível na Banca", f"R$ {st.session_state.data['banca']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            st.metric("🏦 Saldo Operacional Disponível", f"R$ {st.session_state.data['banca']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         
-        with col_aporte:
-            st.markdown("#### ➕ Injetar Aporte na Operação")
-            c_input, c_btn = st.columns([2, 1])
-            with c_input:
-                valor_aporte = st.number_input("Valor (R$):", min_value=1.0, step=10.0, label_visibility="collapsed", format="%.2f")
-            with c_btn:
-                if st.button("✅ Depositar", use_container_width=True):
+        with col_acoes:
+            with st.expander("💸 Injetar Aporte na Banca", expanded=False):
+                valor_aporte = st.number_input("Valor (R$):", min_value=1.0, step=10.0, format="%.2f")
+                if st.button("✅ Confirmar Depósito", use_container_width=True):
                     st.session_state.data['banca'] += valor_aporte
                     st.session_state.data["historico_aportes"] = st.session_state.data.get("historico_aportes", 0.0) + valor_aporte
                     salvar_dados(st.session_state.data)
-                    st.toast(f"Aporte de R$ {valor_aporte:.2f} realizado!", icon="💸")
+                    st.toast(f"Aporte de R$ {valor_aporte:.2f} realizado com sucesso!", icon="💸")
                     st.rerun()
 
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data.get("ia_memoria", {}))
         
-        st.markdown(f"#### 🎯 Setup de Disparo — Concurso Alvo: `{ia['alvo']}`")
+        st.markdown(f"#### ⚙️ Setup de Disparo — Alvo: `Concurso {ia['alvo']}`")
         
+        # =====================================================================
+        # PAINEL DE CONTROLE DE DISPARO (LADO A LADO)
+        # =====================================================================
         with st.container(border=True):
-            orcamento = st.number_input("Defina o Teto Orçamentário para esta Geração (R$):", 
-                                        min_value=3.5, 
-                                        max_value=max(3.5, st.session_state.data['banca']), 
-                                        step=3.5,
-                                        help="O sistema tentará montar a melhor rede matemática possível sem ultrapassar este valor.")
+            col_orc, col_switch = st.columns(2)
             
-            # =====================================================================
-            # 🎛️ NOVO SWITCH ELEGANTE DE FORÇAR MOTOR
-            # =====================================================================
-            st.markdown("<hr style='margin: 15px 0;'>", unsafe_allow_html=True)
-            col_switch1, col_switch2 = st.columns([1.5, 2])
-            with col_switch1:
-                # O st.toggle cria um interruptor moderno no estilo iOS/Android
-                escolha_forcar = st.toggle(
-                    "🚀 **Forçar Motor B (Híbrido)**", 
-                    value=st.session_state.get('forcar_motor', False), 
-                    key="toggle_forcar_aba3"
+            with col_orc:
+                orcamento = st.number_input(
+                    "Teto Orçamentário (R$):", 
+                    min_value=3.5, 
+                    max_value=max(3.5, st.session_state.data['banca']), 
+                    step=3.5,
+                    help="O sistema montará a melhor rede possível sem estourar esse limite."
                 )
-                # ❌ A LINHA QUE DAVA ERRO FOI APAGADA DAQUI!
-            with col_switch2:
-                st.caption("⚙️ **Ative esta chave** para ignorar a garantia 100% matemática (Plano A) e ir direto para a extração otimizada de **Força Bruta Ortogonal**.")
-            st.markdown("<hr style='margin: 15px 0; margin-bottom: 25px;'>", unsafe_allow_html=True)
-            # =====================================================================
+                
+            with col_switch:
+                st.markdown("<br>", unsafe_allow_html=True) # Alinhamento vertical
+                escolha_forcar = st.toggle(
+                    "🚀 **Forçar Motor B (Ortogonal)**", 
+                    value=st.session_state.get('forcar_motor', False), 
+                    key="toggle_forcar_aba3",
+                    help="Ative para ignorar o Plano A (100% Exato) e ir direto para o corte de filtros avançados."
+                )
+
+            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
             
-            if st.button("🧬 DISPARAR MOTOR ORTOGONAL DE GERAÇÃO E FECHAMENTO", type="primary", use_container_width=True):
+            if st.button("🧬 INICIAR GERAÇÃO E FECHAMENTO", type="primary", use_container_width=True):
                 if st.session_state.data['banca'] < orcamento:
-                    st.error("Banca insuficiente para a operação. Faça um aporte.")
+                    st.error("🚨 Banca insuficiente para a operação. Faça um aporte na gaveta acima.")
                 else:
-                    # =====================================================================
-                    # 🧠 INJEÇÃO DO MOTOR MATEMÁTICO E CÁLCULO DE CONFIANÇA
-                    # =====================================================================
                     historico_painel = st.session_state.data["historico_dados"]
                     estrategia_selecionada = ia.get('estrategia', 'Tendencia')
                     memoria_ia = st.session_state.data.get('ia_memoria', {})
@@ -1433,16 +1494,14 @@ with tabs[2]:
                     # =====================================================================
                     # 🛡️ PLANO A: GARANTIA MATEMÁTICA ABSOLUTA
                     # =====================================================================                   
-                    # ✅ CORREÇÃO APLICADA AQUI: Ele agora lê as duas chaves sem dar conflito!
                     if escolha_forcar or st.session_state.get('forcar_motor', False):
                         sucesso_matematico = False
                         msg_status = "Modo Forçado: Motor Exato (Plano A) ignorado pelo usuário."
-                        st.info("🚨 **MOTOR B FORÇADO:** O usuário bloqueou o Plano A. Pulando direto para o Motor Ortogonal...")
+                        st.info("🚨 **MOTOR B FORÇADO:** Pulando direto para o Motor Ortogonal...")
                     else:
-                        st.info("⚙️ **Acionando MOTOR A (Plano Exato):** Verificando viabilidade matemática e orçamentária...")
+                        st.info("⚙️ **Acionando MOTOR A (Plano Exato):** Verificando viabilidade...")
                         sucesso_matematico, matriz_reduzida, msg_status = motor_garantia_exata_dinamica(ia, orcamento, conf_calc)
                 
-
                     if sucesso_matematico:
                         gasto = 0.0
                         qtd_gerados = len(matriz_reduzida)
@@ -1469,23 +1528,22 @@ with tabs[2]:
                                 "dna": "🧬 Fechamento Matemático 100% Garantido"
                             })
                             
-                            if i % 10 == 0:  # Atualiza a barra a cada 10 jogos
+                            if i % 10 == 0:  
                                 prog_a.progress(min((i+1)/qtd_gerados, 1.0))
                                 txt_a.write(f"Injetando bilhetes exatos: {i+1} / {qtd_gerados}")
                                 
-                        prog_a.empty()
-                        txt_a.empty()
+                        # OS COMANDOS DE .EMPTY() FORAM REMOVIDOS AQUI PARA EVITAR CRASH
                             
                         st.session_state.data['banca'] -= gasto
                         salvar_dados(st.session_state.data)
                         
                         st.toast(f"✅ {qtd_gerados} jogos matemáticos criados.", icon="🚀")
-                        st.success(f"**🥇 MOTOR A (Garantia Matemática Ativada!)** {msg_status} Custo Real: **R$ {gasto:.2f}**. Saldo restante: **R$ {st.session_state.data['banca']:.2f}**.")
+                        st.success(f"**🥇 MOTOR A (Garantia Matemática Ativada!)** {msg_status} Custo: **R$ {gasto:.2f}**.")
                         st.rerun()
 
                     else:
                         # =====================================================================
-                        # 🚀 SUPER PLANO B: MÁQUINA DE FORÇA BRUTA ORTOGONAL (COM FILTROS)
+                        # 🚀 SUPER PLANO B: MÁQUINA DE FORÇA BRUTA ORTOGONAL
                         # =====================================================================
                         st.warning(f"⚠️ **Transição para Motor B (Híbrido):** {msg_status}") 
                         
@@ -1502,8 +1560,8 @@ with tabs[2]:
                         
                         tam_matriz = len(ia['matriz_base'])
                         
-                        st.info(f"⚡ **Iniciando Motor Híbrido Ortogonal:** Peneirando combinações de {tam_matriz} dezenas...")
-                        progresso_texto.write("⏳ Gerando TODAS as combinações e passando na peneira genética do DNA... Aguarde.")
+                        st.info(f"⚡ **Motor Híbrido Ortogonal:** Peneirando combinações da Matriz de {tam_matriz}...")
+                        progresso_texto.write("⏳ Processando Genética DNA e Filtros de Histórico...")
                         
                         universo_15 = [list(c) for c in itertools.combinations(ia['matriz_base'], 15)]
                         universo_16 = [list(c) for c in itertools.combinations(ia['matriz_base'], 16)] if tam_matriz >= 16 else []
@@ -1513,7 +1571,7 @@ with tabs[2]:
                             for candidato in universo:
                                 candidato_set = set(candidato)
                                 
-                                if frozenset(candidato) in historico_sets: continue # Filtro 15 pontos exato
+                                if frozenset(candidato) in historico_sets: continue
                                 if any(len(candidato_set & sorteio_passado) >= 14 for sorteio_passado in historico_oficial_sets): continue
                                 
                                 max_c, atual_c = 1, 1
@@ -1539,9 +1597,8 @@ with tabs[2]:
                         pote_15 = filtrar_universo(universo_15)
                         pote_16 = filtrar_universo(universo_16)
                         
-                        progresso_texto.write(f"✅ Filtro concluído! Sobreviveram {len(pote_15)} (15-dez) e {len(pote_16)} (16-dez). Iniciando Compra...")
+                        progresso_texto.write(f"✅ Filtro concluído! Extração: {len(pote_15)} (15-dez) e {len(pote_16)} (16-dez). Distribuindo bilhetes...")
                         
-                        # LAÇO DE COMPRA E DOWNGRADE INTELIGENTE (Somente Força Bruta Ortogonal)
                         while (orcamento - gasto) >= 3.5:
                             
                             if conf_calc >= 0.75 and (orcamento - gasto) >= 56.0 and len(pote_16) > 0:
@@ -1578,7 +1635,6 @@ with tabs[2]:
                             if melhor_idx != -1:
                                 pote_atual.pop(melhor_idx)
                             
-                            # FALLBACK & SALVAMENTO
                             if not melhor_candidato: 
                                 dezenas_finais_fallback = sorted(ia['matriz_base'], key=lambda x: ia['pesos'].get(x, 0), reverse=True)[:tam+3]
                                 melhor_candidato = sorted(random.sample(dezenas_finais_fallback, tam))
@@ -1605,15 +1661,14 @@ with tabs[2]:
                             
                             progresso = min(gasto / orcamento, 1.0)
                             barra_progresso.progress(progresso)
-                            progresso_texto.write(f"⚙️ Cortando bilhetes redundantes... {qtd_gerados} injetados. Investimento: R$ {gasto:.2f} de R$ {orcamento:.2f}")
+                            progresso_texto.write(f"⚙️ Cortando sobreposições... {qtd_gerados} validados. Investimento: R$ {gasto:.2f} / R$ {orcamento:.2f}")
         
-                        barra_progresso.empty()
-                        progresso_texto.empty()
+                        # OS COMANDOS DE .EMPTY() FORAM REMOVIDOS AQUI PARA EVITAR CRASH
                         st.session_state.data['banca'] -= gasto
                         salvar_dados(st.session_state.data)
                         
                         st.toast(f"✅ Sucesso! {qtd_gerados} jogos ortogonais criados.", icon="🚀")
-                        st.success(f"**🥈 MOTOR B (Lote Processado com Sucesso!)** O sistema extraiu a Elite Probabilística respeitando o seu bolso. Verifique a Aba 4 para ver os jogos.")
+                        st.success(f"**🥈 MOTOR B (Lote Concluído!)** A Elite Probabilística foi extraída dentro do seu orçamento. Confira a Aba 4.")
                         st.rerun()
 
     else: 
