@@ -153,19 +153,18 @@ def render_performance_grid(dezenas_lista, titulo):
 # =====================================================================
 import itertools
 
-@st.cache_data(show_spinner="🧠 Calculando Geometria do Fechamento (Motor Bitwise Ultra-Rápido)...")
+@st.cache_data(show_spinner="🧠 Calculando Geometria do Fechamento (Motor Bitwise 100% Exato)...")
 def gerar_fechamento_matematico(dezenas, garantia):
     """
-    Mantém a lógica original de Compressão Máxima (Set Cover) para não estourar o orçamento do Plano B.
-    Troca a lentidão das operações de intersecção de conjuntos (set) por Matemática de Bits (Bitwise), 
-    acelerando o processamento massivamente.
+    Motor Guloso PURO. Roda até a última combinação ser coberta.
+    Garante 100% de fechamento matemático, sem deixar nenhum buraco.
     """
     todas_comb_15 = list(itertools.combinations(dezenas, 15))
     
     if garantia == 15:
         return [list(c) for c in todas_comb_15]
-        
-    # 🌟 INOVAÇÃO: Transformação Quântica - Converte as dezenas em Máscaras de Bits
+
+    # 🌟 Transformação Quântica - Converte as dezenas em Máscaras de Bits
     comb_bits = []
     for c in todas_comb_15:
         bits = 0
@@ -185,7 +184,7 @@ def gerar_fechamento_matematico(dezenas, garantia):
                 cobre.add(j)
         cobertura.append(cobre)
         
-    # Otimização Gulosa
+    # Otimização Gulosa PURA - Roda até zerar os sorteios possíveis (100% coberto)
     while sorteios_possiveis:
         melhor_idx = -1
         max_cobertos = -1
@@ -200,36 +199,39 @@ def gerar_fechamento_matematico(dezenas, garantia):
         sorteios_possiveis -= cobertura[melhor_idx] 
         
     return bilhetes_escolhidos
+
+
 def motor_garantia_exata_dinamica(ia, orcamento, conf_calc):
     """
     Versão Absoluta: Usa Teoria dos Conjuntos para 100% de Garantia.
-    Testa a verba em cascata (15 -> 14 -> 13) e gera a matriz inquebrável.
+    Testa a verba em cascata e só aprova se o orçamento cobrir o CUSTO REAL.
     """
     dezenas_ia = sorted(ia['matriz_base'])
     qtd_dezenas = len(dezenas_ia)
     
+    # Captura o saldo real da banca do usuário
+    banca_disponivel = st.session_state.data.get('banca', 0.0)
+    
     if qtd_dezenas <= 15:
         return False, [], "Matriz muito pequena para redução matemática."
         
-    # Trava de Segurança: Calcular matrizes gigantes (21+ dezenas) ao vivo trava servidores.
-    # O limite de 20 dezenas garante que o Streamlit rode liso.
+    # Limite de segurança para o Streamlit não travar o servidor
     if qtd_dezenas > 20:
         return False, [], f"Matriz de {qtd_dezenas} dezenas exige hardware avançado para garantir 100%. Acionando Plano B (Ortogonal)."
 
-    # 🚀 A CASCATA DE VERBA
+    # 🚀 A CASCATA DE VERBA (100% INQUEBRÁVEL)
     for garantia_alvo in [15, 14, 13]:
         
-        # Gera a teia matemática 100% garantida (A função acima faz o trabalho pesado)
+        # 1. Gera a teia matemática COMPLETA (Sem cortes)
         jogos_reduzidos = gerar_fechamento_matematico(dezenas_ia, garantia_alvo)
         custo_fechamento = len(jogos_reduzidos) * 3.50
         
-        # Se a verba bater, ele aprova o lote e envia para a fila
-        if custo_fechamento <= orcamento and custo_fechamento > 0:
-            msg = f"Matemática Reduzida: Garantia 100% INQUEBRÁVEL de {garantia_alvo} pts. ({len(jogos_reduzidos)} jogos cirúrgicos de 15 dezenas)."
+        # 2. Verifica se a verba suporta o custo real gerado
+        if custo_fechamento > 0 and custo_fechamento <= orcamento and custo_fechamento <= banca_disponivel:
+            msg = f"Matemática Reduzida: Garantia 100% INQUEBRÁVEL de {garantia_alvo} pts. (Cobertura Total: {len(jogos_reduzidos)} jogos)."
             return True, jogos_reduzidos, msg
             
-    return False, [], "Verba insuficiente para o Fechamento 100% Exato. Acionando Plano B (Ortogonal)."
-
+    return False, [], "Verba insuficiente para cobrir os 100% do Fechamento Exato. Acionando Plano B (Híbrido)."
 def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
     if not historico:
         return 18, 0.50, "Histórico vazio. Usando matriz base.", {}
