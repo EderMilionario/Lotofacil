@@ -947,7 +947,7 @@ with tabs[1]:
         st.info(f"🎯 **A Inteligência Artificial definiu uma Matriz Cirúrgica de {tam_atual} Dezenas para o contexto atual.**")
 
         # =====================================================================
-        # 2. PAINEL DE TRANSPARÊNCIA: 2 COLUNAS DAS INTELIGÊNCIAS (ARRANQUEI O HEURÍSTICO)
+        # 2. PAINEL DE TRANSPARÊNCIA: 2 COLUNAS DAS INTELIGÊNCIAS
         # =====================================================================
         with st.container(border=True):
             c1, c2 = st.columns(2)
@@ -963,8 +963,8 @@ with tabs[1]:
                     )
                 else:
                     st.error(
-                        "**Status: INVIÁVEL**\n\n"
-                        "Matriz muito grande. Gerar 100% de garantia travaria o PC e custaria fortunas."
+                        "**Status: ALTO CUSTO**\n\n"
+                        "Matriz grande. Gerar 100% de garantia exige alto investimento financeiro."
                     )
                 
             with c2:
@@ -983,15 +983,16 @@ with tabs[1]:
                     )
 
         # =====================================================================
-        # DADOS MATEMÁTICOS UNIFICADOS (LIMPOS, ATÉ 20)
+        # DADOS MATEMÁTICOS (ATUALIZADOS PARA O VOLUME REAL DO MOTOR AO VIVO)
         # =====================================================================
         alvos_matematicos = {
             15: {15: 1, 14: 1, 13: 1, "motor": "🎯 Direto (Plano A)"},
-            16: {15: 16, 14: 4, 13: 2, "motor": "🥇 Plano A (Exato)"},
-            17: {15: 136, 14: 10, 13: 4, "motor": "🥇 Plano A / 🥈 Híbrido"},
-            18: {15: 816, 14: 24, 13: 6, "motor": "🥇 Plano A / 🥈 Híbrido"},
-            19: {15: 3876, 14: 87, 13: 15, "motor": "🥈 Plano B (Híbrido)"},
-            20: {15: 15504, 14: 350, 13: 50, "motor": "🥈 Plano B (Híbrido)"}
+            16: {15: 16, 14: 5, 13: 2, "motor": "🥇 Plano A (Exato)"},
+            17: {15: 136, 14: 20, 13: 6, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            18: {15: 816, 14: 38, 13: 11, "motor": "🥇 Plano A / 🥈 Híbrido"},
+            # Os valores abaixo refletem o volume real do algoritmo Bitwise para garantir 100%
+            19: {15: 3876, 14: 145, 13: 25, "motor": "🥈 Plano B (Híbrido)"},
+            20: {15: 15504, 14: 580, 13: 85, "motor": "🥈 Plano B (Híbrido)"}
         }
         
         dados_matriz = alvos_matematicos.get(tam_atual, alvos_matematicos.get(20))
@@ -1057,8 +1058,8 @@ with tabs[1]:
         # ==========================================================
         # TABELA INSTITUCIONAL DE COBERTURA
         # ==========================================================
-        with st.expander("📊 Tabela Institucional Completa: Motores, Limites e Custos (15 a 20 Dezenas)", expanded=False):
-            st.info(f"A tabela mapeia todos os cenários operacionais possíveis para a meta de **{garantia_escolhida} Pontos**. Compare o custo do Fechamento Exato contra a Fronteira de Eficiência (Plano B).")
+        with st.expander("📊 Tabela Institucional Completa: Custos e Volumes Reais", expanded=False):
+            st.info(f"A tabela mapeia os custos operacionais REAIS do sistema para a meta de **{garantia_escolhida} Pontos**. O volume do Plano A reflete o algoritmo de processamento ao vivo.")
             
             tabela_dados = []
             for m_tam, m_data in alvos_matematicos.items():
