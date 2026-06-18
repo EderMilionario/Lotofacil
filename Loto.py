@@ -523,15 +523,14 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO PREDITIVO: ACELERAÇÃO RSI + ESPELHAMENTO + TRAVA GEOMÉTRICA
-# Compatibilidade Total com Abas 2, 3, 4 e 5
+# CÉREBRO PREDITIVO: EQUALIZAÇÃO ESCALAR PROFISSIONAL (Z-SCORE ADAPTADO)
 # =====================================================================
 from collections import Counter
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
-    # --- 🧠 1. MÉTRICAS BASE EXIGIDAS PELAS OUTRAS ABAS ---
+    # --- 🧠 1. MÉTRICAS BASE ---
     ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
     media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 190
     primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
@@ -541,6 +540,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     media_moldura = sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 10
 
     freq_recente = Counter([n for h in historico[-50:] for n in h['dezenas']])
+    max_freq = max(freq_recente.values()) if freq_recente else 1  # Base para Normalização
     
     atrasos = {n: 0 for n in range(1, 26)}
     dezena_encontrada = {n: False for n in range(1, 26)}
@@ -560,7 +560,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
     qtd_faltam = len(faltam_ciclo)
 
-    # --- 🧠 2. DEFINIÇÃO ESCALÁVEL DO TAMANHO E COTAS ---
+    # --- 🧠 2. DINÂMICA DE COTAS ---
     ultimo_sorteio = historico[-1]['dezenas']
     repetidas = list(ultimo_sorteio) 
     ausentes = [n for n in range(1, 26) if n not in repetidas] 
@@ -574,7 +574,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except:
         media_volatilidade = 9.0
 
-    # Escala Dinâmica Proporcional (Espelhamento Exato do Comportamento da Caixa)
     if qtd_faltam <= 3:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
@@ -596,9 +595,8 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         cota_rep, cota_aus = 12, 7
         tatic_desc = f"Equilíbrio ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 7 Ausentes."
 
-    # --- 🧠 3. PILAR: ÍNDICE DE ACELERAÇÃO (RSI LOTÉRICO) ---
+    # --- 🧠 3. PILAR: A BALANÇA DE EQUALIZAÇÃO (NORMALIZAÇÃO 0-100) ---
     freq_5 = Counter([n for h in historico[-5:] for n in h['dezenas']])
-    freq_15 = Counter([n for h in historico[-15:] for n in h['dezenas']])
     
     sequencias_ativas = {n: 0 for n in range(1, 26)}
     for n in range(1, 26):
@@ -610,35 +608,38 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
 
     unified_scores = {}
     
-    # Avaliação das Repetidas (Aceleração + Prevenção de Exaustão)
+    # 🎯 Repetidas: 40% Histórico | 30% Explosão Curta | 30% Inércia
     for n in repetidas:
-        f_curta = freq_5.get(n, 0)
-        f_media = freq_15.get(n, 0)
-        
-        # Fórmula RSI: Penaliza quem saiu muito na média, mas beneficia quem está forte no curtíssimo prazo
-        aceleracao = (f_curta * 3.0) - (f_media * 0.5) 
+        macro_score = (freq_recente.get(n, 0) / max_freq) * 100.0
+        micro_score = (freq_5.get(n, 0) / 5.0) * 100.0
         
         seq = sequencias_ativas.get(n, 0)
-        inercia = 5.0 if 2 <= seq <= 3 else (-10.0 if seq >= 5 else 0.0)
+        if seq == 1: inercia_score = 60.0
+        elif 2 <= seq <= 3: inercia_score = 100.0 # Ponto de tração máximo
+        elif seq == 4: inercia_score = 30.0
+        else: inercia_score = 0.0 # Risco extremo de falha
         
-        unified_scores[n] = 50.0 + aceleracao + inercia + (freq_recente.get(n, 0) * 0.1)
+        # Fórmula Ponderada Intocável
+        nota_final = (macro_score * 0.40) + (micro_score * 0.30) + (inercia_score * 0.30)
+        unified_scores[n] = nota_final
 
-    # Avaliação das Ausentes (Ponto de Retorno)
+    # 🎯 Ausentes: 50% Histórico | 50% Status de Retorno (Curva de Sino)
     for n in ausentes:
+        macro_score = (freq_recente.get(n, 0) / max_freq) * 100.0
         delay = atrasos.get(n, 0)
         
-        if delay == 1: delay_pts = 10.0
-        elif delay == 2 or delay == 3: delay_pts = 20.0
-        elif delay >= 5: delay_pts = -15.0
-        else: delay_pts = 0.0
+        if delay == 1: status_score = 60.0
+        elif delay == 2 or delay == 3: status_score = 100.0 # Janela de retorno ideal
+        elif delay == 4: status_score = 40.0
+        else: status_score = 0.0 # Coma estatístico
         
-        score_base = 50.0 + delay_pts + (freq_recente.get(n, 0) * 0.2)
+        nota_final = (macro_score * 0.50) + (status_score * 0.50)
         
-        # Override de Ciclo: Blindagem absoluta
+        # Proteção Absoluta de Ciclo
         if qtd_faltam <= 3 and n in faltam_ciclo:
-            score_base += 1000.0
+            nota_final += 1000.0
             
-        unified_scores[n] = score_base
+        unified_scores[n] = nota_final
 
     repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
     ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
@@ -646,18 +647,13 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     matriz_bruta = repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus]
 
     # --- 🧠 4. PILAR: A TRAVA GEOMÉTRICA (Evita Buracos no Volante) ---
-    # Limita o acúmulo de dezenas na mesma linha com base no tamanho da matriz
     linhas = {
-        1: [1, 2, 3, 4, 5],
-        2: [6, 7, 8, 9, 10],
-        3: [11, 12, 13, 14, 15],
-        4: [16, 17, 18, 19, 20],
-        5: [21, 22, 23, 24, 25]
+        1: [1, 2, 3, 4, 5], 2: [6, 7, 8, 9, 10], 3: [11, 12, 13, 14, 15],
+        4: [16, 17, 18, 19, 20], 5: [21, 22, 23, 24, 25]
     }
     
     max_por_linha = 4 if qtd_matriz <= 18 else 5
     
-    # Loop de correção geométrica
     for _ in range(5):
         contagem_linhas = {l: 0 for l in range(1, 6)}
         for n in matriz_bruta:
@@ -666,25 +662,20 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                     contagem_linhas[l] += 1
                     
         linhas_excedentes = [l for l, count in contagem_linhas.items() if count > max_por_linha]
-        if not linhas_excedentes:
-            break # Matriz alinhada geometricamente
+        if not linhas_excedentes: break 
             
         for linha_excedente in linhas_excedentes:
-            # 1. Pega as dezenas da linha excedente que estão na matriz e NÃO são dezenas do ciclo VIP
             dezenas_in = [n for n in matriz_bruta if n in linhas[linha_excedente] and not (qtd_faltam <= 3 and n in faltam_ciclo)]
             if not dezenas_in: continue
             
-            # Rebaixa a mais fraca
             pior_dezena = min(dezenas_in, key=lambda x: unified_scores[x])
             
-            # 2. Puxa a melhor dezena de fora que pertence à linha mais vazia
             linha_carente = min(contagem_linhas, key=contagem_linhas.get)
             dezenas_out = [n for n in linhas[linha_carente] if n not in matriz_bruta]
             if not dezenas_out: continue
             
             melhor_dezena_substituta = max(dezenas_out, key=lambda x: unified_scores[x])
             
-            # Efetua a troca geométrica
             matriz_bruta.remove(pior_dezena)
             matriz_bruta.append(melhor_dezena_substituta)
             contagem_linhas[linha_excedente] -= 1
@@ -692,7 +683,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
 
     matriz_final = sorted(matriz_bruta)
 
-    # --- 🧠 5. EXPORTAÇÃO ESTÁVEL DO DICIONÁRIO (Para as Abas 3 e 4) ---
+    # --- 🧠 5. EXPORTAÇÃO COMPATÍVEL ---
     pesos_reais = {}
     for x in range(1, 26):
         if x in matriz_final:
@@ -705,24 +696,10 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     alvo = (historico[-1]['concurso'] + 1) if historico else 1
 
     return {
-        "estrategia": cod_est, 
-        "cod_estrategia": cod_est, 
-        "estrategia_usada": cod_est, 
-        "motivo_est": motivo_est, 
-        "pesos": pesos_reais, 
-        "freq": freq_recente, 
-        "atrasos": atrasos, 
-        "ciclo_tam": jogos_ciclo, 
-        "faltam_ciclo": faltam_ciclo,
-        "soma": media_soma, 
-        "impares": media_impares, 
-        "primos": media_primos, 
-        "moldura": media_moldura, 
-        "alvo": alvo, 
-        "qtd_matriz": qtd_matriz, 
-        "matriz_base": matriz_final, 
-        "perf": {}, 
-        "volatilidade": media_volatilidade
+        "estrategia": cod_est, "cod_estrategia": cod_est, "estrategia_usada": cod_est, "motivo_est": motivo_est, 
+        "pesos": pesos_reais, "freq": freq_recente, "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
+        "soma": media_soma, "impares": media_impares, "primos": media_primos, "moldura": media_moldura, 
+        "alvo": alvo, "qtd_matriz": qtd_matriz, "matriz_base": matriz_final, "perf": {}, "volatilidade": media_volatilidade
     }
 # =====================================================================
 # INTERFACE PRINCIPAL
