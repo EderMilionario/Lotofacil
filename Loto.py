@@ -523,18 +523,16 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO PREDITIVO: O PADRÃO ABSOLUTO DOS 3710 CONCURSOS (SEM ERROS DE UI)
+# CÉREBRO PREDITIVO: O ALGORITMO DE FADIGA E RETORNO (CORREÇÃO DE ROI)
 # =====================================================================
 from collections import Counter
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
-    # --- 🧠 1. SEGURANÇA MÁXIMA PARA O REACT DOM (Tipagem Estrita) ---
     ultimos_12 = historico[-12:] if len(historico) >= 12 else historico
     
     media_soma = float(sum([sum(h['dezenas']) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 190.0
-    
     primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
     moldura_lista = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
     
@@ -542,10 +540,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     media_primos = float(sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 5.0
     media_moldura = float(sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 10.0
 
-    # Frequência de Micro-Tendência (O que importa nos 3710 concursos é o momento atual)
     freq_micro = Counter([int(n) for h in ultimos_12 for n in h['dezenas']])
-    
-    # Frequência de Médio Prazo para sustentação e desempate
     freq_recente = Counter([int(n) for h in historico[-30:] for n in h['dezenas']])
     
     atrasos = {int(n): 0 for n in range(1, 26)}
@@ -555,7 +550,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             if int(n) in h['dezenas']: dezena_encontrada[int(n)] = True
             elif not dezena_encontrada[int(n)]: atrasos[int(n)] += 1
 
-    # Fechamento de Ciclo
     ciclo_atual = set()
     jogos_ciclo = 0
     for h in historico:
@@ -568,12 +562,10 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     faltam_ciclo = sorted([int(x) for x in list(set(range(1, 26)) - ciclo_atual)])
     qtd_faltam = len(faltam_ciclo)
 
-    # --- 🧠 2. LEI DA PROPORÇÃO ÁUREA (O Segredo do Backup) ---
     ultimo_sorteio = [int(x) for x in historico[-1]['dezenas']]
     repetidas = list(ultimo_sorteio) 
     ausentes = [int(n) for n in range(1, 26) if n not in repetidas] 
 
-    # Análise de Volatilidade Simples
     repeticoes_recentes = []
     try:
         for j in range(1, min(6, len(historico))):
@@ -583,7 +575,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except:
         media_volatilidade = 9.0
 
-    # A verdadeira matemática da Lotofácil (Forçando limites reais nas cotas)
     if qtd_faltam <= 2:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
@@ -605,39 +596,47 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         cota_rep, cota_aus = 11, 8
         tatic_desc = "Padrão de Equilíbrio. Cotas Reais: 11 Repetidas + 8 Ausentes."
 
-    # --- 🧠 3. ALGORITMO DE SELEÇÃO: A FORÇA BRUTA DO MOMENTO ---
+    # --- 🧠 3. ALGORITMO DE FADIGA E RETORNO (CORTANDO AS 3 BOLAS CEGAS) ---
     unified_scores = {}
     
     for n in range(1, 26):
         n = int(n)
+        aparicoes_12 = freq_micro.get(n, 0)
         
-        # Base = O quão quente a dezena está AGORA (Micro) + Sustentação (Médio)
-        score_calc = float((freq_micro.get(n, 0) * 15.0) + (freq_recente.get(n, 0) * 2.0))
+        # O FATOR DE FADIGA (Não comprar dezenas exaustas que vão falhar)
+        if aparicoes_12 >= 10:
+            peso_tendencia = aparicoes_12 * 5.0  # Punição por exaustão
+        elif 6 <= aparicoes_12 <= 9:
+            peso_tendencia = aparicoes_12 * 18.0 # A Nata (Sustentação Real)
+        else:
+            peso_tendencia = aparicoes_12 * 10.0 # Neutras
+            
+        score_calc = float(peso_tendencia + (freq_recente.get(n, 0) * 2.0))
         
-        # Bônus de Retorno Estratégico para dezenas ausentes
+        # A LEI DO RETORNO IMEDIATO PARA AUSENTES
         if n in ausentes:
             delay = atrasos.get(n, 0)
             if delay == 1:
-                score_calc += 25.0 # Ponto ótimo de retorno na Loto
-            elif delay == 2 or delay == 3:
-                score_calc += 35.0 # Explosão iminente
-            elif delay >= 5:
-                score_calc -= 40.0 # Está morta. Cortar do bisturi.
+                score_calc += 45.0 # Falha Simples: Maior chance de retorno da Lotofácil (50%+)
+            elif delay == 2:
+                score_calc += 15.0 
+            elif delay == 3:
+                score_calc += 5.0
+            elif delay >= 4:
+                score_calc -= 50.0 # Coma estatístico. Risco alto de não sair. Cortar.
                 
-        # VIP de Ciclo (Só aciona se o ciclo estiver gritando para fechar)
+        # VIP de Ciclo
         if qtd_faltam <= 3 and n in faltam_ciclo:
-            score_calc += 500.0 
+            score_calc += 1000.0 
                 
         unified_scores[n] = score_calc
 
-    # Extraindo a Nata Absoluta (Sem firulas geométricas)
     repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
     ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
     
-    # A Matriz Forjada na Estatística Real
     matriz_final = sorted(repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus])
 
-    # --- 🧠 4. EXPORTAÇÃO BLINDADA (0% DE ERRO NO STREAMLIT) ---
+    # --- 🧠 4. EXPORTAÇÃO BLINDADA ---
     pesos_reais = {}
     for x in range(1, 26):
         val = unified_scores.get(x, 0.0)
