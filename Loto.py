@@ -523,31 +523,36 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO PREDITIVO: EQUALIZAÇÃO ESCALAR PROFISSIONAL (Z-SCORE ADAPTADO)
+# CÉREBRO PREDITIVO: FORÇA ESTATÍSTICA PURA E PROTEÇÃO REACT DOM
 # =====================================================================
 from collections import Counter
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
-    # --- 🧠 1. MÉTRICAS BASE ---
+    # --- 🧠 1. MÉTRICAS BASE DE ALTA SEGURANÇA (Prevenção de Erro DOM) ---
     ultimos_10 = historico[-10:] if len(historico) >= 10 else historico
-    media_soma = sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 190
+    
+    # Castings explícitos para float/int nativos do Python para não crashar a interface
+    media_soma = float(sum([sum(h['dezenas']) for h in ultimos_10]) / len(ultimos_10)) if ultimos_10 else 190.0
+    
     primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
     moldura_lista = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
-    media_impares = sum([sum(1 for n in h['dezenas'] if n % 2 != 0) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 8
-    media_primos = sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 5
-    media_moldura = sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10) if ultimos_10 else 10
-
-    freq_recente = Counter([n for h in historico[-50:] for n in h['dezenas']])
-    max_freq = max(freq_recente.values()) if freq_recente else 1  # Base para Normalização
     
-    atrasos = {n: 0 for n in range(1, 26)}
-    dezena_encontrada = {n: False for n in range(1, 26)}
+    media_impares = float(sum([sum(1 for n in h['dezenas'] if n % 2 != 0) for h in ultimos_10]) / len(ultimos_10)) if ultimos_10 else 8.0
+    media_primos = float(sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_10]) / len(ultimos_10)) if ultimos_10 else 5.0
+    media_moldura = float(sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_10]) / len(ultimos_10)) if ultimos_10 else 10.0
+
+    # Frequências Limpas
+    freq_recente = Counter([int(n) for h in historico[-50:] for n in h['dezenas']])
+    freq_10 = Counter([int(n) for h in ultimos_10 for n in h['dezenas']])
+    
+    atrasos = {int(n): 0 for n in range(1, 26)}
+    dezena_encontrada = {int(n): False for n in range(1, 26)}
     for h in reversed(historico):
         for n in range(1, 26):
-            if n in h['dezenas']: dezena_encontrada[n] = True
-            elif not dezena_encontrada[n]: atrasos[n] += 1
+            if int(n) in h['dezenas']: dezena_encontrada[int(n)] = True
+            elif not dezena_encontrada[int(n)]: atrasos[int(n)] += 1
 
     ciclo_atual = set()
     jogos_ciclo = 0
@@ -557,23 +562,26 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         if len(ciclo_atual) == 25:
             ciclo_atual = set() 
             jogos_ciclo = 0
-    faltam_ciclo = sorted(list(set(range(1, 26)) - ciclo_atual))
+            
+    faltam_ciclo = sorted([int(x) for x in list(set(range(1, 26)) - ciclo_atual)])
     qtd_faltam = len(faltam_ciclo)
 
-    # --- 🧠 2. DINÂMICA DE COTAS ---
-    ultimo_sorteio = historico[-1]['dezenas']
+    # --- 🧠 2. O VERDADEIRO MOTOR PROFISSIONAL (Proporção da Caixa) ---
+    ultimo_sorteio = [int(x) for x in historico[-1]['dezenas']]
     repetidas = list(ultimo_sorteio) 
-    ausentes = [n for n in range(1, 26) if n not in repetidas] 
+    ausentes = [int(n) for n in range(1, 26) if n not in repetidas] 
 
+    # Análise de Volatilidade Simples e Segura
     repeticoes_recentes = []
     try:
         for j in range(1, min(6, len(historico))):
             rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
             repeticoes_recentes.append(rep)
-        media_volatilidade = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
+        media_volatilidade = float(sum(repeticoes_recentes) / len(repeticoes_recentes)) if repeticoes_recentes else 9.0
     except:
         media_volatilidade = 9.0
 
+    # Definição Criteriosa do Tamanho (A matriz agora será preenchida com lógica absoluta)
     if qtd_faltam <= 3:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
@@ -583,123 +591,74 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         cod_est = "Reversao Hibrida"
         qtd_matriz = 20
         cota_rep, cota_aus = 12, 8
-        tatic_desc = f"Caos ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 8 Ausentes."
+        tatic_desc = "Caos/Reversão. Cotas: 12 Repetidas + 8 Ausentes."
     elif media_volatilidade > 9.5:
         cod_est = "Tendencia Hibrida"
         qtd_matriz = 17
         cota_rep, cota_aus = 11, 6
-        tatic_desc = f"Tendência ({media_volatilidade:.1f} rep). Cotas: 11 Repetidas + 6 Ausentes."
+        tatic_desc = "Tendência Forte. Cotas: 11 Repetidas + 6 Ausentes."
     else:
         cod_est = "Simetria Conjunta"
         qtd_matriz = 19
         cota_rep, cota_aus = 12, 7
-        tatic_desc = f"Equilíbrio ({media_volatilidade:.1f} rep). Cotas: 12 Repetidas + 7 Ausentes."
+        tatic_desc = "Padrão de Equilíbrio. Cotas: 12 Repetidas + 7 Ausentes."
 
-    # --- 🧠 3. PILAR: A BALANÇA DE EQUALIZAÇÃO (NORMALIZAÇÃO 0-100) ---
-    freq_5 = Counter([n for h in historico[-5:] for n in h['dezenas']])
-    
-    sequencias_ativas = {n: 0 for n in range(1, 26)}
-    for n in range(1, 26):
-        count = 0
-        for h in reversed(historico):
-            if n in h['dezenas']: count += 1
-            else: break
-        sequencias_ativas[n] = count
-
+    # --- 🧠 3. ALGORITMO DE SELEÇÃO: O FIM DOS BURACOS ---
+    # As notas agora são um cruzamento real de Frequência Histórica (Macro) + Força Atual (Micro)
     unified_scores = {}
     
-    # 🎯 Repetidas: 40% Histórico | 30% Explosão Curta | 30% Inércia
-    for n in repetidas:
-        macro_score = (freq_recente.get(n, 0) / max_freq) * 100.0
-        micro_score = (freq_5.get(n, 0) / 5.0) * 100.0
+    for n in range(1, 26):
+        n = int(n)
+        # Nota base = Frequência Histórica x 2 + Frequência Curta x 3
+        score_calc = float((freq_recente.get(n, 0) * 2.0) + (freq_10.get(n, 0) * 3.0))
         
-        seq = sequencias_ativas.get(n, 0)
-        if seq == 1: inercia_score = 60.0
-        elif 2 <= seq <= 3: inercia_score = 100.0 # Ponto de tração máximo
-        elif seq == 4: inercia_score = 30.0
-        else: inercia_score = 0.0 # Risco extremo de falha
-        
-        # Fórmula Ponderada Intocável
-        nota_final = (macro_score * 0.40) + (micro_score * 0.30) + (inercia_score * 0.30)
-        unified_scores[n] = nota_final
-
-    # 🎯 Ausentes: 50% Histórico | 50% Status de Retorno (Curva de Sino)
-    for n in ausentes:
-        macro_score = (freq_recente.get(n, 0) / max_freq) * 100.0
-        delay = atrasos.get(n, 0)
-        
-        if delay == 1: status_score = 60.0
-        elif delay == 2 or delay == 3: status_score = 100.0 # Janela de retorno ideal
-        elif delay == 4: status_score = 40.0
-        else: status_score = 0.0 # Coma estatístico
-        
-        nota_final = (macro_score * 0.50) + (status_score * 0.50)
-        
-        # Proteção Absoluta de Ciclo
+        # Override se for a "Pedra Final" do Ciclo
         if qtd_faltam <= 3 and n in faltam_ciclo:
-            nota_final += 1000.0
+            score_calc += 1000.0
             
-        unified_scores[n] = nota_final
+        # Refino de atraso para ausentes (Pedras muito atrasadas ganham chance, mas sem matar as quentes)
+        if n in ausentes:
+            delay = atrasos.get(n, 0)
+            if delay == 2 or delay == 3: 
+                score_calc += 15.0  # Ponto de retorno ótimo
+                
+        unified_scores[n] = score_calc
 
+    # Ordenação estrita e pura (Quem tem mais ponto entra, sem cortes)
     repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
     ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
     
-    matriz_bruta = repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus]
+    # A Matriz Perfeita
+    matriz_final = sorted(repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus])
 
-    # --- 🧠 4. PILAR: A TRAVA GEOMÉTRICA (Evita Buracos no Volante) ---
-    linhas = {
-        1: [1, 2, 3, 4, 5], 2: [6, 7, 8, 9, 10], 3: [11, 12, 13, 14, 15],
-        4: [16, 17, 18, 19, 20], 5: [21, 22, 23, 24, 25]
-    }
-    
-    max_por_linha = 4 if qtd_matriz <= 18 else 5
-    
-    for _ in range(5):
-        contagem_linhas = {l: 0 for l in range(1, 6)}
-        for n in matriz_bruta:
-            for l, dezenas_linha in linhas.items():
-                if n in dezenas_linha:
-                    contagem_linhas[l] += 1
-                    
-        linhas_excedentes = [l for l, count in contagem_linhas.items() if count > max_por_linha]
-        if not linhas_excedentes: break 
-            
-        for linha_excedente in linhas_excedentes:
-            dezenas_in = [n for n in matriz_bruta if n in linhas[linha_excedente] and not (qtd_faltam <= 3 and n in faltam_ciclo)]
-            if not dezenas_in: continue
-            
-            pior_dezena = min(dezenas_in, key=lambda x: unified_scores[x])
-            
-            linha_carente = min(contagem_linhas, key=contagem_linhas.get)
-            dezenas_out = [n for n in linhas[linha_carente] if n not in matriz_bruta]
-            if not dezenas_out: continue
-            
-            melhor_dezena_substituta = max(dezenas_out, key=lambda x: unified_scores[x])
-            
-            matriz_bruta.remove(pior_dezena)
-            matriz_bruta.append(melhor_dezena_substituta)
-            contagem_linhas[linha_excedente] -= 1
-            contagem_linhas[linha_carente] += 1
-
-    matriz_final = sorted(matriz_bruta)
-
-    # --- 🧠 5. EXPORTAÇÃO COMPATÍVEL ---
+    # --- 🧠 4. EXPORTAÇÃO BLINDADA (Prevenção de Crash) ---
+    # Todos os pesos são convertidos para float nativo. Isso impede que o Streamlit quebre a UI.
     pesos_reais = {}
     for x in range(1, 26):
-        if x in matriz_final:
-            pesos_reais[x] = 100.0 + unified_scores[x]
-        else:
-            pesos_reais[x] = freq_recente.get(x, 0)
+        val = unified_scores.get(x, 0.0)
+        pesos_reais[int(x)] = round(float(val), 2)
 
-    texto_geometria = f"Malha cirúrgica de {qtd_matriz} dez. c/ Trava Geométrica Ativada."
-    motivo_est = f"DIRETRIZ: {tatic_desc} GEOMETRIA: {texto_geometria}"
-    alvo = (historico[-1]['concurso'] + 1) if historico else 1
+    alvo = int((historico[-1]['concurso'] + 1)) if historico else 1
 
     return {
-        "estrategia": cod_est, "cod_estrategia": cod_est, "estrategia_usada": cod_est, "motivo_est": motivo_est, 
-        "pesos": pesos_reais, "freq": freq_recente, "atrasos": atrasos, "ciclo_tam": jogos_ciclo, "faltam_ciclo": faltam_ciclo,
-        "soma": media_soma, "impares": media_impares, "primos": media_primos, "moldura": media_moldura, 
-        "alvo": alvo, "qtd_matriz": qtd_matriz, "matriz_base": matriz_final, "perf": {}, "volatilidade": media_volatilidade
+        "estrategia": str(cod_est), 
+        "cod_estrategia": str(cod_est), 
+        "estrategia_usada": str(cod_est), 
+        "motivo_est": str(f"DIRETRIZ: {tatic_desc} (Estatística Pura / Sem Travas Artificiais)"), 
+        "pesos": pesos_reais, 
+        "freq": dict(freq_recente), 
+        "atrasos": dict(atrasos), 
+        "ciclo_tam": int(jogos_ciclo), 
+        "faltam_ciclo": faltam_ciclo,
+        "soma": media_soma, 
+        "impares": media_impares, 
+        "primos": media_primos, 
+        "moldura": media_moldura, 
+        "alvo": alvo, 
+        "qtd_matriz": int(qtd_matriz), 
+        "matriz_base": matriz_final, 
+        "perf": {}, 
+        "volatilidade": media_volatilidade
     }
 # =====================================================================
 # INTERFACE PRINCIPAL
