@@ -654,27 +654,30 @@ with tabs[1]:
     
     st.markdown("### 🧠 Diagnóstico da Inteligência Artificial")
     
-    # 1. TRACK RECORD (Performance Histórica)
-    track = st.session_state.data.get("ledger_track", {"bilhetes": 0, "premiados_geral": 0, "elite": 0, "custo": 0.0, "retorno": 0.0})
-    win_rate = (track['premiados_geral'] / track['bilhetes'] * 100) if track['bilhetes'] > 0 else 0.0
-    roi_val = track['retorno'] - track['custo']
-    roi_pct = (roi_val / track['custo'] * 100) if track['custo'] > 0 else 0.0
+    # 1. TRACK RECORD (Performance REAL em Campo)
+    track = st.session_state.data.get("ledger_track", {"bilhetes": 0, "premiados_geral": 0, "elite": 0})
+    custo_real = st.session_state.data.get("historico_custos", 0.0)
+    retorno_real = st.session_state.data.get("historico_premios", 0.0)
+    
+    win_rate = (track['premiados_geral'] / track['bilhetes'] * 100) if track.get('bilhetes', 0) > 0 else 0.0
+    roi_val = retorno_real - custo_real
+    roi_pct = (roi_val / custo_real * 100) if custo_real > 0 else 0.0
 
     with st.container(border=True):
-        st.markdown("#### 📈 Track Record: Performance da Máquina")
+        st.markdown("#### 📈 Track Record: A Máquina em Ação (Dados Reais)")
+        st.caption("Estatísticas construídas do zero, contabilizando APENAS os seus jogos apostados e auditados.")
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("🎟️ Bilhetes Operados", track['bilhetes'])
+        c1.metric("🎟️ Bilhetes Operados", track.get('bilhetes', 0))
         c2.metric("🎯 Win Rate (Prêmios)", f"{win_rate:.1f}%")
         
-        elite_rate = (track['elite'] / track['premiados_geral'] * 100) if track['premiados_geral'] > 0 else 0.0
-        c3.metric("💎 Freq. de Elite (14/15)", f"{elite_rate:.1f}%" if elite_rate > 0 else "Buscando...")
+        elite_rate = (track.get('elite', 0) / track.get('premiados_geral', 1) * 100) if track.get('premiados_geral', 0) > 0 else 0.0
+        c3.metric("💎 Freq. de Elite (14/15)", f"{elite_rate:.1f}%" if elite_rate > 0 else "0.0%")
         
         c4.metric("📈 ROI Financeiro", f"{roi_pct:.1f}%", f"R$ {roi_val:.2f}")
 
     historico_painel = st.session_state.data.get("historico_dados", [])
     
     if historico_painel:
-        # Chama a função da IA purificada (Motor Híbrido Hot + Bisturi)
         ia = raciocinio_total_ia(historico_painel, st.session_state.data.get("ia_memoria", {}))
         
         if ia:
@@ -682,8 +685,6 @@ with tabs[1]:
             
             st.markdown(f"### 🎯 Matriz Cirúrgica de {tamanho_m} Dezenas (Fechamento Exato)")
             
-            
-            # --- O NOVO SELETOR DE GARANTIA ---
             with st.container(border=True):
                 st.markdown("#### 💰 Simulação de Custo (Matemática Pura)")
                 st.markdown("Selecione qual prêmio você quer **GARANTIR 100%** caso as 15 sorteadas caiam dentro da matriz:")
@@ -696,7 +697,6 @@ with tabs[1]:
                     key="radio_garantia_aba2"
                 )
                 
-                # Agora puxamos o cálculo EXATO cravado do motor
                 jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
                 
                 st.success(
@@ -706,34 +706,27 @@ with tabs[1]:
                 )
 
             # =======================================================
-            # DE VOLTA: RETROSPECTIVA CRÍTICA PERMANENTE (FORÇA DA MATRIZ)
+            # O NOVO QUADRO DE DISTRIBUIÇÃO DE PRÊMIOS 100% REAIS
             # =======================================================
-            st.markdown("#### 🎯 Retrospectiva Crítica Permanente (Força da Matriz)")
-            acertos_totais = {11: 0, 12: 0, 13: 0, 14: 0, 15: 0}
-            soma_acertos = 0
+            st.markdown("#### 🏆 Histórico Oficial de Prêmios (Suas Apostas Auditadas)")
             
-            for h in historico_painel:
-                acertos = len(set(ia['matriz_base']).intersection(set(h['dezenas'])))
-                soma_acertos += acertos
-                if acertos >= 11:
-                    acertos_totais[acertos] += 1
-                    
-            media_matriz = soma_acertos / len(historico_painel) if historico_painel else 0
+            hits = st.session_state.data.get("global_hits", {})
             
-            c1, c2 = st.columns(2)
-            c1.metric("🧩 Média Histórica de Acertos (Matriz Cheia)", f"{media_matriz:.2f} / 15")
-            c2.metric("💎 Frequência de Elite (14 e 15 pts)", f"{acertos_totais[14] + acertos_totais[15]} vezes no histórico")
+            # Lê o Json de forma blindada (puxa o número real acumulado das suas conferências)
+            v11 = hits.get(11, 0) + hits.get("11", 0)
+            v12 = hits.get(12, 0) + hits.get("12", 0)
+            v13 = hits.get(13, 0) + hits.get("13", 0)
+            v14 = hits.get(14, 0) + hits.get("14", 0)
+            v15 = hits.get(15, 0) + hits.get("15", 0)
             
-            st.markdown("**Distribuição Exata de Prêmios (Se a matriz fosse jogada cheia no histórico):**")
             cp1, cp2, cp3, cp4, cp5 = st.columns(5)
-            cp1.metric("11 Pontos", acertos_totais[11])
-            cp2.metric("12 Pontos", acertos_totais[12])
-            cp3.metric("13 Pontos", acertos_totais[13])
-            cp4.metric("14 Pontos", acertos_totais[14])
-            cp5.metric("15 Pontos", acertos_totais[15])
+            cp1.metric("11 Pontos", v11)
+            cp2.metric("12 Pontos", v12)
+            cp3.metric("13 Pontos", v13)
+            cp4.metric("14 Pontos", v14)
+            cp5.metric("15 Pontos", v15)
             st.divider()
-            # =======================================================
-
+            
             # --- DIAGNÓSTICO DO CONCURSO ALVO ---
             st.markdown(f"#### 🧠 Diagnóstico Autônomo — Concurso Alvo {ia['alvo']}")
             
@@ -1059,7 +1052,7 @@ with tabs[4]:
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
     
     # =====================================================================
-    # 🧠 MOTOR DE AUDITORIA CONTÁBIL EXATA
+    # 🧠 MOTOR DE AUDITORIA CONTÁBIL EXATA (CONTA APENAS JOGOS REAIS)
     # =====================================================================
     def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
         if rateios is None: rateios = {}
@@ -1073,6 +1066,15 @@ with tabs[4]:
         premiados = 0
         max_pts = 0
         
+        # Garante que os contadores de VIDA REAL existam no Cofre
+        if "global_hits" not in st.session_state.data:
+            st.session_state.data["global_hits"] = {11: 0, 12: 0, 13: 0, 14: 0, 15: 0}
+        if "ledger_track" not in st.session_state.data:
+            st.session_state.data["ledger_track"] = {"bilhetes": 0, "premiados_geral": 0, "elite": 0}
+            
+        ledger = st.session_state.data["ledger_track"]
+        hits_reais = st.session_state.data["global_hits"]
+        
         for j in st.session_state.data.get("jogos_salvos", []):
             alvo_do_jogo = j.get('concurso_alvo')
             pode_auditar = False
@@ -1082,6 +1084,8 @@ with tabs[4]:
                 
             if j.get('status') == "Aguardando Sorteio" and pode_auditar:
                 jogos_processados += 1
+                ledger["bilhetes"] += 1 # Contabiliza +1 bilhete operado na Vida Real
+                
                 pontos = len(set(j.get('dezenas', [])).intersection(sorteio_set))
                 j['acertos'] = pontos
                 j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
@@ -1091,17 +1095,28 @@ with tabs[4]:
                 if pontos >= 11:
                     j['status'] = "Premiado"
                     lucro_total += j['premio_valor']
-                    # Crédito real direto no Livro-Caixa de Prêmios (ROI)
                     st.session_state.data["historico_premios"] += j['premio_valor']
                     premiados += 1
+                    
+                    # ALIMENTA O PAINEL DA ABA 2 EXATAMENTE COM O QUE VOCÊ GANHOU
+                    ledger["premiados_geral"] += 1
+                    if pontos >= 14:
+                        ledger["elite"] += 1
+                        
+                    # Salva a quantidade de prêmios exata (lidando com strings do JSON)
+                    chave_str = str(pontos)
+                    hits_reais[chave_str] = hits_reais.get(chave_str, 0) + 1
+                    hits_reais[pontos] = hits_reais.get(pontos, 0) + 1
                 else:
                     j['status'] = "Não Premiado"
+        
+        st.session_state.data["global_hits"] = hits_reais
+        st.session_state.data["ledger_track"] = ledger
         
         if jogos_processados > 0:
             relatorio.append(f"Auditoria Concurso {concurso}: {premiados}/{jogos_processados} bilhetes premiados. Pico: {max_pts} pts.")
             
         return lucro_total, relatorio
-
     def extrair_rateios_api(premiacoes):
         rateios = {}
         if premiacoes:
