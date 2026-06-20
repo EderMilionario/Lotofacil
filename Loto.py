@@ -826,7 +826,6 @@ with tabs[2]:
         # =====================================================================
         with st.container(border=True):
             st.markdown("#### 🎯 Alvo da Garantia Matemática")
-            st.markdown("Selecione qual prêmio você quer **GARANTIR 100%** caso as 15 sorteadas caiam dentro da matriz de Elite:")
             
             garantia_alvo = st.radio(
                 "Garantia:",
@@ -836,69 +835,65 @@ with tabs[2]:
                 key="radio_garantia_aba3"
             )
             
-            # Chama EXATAMENTE o mesmo cálculo da Aba 2
             jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
             
-            st.info(
-                f"📊 **Volume Exato a Ser Gerado:** {jogos_exatos} Bilhetes\n\n"
-                f"💸 **Investimento Cravado ({jogos_exatos} x R$ 3,50):** R$ {custo_exato:.2f}"
-            )
+            st.info(f"📊 **Volume Exato a Ser Gerado:** {jogos_exatos} Bilhetes\n\n💸 **Investimento Cravado:** R$ {custo_exato:.2f}")
 
             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
             
             if st.button("🧬 GERAR FECHAMENTO EXATO", type="primary", use_container_width=True):
-                st.info("⚙️ **Acionando MOTOR A (Plano Exato):** Desdobrando matriz...")
+                st.info("⚙️ **Acionando MOTOR EXATO:** Desdobrando matriz...")
                 
-                # Gera a matriz usando o motor sem limites
+                # ================================================================
+                # CORREÇÃO DA MEMÓRIA: Apaga a fila antiga antes de gerar novos!
+                # ================================================================
+                st.session_state.data["jogos_salvos"] = [
+                    j for j in st.session_state.data["jogos_salvos"] 
+                    if j.get('status') != "Aguardando Sorteio"
+                ]
+                
                 matriz_reduzida = gerar_fechamento_matematico(tuple(ia['matriz_base']), garantia_alvo)
-                
                 qtd_gerados = len(matriz_reduzida)
                 gasto = qtd_gerados * 3.50
                 
                 prog_a = st.progress(0)
-                txt_a = st.empty()
                 
                 for i, dezenas_jogo in enumerate(matriz_reduzida):
-                    tamanho_bilhete = len(dezenas_jogo)
-                    
                     st.session_state.data["jogos_salvos"].append({
                         "id": str(uuid.uuid4()), 
                         "concurso_alvo": ia['alvo'], 
                         "dezenas": sorted(list(dezenas_jogo)),
-                        "tamanho": tamanho_bilhete, 
+                        "tamanho": len(dezenas_jogo), 
                         "estrategia": ia['cod_estrategia'], 
                         "justificativa": f"Matriz {ia['cod_estrategia']}. Garantia 100% de {garantia_alvo} pts.",
                         "status": "Aguardando Sorteio", 
                         "acertos": 0, 
                         "premio_valor": 0.0,
                         "matriz_origem": ia['matriz_base'],
-                        "dna": "🧬 Fechamento Matemático 100% (Plano A)"
+                        "dna": "🧬 Fechamento Matemático 100%"
                     })
                     
                     if i % max(1, (qtd_gerados // 10)) == 0:  
                         prog_a.progress(min((i+1)/qtd_gerados, 1.0))
-                        txt_a.write(f"Injetando bilhetes exatos: {i+1} / {qtd_gerados}")
                         
-                # Registra o custo EXATO calculado na hora da geração no Livro-Caixa
                 st.session_state.data['historico_custos'] += gasto
                 salvar_dados(st.session_state.data)
-                
-                st.toast(f"✅ {qtd_gerados} jogos matemáticos criados.", icon="🚀")
-                st.success(f"**🥇 FECHAMENTO CONCLUÍDO!** {qtd_gerados} bilhetes gerados com sucesso. Custo de **R$ {gasto:.2f}** adicionado ao Livro-Caixa.")
+                st.success(f"**🥇 FECHAMENTO CONCLUÍDO!** {qtd_gerados} bilhetes gerados exatos.")
                 st.rerun()
 
     else: 
         st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
 
     # =====================================================================
-    # PRÉ-VISUALIZAÇÃO NA ABA 3 (COM PAGINAÇÃO PARA NÃO TRAVAR O PC)
+    # PRÉ-VISUALIZAÇÃO BLINDADA (SÓ MOSTRA UMA VEZ)
     # =====================================================================
-    jogos_salvos_aba3 = st.session_state.data.get("jogos_salvos", [])
-    if jogos_salvos_aba3:
+    jogos_espera = [j for j in st.session_state.data.get("jogos_salvos", []) if j.get('status') == "Aguardando Sorteio"]
+    
+    if jogos_espera:
         st.markdown("---")
         st.markdown("#### 👀 Pré-visualização dos Bilhetes Gerados")
         bilhetes_por_pagina = 30
-        total_paginas = (len(jogos_salvos_aba3) // bilhetes_por_pagina) + (1 if len(jogos_salvos_aba3) % bilhetes_por_pagina > 0 else 0)
+        total_paginas = (len(jogos_espera) // bilhetes_por_pagina) + (1 if len(jogos_espera) % bilhetes_por_pagina > 0 else 0)
         
         if total_paginas > 1:
             pagina_atual = st.selectbox("Página (Aba 3)", range(1, total_paginas + 1), label_visibility="collapsed", key="pag_aba3")
@@ -907,31 +902,7 @@ with tabs[2]:
             
         inicio = (pagina_atual - 1) * bilhetes_por_pagina
         fim = inicio + bilhetes_por_pagina
-        jogos_pagina = jogos_salvos_aba3[inicio:fim]
-
-        cols = st.columns(3)
-        for idx, jogo in enumerate(jogos_pagina):
-            numero_real_jogo = inicio + idx + 1
-            with cols[idx % 3]:
-                exibir_card_volante(jogo, numero_real_jogo)
-    # =====================================================================
-    # PRÉ-VISUALIZAÇÃO NA ABA 3 (COM PAGINAÇÃO PARA NÃO TRAVAR O PC)
-    # =====================================================================
-    jogos_salvos_aba3 = st.session_state.data.get("jogos_salvos", [])
-    if jogos_salvos_aba3:
-        st.markdown("---")
-        st.markdown("#### 👀 Pré-visualização dos Bilhetes Gerados")
-        bilhetes_por_pagina = 30
-        total_paginas = (len(jogos_salvos_aba3) // bilhetes_por_pagina) + (1 if len(jogos_salvos_aba3) % bilhetes_por_pagina > 0 else 0)
-        
-        if total_paginas > 1:
-            pagina_atual = st.selectbox("Página (Aba 3)", range(1, total_paginas + 1), label_visibility="collapsed", key="pag_aba3")
-        else:
-            pagina_atual = 1
-            
-        inicio = (pagina_atual - 1) * bilhetes_por_pagina
-        fim = inicio + bilhetes_por_pagina
-        jogos_pagina = jogos_salvos_aba3[inicio:fim]
+        jogos_pagina = jogos_espera[inicio:fim]
 
         cols = st.columns(3)
         for idx, jogo in enumerate(jogos_pagina):
