@@ -438,142 +438,129 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 # =====================================================================
-# CÉREBRO PREDITIVO: ALGORITMO HÍBRIDO PERFEITO (HOT + BISTURI + VIP CICLO)
+# CÉREBRO DA IA: ANÁLISE DE HISTÓRICO E GERAÇÃO DE MATRIZ EQUILIBRADA
+# (COM FILTRO DE OURO DA LOTOFÁCIL: ÍMPARES, PRIMOS E MOLDURA)
 # =====================================================================
-from collections import Counter
-
-def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
+def raciocinio_total_ia(historico, memoria):
     if not historico: return None
     
-    ultimos_12 = historico[-12:] if len(historico) >= 12 else historico
+    # 1. PREPARAÇÃO DOS DADOS BÁSICOS
+    ultimo_conc = historico[-1]['concurso']
+    alvo = ultimo_conc + 1
     
-    media_soma = float(sum([sum(h['dezenas']) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 190.0
-    primos_lista = [2, 3, 5, 7, 11, 13, 17, 19, 23]
-    moldura_lista = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25]
+    todas_dezenas = []
+    for h in historico[-20:]:  # Analisa os últimos 20 sorteios para temperatura
+        todas_dezenas.extend(h['dezenas'])
+        
+    freq = Counter(todas_dezenas)
     
-    media_impares = float(sum([sum(1 for n in h['dezenas'] if n % 2 != 0) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 8.0
-    media_primos = float(sum([sum(1 for n in h['dezenas'] if n in primos_lista) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 5.0
-    media_moldura = float(sum([sum(1 for n in h['dezenas'] if n in moldura_lista) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 10.0
-
-    freq_micro = Counter([int(n) for h in ultimos_12 for n in h['dezenas']])
-    freq_recente = Counter([int(n) for h in historico[-30:] for n in h['dezenas']])
-    
-    atrasos = {int(n): 0 for n in range(1, 26)}
-    dezena_encontrada = {int(n): False for n in range(1, 26)}
-    for h in reversed(historico):
-        for n in range(1, 26):
-            if int(n) in h['dezenas']: dezena_encontrada[int(n)] = True
-            elif not dezena_encontrada[int(n)]: atrasos[int(n)] += 1
-
-    ciclo_atual = set()
-    jogos_ciclo = 0
-    for h in historico:
-        ciclo_atual.update(h['dezenas'])
-        jogos_ciclo += 1
-        if len(ciclo_atual) == 25:
-            ciclo_atual = set() 
-            jogos_ciclo = 0
-            
-    faltam_ciclo = sorted([int(x) for x in list(set(range(1, 26)) - ciclo_atual)])
-    qtd_faltam = len(faltam_ciclo)
-
-    ultimo_sorteio = [int(x) for x in historico[-1]['dezenas']]
-    repetidas = list(ultimo_sorteio) 
-    ausentes = [int(n) for n in range(1, 26) if n not in repetidas] 
-
-    repeticoes_recentes = []
-    try:
-        for j in range(1, min(6, len(historico))):
-            rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
-            repeticoes_recentes.append(rep)
-        media_volatilidade = float(sum(repeticoes_recentes) / len(repeticoes_recentes)) if repeticoes_recentes else 9.0
-    except:
-        media_volatilidade = 9.0
-
-    # Definição Dinâmica da Matriz (17 a 20 dezenas)
-    if qtd_faltam <= 2:
-        cod_est = "Ciclo Supremo"
-        qtd_matriz = 18
-        cota_rep, cota_aus = 10, 8  
-        tatic_desc = "Cerco Fim de Ciclo. Cotas Exatas: 10 Repetidas + 8 Ausentes."
-    elif media_volatilidade < 8.0:
-        cod_est = "Reversao de Tendencia"
-        qtd_matriz = 20
-        cota_rep, cota_aus = 11, 9
-        tatic_desc = "Caos/Reversão. Cotas Exatas: 11 Repetidas + 9 Ausentes."
-    elif media_volatilidade > 9.5:
-        cod_est = "Tendencia Forte"
-        qtd_matriz = 17
-        cota_rep, cota_aus = 10, 7
-        tatic_desc = "Tendência Absoluta. Cotas Exatas: 10 Repetidas + 7 Ausentes."
-    else:
-        cod_est = "Simetria Conjunta"
-        qtd_matriz = 19
-        cota_rep, cota_aus = 11, 8
-        tatic_desc = "Padrão de Equilíbrio. Cotas Exatas: 11 Repetidas + 8 Ausentes."
-
-    # --- 🧠 3. MOTOR DE SELEÇÃO: FORÇA BRUTA (REPETIDAS) + BISTURI (AUSENTES) ---
-    unified_scores = {}
-    
+    atrasos = {n: 0 for n in range(1, 26)}
     for n in range(1, 26):
-        n = int(n)
-        aparicoes_12 = freq_micro.get(n, 0)
-        
-        # 1. FORÇA BRUTA: Fim da Fadiga. Dezenas quentes recebem pontuação máxima livremente.
-        peso_tendencia = aparicoes_12 * 15.0 
-        score_calc = float(peso_tendencia + (freq_recente.get(n, 0) * 2.0))
-        
-        # 2. O BISTURI: Aplica-se apenas às ausentes
-        if n in ausentes:
-            delay = atrasos.get(n, 0)
-            if delay == 1:
-                score_calc += 45.0 # Falha Simples: Maior chance de retorno
-            elif delay == 2:
-                score_calc += 15.0 
-            elif delay >= 4:
-                # Coma estatístico. Risco alto de não sair. Sofre o corte do bisturi.
-                score_calc -= 50.0 
+        for h in reversed(historico):
+            if n not in h['dezenas']:
+                atrasos[n] += 1
+            else:
+                break
                 
-        # 3. BLINDAGEM DE CICLO (VIP SUPREMO)
-        # Se a dezena faltar para o ciclo, atropela qualquer regra (seja bisturi ou coma)
-        if qtd_faltam <= 3 and n in faltam_ciclo:
-            score_calc += 1000.0 
-                
-        unified_scores[n] = score_calc
-
-    repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
-    ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
+    # 2. ANÁLISE DO CICLO
+    ciclo_atual = set()
+    tam_ciclo = 0
+    for h in reversed(historico):
+        tam_ciclo += 1
+        ciclo_atual.update(h['dezenas'])
+        if len(ciclo_atual) == 25:
+            break
+            
+    # Se fechou 25, um novo ciclo começou no último sorteio
+    if len(ciclo_atual) == 25:
+        ciclo_atual = set(historico[-1]['dezenas'])
+        tam_ciclo = 1
+        
+    faltam_ciclo = [n for n in range(1, 26) if n not in ciclo_atual]
     
-    # Montagem Exata do Volante
-    matriz_final = sorted(repetidas_ordenadas[:cota_rep] + ausentes_ordenadas[:cota_aus])
-
-    # --- 🧠 4. EXPORTAÇÃO BLINDADA (STREAMLIT SEGURO) ---
-    pesos_reais = {}
-    for x in range(1, 26):
-        val = unified_scores.get(x, 0.0)
-        pesos_reais[int(x)] = round(float(val), 2)
-
-    alvo = int((historico[-1]['concurso'] + 1)) if historico else 1
+    # 3. CÁLCULO DE PESOS BRUTOS (A FORÇA DA DEZENA)
+    pesos = {n: 0.0 for n in range(1, 26)}
+    for n in range(1, 26):
+        peso = 0.0
+        # Peso do Ciclo (Prioridade Máxima)
+        if n in faltam_ciclo:
+            peso += 15.0
+        # Peso de Atraso (Se está atrasada há 3 ou 4 concursos, está estourando)
+        if 2 <= atrasos[n] <= 4:
+            peso += 8.0
+        # Peso de Frequência (Dezenas quentes mantêm o motor)
+        peso += (freq[n] * 0.5)
+        
+        pesos[n] = round(peso, 2)
+        
+    # Ordena da mais forte para a mais fraca
+    dezenas_ordenadas = sorted(pesos.keys(), key=lambda k: pesos[k], reverse=True)
+    
+    # =====================================================================
+    # 4. O FILTRO DE OURO DA LOTOFÁCIL (BALANÇO ESTATÍSTICO)
+    # =====================================================================
+    IMPARES = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
+    PRIMOS = {2, 3, 5, 7, 11, 13, 17, 19, 23}
+    MOLDURA = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
+    
+    # Tamanho da Matriz que a IA vai montar (Padrão Elite: 18 dezenas)
+    tamanho_m = 18 
+    
+    # Cotas Máximas Dinâmicas Baseadas no Tamanho da Matriz
+    max_impares = int(tamanho_m * (8.5 / 15))  # Ex: Para 18, max 10 ímpares
+    max_pares = int(tamanho_m * (7.5 / 15))    # Ex: Para 18, max 9 pares
+    max_primos = int(tamanho_m * (6.5 / 15))   # Ex: Para 18, max 7 primos
+    max_moldura = int(tamanho_m * (11 / 15))   # Ex: Para 18, max 13 moldura
+    
+    matriz_base = []
+    
+    for dez in dezenas_ordenadas:
+        if len(matriz_base) == tamanho_m:
+            break
+            
+        qtd_imp = sum(1 for d in matriz_base if d in IMPARES)
+        qtd_par = sum(1 for d in matriz_base if d not in IMPARES)
+        qtd_prim = sum(1 for d in matriz_base if d in PRIMOS)
+        qtd_mold = sum(1 for d in matriz_base if d in MOLDURA)
+        
+        faltam_vagas = tamanho_m - len(matriz_base)
+        dezenas_restantes = [d for d in dezenas_ordenadas if d not in matriz_base and d != dez]
+        
+        # A TRAVA DE SEGURANÇA (O Pulo do Gato para não dar Bug)
+        # Só bloqueia a dezena se ainda houver dezenas suficientes no banco para fechar a matriz.
+        if len(dezenas_restantes) >= faltam_vagas:
+            if dez in IMPARES and qtd_imp >= max_impares: continue
+            if dez not in IMPARES and qtd_par >= max_pares: continue
+            if dez in PRIMOS and qtd_prim >= max_primos: continue
+            if dez in MOLDURA and qtd_mold >= max_moldura: continue
+            
+        # Se passou pelos filtros (ou se acionou a trava de emergência), a dezena entra na matriz!
+        matriz_base.append(dez)
+        
+    matriz_base = sorted(matriz_base)
+    
+    # 5. DIAGNÓSTICO DA ESTRATÉGIA PARA O PAINEL
+    if len(faltam_ciclo) > 0 and len(faltam_ciclo) <= 5:
+        estrategia = "Caçada de Ciclo + Equilíbrio Estatístico"
+        motivo = f"Faltam {len(faltam_ciclo)} dezenas para o ciclo. A IA focou em forçar o fechamento do ciclo, mantendo as proporções ideais de Ímpares, Pares, Primos e Moldura."
+        cod = "C-EQ"
+    else:
+        estrategia = "Força Ponderada + Balanceamento Lotofácil"
+        motivo = "O ciclo acabou de zerar ou está no início. A IA selecionou as melhores tendências de atraso e frequência e filtrou pela Regra de Ouro (Ímpares, Pares e Primos)."
+        cod = "F-EQ"
 
     return {
-        "estrategia": str(cod_est), 
-        "cod_estrategia": str(cod_est), 
-        "estrategia_usada": str(cod_est), 
-        "motivo_est": str(f"DIRETRIZ: {tatic_desc}"), 
-        "pesos": pesos_reais, 
-        "freq": dict(freq_recente), 
-        "atrasos": dict(atrasos), 
-        "ciclo_tam": int(jogos_ciclo), 
-        "faltam_ciclo": faltam_ciclo,
-        "soma": media_soma, 
-        "impares": media_impares, 
-        "primos": media_primos, 
-        "moldura": media_moldura, 
-        "alvo": alvo, 
-        "qtd_matriz": int(qtd_matriz), 
-        "matriz_base": matriz_final, 
-        "perf": {}, 
-        "volatilidade": media_volatilidade
+        'qtd_matriz': tamanho_m,
+        'alvo': alvo,
+        'estrategia': estrategia,
+        'motivo_est': motivo,
+        'matriz_base': matriz_base,
+        'freq': freq,
+        'atrasos': atrasos,
+        'ciclo_tam': tam_ciclo,
+        'faltam_ciclo': faltam_ciclo,
+        'pesos': pesos,
+        'cod_estrategia': cod
     }
 
 # =====================================================================
