@@ -14,7 +14,7 @@ import os
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # =====================================================================
-# GERADOR DE PDF (CORRIGIDO: BLINDAGEM CONTRA UNICODE/EMOJIS)
+# GERADOR DE PDF (COM RODAPÉ DE GARANTIA DINÂMICA 100% EXATA)
 # =====================================================================
 def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     if dezenas_anteriores is None:
@@ -38,7 +38,7 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     pdf.set_font('Arial', '', 10)
     pdf.set_text_color(100, 100, 100)
     pdf.set_xy(10, 22)
-    pdf.cell(0, 8, "Relatorio Oficial Pericial (Plano A - Exato)", ln=0)
+    pdf.cell(0, 8, "Relatorio Oficial Pericial (Fechamento Exato)", ln=0)
     
     pdf.set_font('Arial', 'B', 11)
     pdf.set_text_color(147, 0, 137)
@@ -51,6 +51,8 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     pdf.cell(190, 8, datetime.now().strftime('%d/%m/%Y %H:%M'), ln=0, align='R')
     
     pdf.ln(30)
+    
+    import re # Adicionado para rastrear a garantia escolhida
     
     # GERADOR DE CARDS NO PDF
     for i, j in enumerate(jogos, 1):
@@ -104,11 +106,23 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
             pdf.set_font('Arial', 'B', 7)
             pdf.cell(6, 6, f"{num:02d}", align='C')
             
-        # Rodapé (EMOJI REMOVIDO DAQUI)
+        # ========================================================
+        # O NOVO RODAPÉ DINÂMICO
+        # Ele caça a justificativa do bilhete e estampa a pontuação
+        # ========================================================
+        justificativa_texto = str(j.get('justificativa', ''))
+        match = re.search(r'(\d+) pts', justificativa_texto)
+        
+        if match:
+            pontos = match.group(1)
+            texto_rodape = f"Fechamento 100% Matematico - Garantia de {pontos} Pontos"
+        else:
+            texto_rodape = "Fechamento 100% Matematico Absoluto"
+            
         pdf.set_text_color(147, 0, 137)
-        pdf.set_font('Arial', 'I', 8)
+        pdf.set_font('Arial', 'B', 8)
         pdf.set_xy(18, y_start + 58)
-        pdf.cell(170, 5, "Fechamento Exato - Matematica Pura", ln=0, align='C')
+        pdf.cell(170, 5, texto_rodape, ln=0, align='C')
         
         pdf.set_y(y_start + 70)
         
@@ -151,33 +165,27 @@ def render_performance_grid(dezenas_lista, titulo):
     st.markdown(f"#### {titulo}")
     st.bar_chart(df)
 
-# =====================================================================
-# TABELA MATEMÁTICA EXATA - MATRIZ DE LÓTT E SINCRONIZAÇÃO DE CUSTO
-# =====================================================================
-TABELA_FECHAMENTO_EXATO = {
-    16: {15: 16, 14: 4, 13: 4},
-    17: {15: 136, 14: 14, 13: 6},
-    18: {15: 816, 14: 24, 13: 12},
-    19: {15: 3876, 14: 87, 13: 22},
-    20: {15: 15504, 14: 253, 13: 53}
-}
 
-@st.cache_data(show_spinner="🧠 Processando Matriz de Lótt (Matemática Exata)...")
+
+# =====================================================================
+# MOTOR DE INTELIGÊNCIA MATEMÁTICA - FECHAMENTO 100% EXATO E ABSOLUTO
+# =====================================================================
+@st.cache_data(show_spinner="🧠 Processando Matriz (Fechamento 100% Matemático)...")
 def gerar_fechamento_matematico(dezenas_tuple, garantia):
     """
-    Recebe 'dezenas_tuple' para permitir que o cache do Streamlit funcione.
-    O motor roda e devolve a rede exata travada no limite.
+    Motor Bitwise de Cobertura Total.
+    NÃO POSSUI LIMITES. Roda até garantir 100% de cobertura matemática da matriz.
     """
     import itertools
     dezenas = list(dezenas_tuple)
     todas_comb_15 = list(itertools.combinations(dezenas, 15))
     qtd_dezenas = len(dezenas)
     
+    # Se a garantia for máxima ou a matriz for do tamanho do volante, não precisa desdobrar
     if garantia == 15 or qtd_dezenas <= 15:
         return [list(c) for c in todas_comb_15]
 
-    limite_bilhetes = TABELA_FECHAMENTO_EXATO.get(qtd_dezenas, {}).get(garantia, 99999)
-
+    # Transformação Quântica - Bits (Isso garante a precisão exata da matemática)
     comb_bits = []
     for c in todas_comb_15:
         bits = 0
@@ -196,7 +204,10 @@ def gerar_fechamento_matematico(dezenas_tuple, garantia):
                 cobre.add(j)
         cobertura.append(cobre)
         
-    while sorteios_possiveis and len(bilhetes_escolhidos) < limite_bilhetes:
+    # =====================================================================
+    # A MÁGICA DA GARANTIA 100%: O WHILE NÃO TEM MAIS "COLEIRA"
+    # =====================================================================
+    while sorteios_possiveis:
         melhor_idx = -1
         max_cobertos = -1
         
@@ -220,7 +231,6 @@ def obter_dados_fechamento(matriz_base, garantia):
     qtd = len(jogos)
     custo = qtd * 3.50
     return qtd, custo
-
 def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
     if not historico:
         return 18, 0.50, "Histórico vazio. Usando matriz base.", {}
@@ -257,37 +267,51 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     
     return tamanho_matriz, taxa_confianca, motivo, detalhes
 
-def exibir_card_volante(jogo, indice):
+# =====================================================================
+# RENDERIZADOR DOS BILHETES NA TELA (COM RODAPÉ DINÂMICO 100% EXATO)
+# =====================================================================
+def exibir_card_volante(jogo, numero_jogo):
     dezenas = jogo.get('dezenas', [])
-    estrategia = jogo.get('estrategia', 'Padrão').replace("🧬", "🍀")
     alvo = jogo.get('concurso_alvo', 'N/A')
-    dna = "Fechamento Matemático 100% (Plano A)"
+    estrategia = jogo.get('estrategia', 'Padrão')
+    justificativa = str(jogo.get('justificativa', ''))
     
-    html = f"""
-    <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(147,0,137,0.1); margin-bottom: 20px; border-left: 8px solid #930089; font-family: sans-serif;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px;">
-            <div style="font-weight: 900; color: #930089; font-size: 18px;">🎫 JOGO {indice:02d}</div>
-            <div style="background-color: #930089; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px;">{len(dezenas)} DEZENAS</div>
-        </div>
-        <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 20px; display: flex; justify-content: space-between;">
-            <span><strong style="color: #930089;">Alvo:</strong> {alvo}</span>
-            <span><strong style="color: #930089;">Tática:</strong> {estrategia}</span>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 260px; margin: 0 auto; background-color: #fdf5ff; padding: 15px; border-radius: 10px; border: 1px solid #eccbff;">
-    """
-    
-    for i in range(1, 26):
-        if i in dezenas:
-            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #930089; box-shadow: 0 2px 5px rgba(147,0,137,0.4);">{i:02d}</div>'
+    import re
+    # Caça a garantia exata dentro da justificativa gerada pelo motor
+    match = re.search(r'(\d+) pts', justificativa)
+    if match:
+        pontos = match.group(1)
+        texto_rodape = f"Fechamento 100% Matemático - Garantia de {pontos} Pontos"
+    else:
+        texto_rodape = "Fechamento 100% Matemático Absoluto"
+
+    # Constrói as bolinhas do volante (5 colunas)
+    grid_html = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 10px;'>"
+    for num in range(1, 26):
+        if num in dezenas:
+            bg_color = "#930089" # Roxo Lotofácil
+            txt_color = "white"
+            border = "none"
         else:
-            html += f'<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 16px; font-weight: 600; color: #b2bec3; background-color: #ffffff; border: 1px solid #dfe6e9;">{i:02d}</div>'
-            
-    html += f"""
+            bg_color = "#f4f6f9" # Fundo Cinza Claro
+            txt_color = "#ccc"
+            border = "1px solid #eee"
+        
+        grid_html += f"<div style='background-color: {bg_color}; color: {txt_color}; border: {border}; text-align: center; border-radius: 50%; width: 28px; height: 28px; line-height: 28px; font-size: 12px; font-weight: bold; margin: auto;'>{num:02d}</div>"
+    grid_html += "</div>"
+
+    # Desenha o cartão completo com o rodapé novo
+    html_card = f"""
+    <div style='background-color: #fcf5ff; border-left: 4px solid #930089; padding: 10px; border-radius: 5px; margin-bottom: 15px; box-shadow: 1px 1px 5px rgba(0,0,0,0.05);'>
+        <div style='font-size: 14px; font-weight: bold; color: #333;'>JOGO {numero_jogo:02d} <span style='font-size: 11px; font-weight: normal; color: #777; float: right;'>Alvo: {alvo}</span></div>
+        <div style='font-size: 11px; color: #930089; margin-bottom: 10px; font-weight: bold;'>{estrategia}</div>
+        {grid_html}
+        <div style='text-align: center; font-size: 10px; font-weight: bold; color: #930089; background: rgba(147, 0, 137, 0.1); padding: 4px; border-radius: 4px; margin-top: 5px;'>
+            {texto_rodape}
         </div>
-        <div style="margin-top: 15px; font-size: 11px; color: #930089; text-align: center; font-weight: bold;">{dna}</div>
     </div>
     """
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(html_card, unsafe_allow_html=True)
 
 # =====================================================================
 # CONFIGURAÇÃO E LOGIN (100% ROXO LOTOFÁCIL)
@@ -686,17 +710,13 @@ with tabs[1]:
     tm_15 = hits_matriz.get(15, 0) + hits_matriz.get("15", 0)
     tm_total = hits_matriz.get("total", 0)
 
-    # Cálculo da média de acertos da matriz
     soma_acertos_ponderada = (tm_11 * 11) + (tm_12 * 12) + (tm_13 * 13) + (tm_14 * 14) + (tm_15 * 15)
     media_acertos_matriz = soma_acertos_ponderada / tm_total if tm_total > 0 else 0
 
     with st.container(border=True):
         st.markdown("#### 🎯 Força da Matriz da IA (Quantas dezenas a IA cravou?)")
         st.caption(f"Total de Matrizes Auditadas: **{tm_total}**.")
-        
-        # Exibe a Média de Acertos em destaque
         st.metric("Média de Acertos da Matriz", f"{media_acertos_matriz:.2f} / 15")
-        
         st.markdown("---")
         cm1, cm2, cm3, cm4, cm5 = st.columns(5)
         cm1.metric("Matriz Acertou 11", tm_11)
@@ -721,6 +741,7 @@ with tabs[1]:
         cb3.metric("Bilhetes com 13", tb_13)
         cb4.metric("Bilhetes com 14", tb_14)
         cb5.metric("Bilhetes com 15", tb_15)
+
     historico_painel = st.session_state.data.get("historico_dados", [])
     
     if historico_painel:
@@ -731,11 +752,19 @@ with tabs[1]:
             
             st.markdown(f"### 🎯 Matriz Cirúrgica Atual — {tamanho_m} Dezenas")
             
+            # --- PAINEL DE CUSTO EXACTO DA ABA 2 ---
             with st.container(border=True):
-                st.markdown("#### 💰 Simulação de Custo do Fechamento")
-                garantia_alvo = st.radio("Alvo do Fechamento:", options=[15, 14, 13], format_func=lambda x: f"Garantia de {x} Pontos", horizontal=True, key="radio_garantia_aba2")
+                st.markdown(f"#### 💰 Simulação de Custo do Fechamento (Matriz de {tamanho_m} dezenas)")
+                garantia_alvo = st.radio("Alvo do Fechamento:", options=[15, 14, 13], format_func=lambda x: f"Garantia Absoluta de {x} Pontos", horizontal=True, key="radio_garantia_aba2")
+                
+                # Puxa EXATAMENTE do motor principal
                 jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
-                st.success(f"**Diagnóstico:** Para garantir **{garantia_alvo} pontos**, o sistema vai gerar exatamente **{jogos_exatos} bilhetes**.\n\n💸 **Custo da Operação:** R$ {custo_exato:.2f}")
+                
+                st.success(
+                    f"**Diagnóstico Matemático (100% Exato):**\n"
+                    f"Para garantir **{garantia_alvo} pontos**, o sistema vai desdobrar exatamente **{jogos_exatos} bilhetes**.\n\n"
+                    f"💸 **Custo Fixo Total ({jogos_exatos} x R$ 3,50): R$ {custo_exato:.2f}**"
+                )
 
             # --- DIAGNÓSTICO DO CONCURSO ALVO ---
             st.markdown(f"#### 🧠 Diagnóstico Autônomo — Concurso Alvo {ia['alvo']}")
@@ -789,8 +818,8 @@ with tabs[2]:
     if st.session_state.data["historico_dados"]:
         ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data.get("ia_memoria", {}))
         
-        st.markdown(f"#### ⚙️ Setup de Disparo — Alvo: `Concurso {ia['alvo']}`")
         tamanho_m = ia['qtd_matriz']
+        st.markdown(f"#### ⚙️ Setup de Disparo — Alvo: `Concurso {ia['alvo']}` | 🎯 **Matriz Usada: {tamanho_m} Dezenas**")
         
         # =====================================================================
         # PAINEL DE CONTROLE DE DISPARO (MATEMÁTICA PURA)
@@ -807,17 +836,20 @@ with tabs[2]:
                 key="radio_garantia_aba3"
             )
             
-            # Chamada conectada no gerador (Custo Real)
+            # Chama EXATAMENTE o mesmo cálculo da Aba 2
             jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
             
-            st.info(f"📊 **Volume Exato do Desdobramento:** {jogos_exatos} Bilhetes | 💸 **Custo Fixo do Fechamento:** R$ {custo_exato:.2f}")
+            st.info(
+                f"📊 **Volume Exato a Ser Gerado:** {jogos_exatos} Bilhetes\n\n"
+                f"💸 **Investimento Cravado ({jogos_exatos} x R$ 3,50):** R$ {custo_exato:.2f}"
+            )
 
             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
             
             if st.button("🧬 GERAR FECHAMENTO EXATO", type="primary", use_container_width=True):
-                st.info("⚙️ **Acionando MOTOR A (Plano Exato):** Processando matriz de Lótt...")
+                st.info("⚙️ **Acionando MOTOR A (Plano Exato):** Desdobrando matriz...")
                 
-                # Chama a versão com tuple para funcionar no cache certinho
+                # Gera a matriz usando o motor sem limites
                 matriz_reduzida = gerar_fechamento_matematico(tuple(ia['matriz_base']), garantia_alvo)
                 
                 qtd_gerados = len(matriz_reduzida)
@@ -847,17 +879,41 @@ with tabs[2]:
                         prog_a.progress(min((i+1)/qtd_gerados, 1.0))
                         txt_a.write(f"Injetando bilhetes exatos: {i+1} / {qtd_gerados}")
                         
-                # Registra o custo no Livro-Caixa e salva sem barreiras bancárias
+                # Registra o custo EXATO calculado na hora da geração no Livro-Caixa
                 st.session_state.data['historico_custos'] += gasto
                 salvar_dados(st.session_state.data)
                 
                 st.toast(f"✅ {qtd_gerados} jogos matemáticos criados.", icon="🚀")
-                st.success(f"**🥇 MOTOR A CONCLUÍDO!** Bilhetes gerados com sucesso. Custo adicionado ao Livro-Caixa: **R$ {gasto:.2f}**.")
+                st.success(f"**🥇 FECHAMENTO CONCLUÍDO!** {qtd_gerados} bilhetes gerados com sucesso. Custo de **R$ {gasto:.2f}** adicionado ao Livro-Caixa.")
                 st.rerun()
 
     else: 
         st.warning("Aguardando sincronização de dados do Cofre na Aba 1.")
 
+    # =====================================================================
+    # PRÉ-VISUALIZAÇÃO NA ABA 3 (COM PAGINAÇÃO PARA NÃO TRAVAR O PC)
+    # =====================================================================
+    jogos_salvos_aba3 = st.session_state.data.get("jogos_salvos", [])
+    if jogos_salvos_aba3:
+        st.markdown("---")
+        st.markdown("#### 👀 Pré-visualização dos Bilhetes Gerados")
+        bilhetes_por_pagina = 30
+        total_paginas = (len(jogos_salvos_aba3) // bilhetes_por_pagina) + (1 if len(jogos_salvos_aba3) % bilhetes_por_pagina > 0 else 0)
+        
+        if total_paginas > 1:
+            pagina_atual = st.selectbox("Página (Aba 3)", range(1, total_paginas + 1), label_visibility="collapsed", key="pag_aba3")
+        else:
+            pagina_atual = 1
+            
+        inicio = (pagina_atual - 1) * bilhetes_por_pagina
+        fim = inicio + bilhetes_por_pagina
+        jogos_pagina = jogos_salvos_aba3[inicio:fim]
+
+        cols = st.columns(3)
+        for idx, jogo in enumerate(jogos_pagina):
+            numero_real_jogo = inicio + idx + 1
+            with cols[idx % 3]:
+                exibir_card_volante(jogo, numero_real_jogo)
     # =====================================================================
     # PRÉ-VISUALIZAÇÃO NA ABA 3 (COM PAGINAÇÃO PARA NÃO TRAVAR O PC)
     # =====================================================================
