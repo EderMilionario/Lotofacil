@@ -13,12 +13,17 @@ import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# =====================================================================
+# GERADOR DE PDF (CORRIGIDO: BLINDAGEM CONTRA UNICODE/EMOJIS)
+# =====================================================================
 def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     if dezenas_anteriores is None:
         dezenas_anteriores = []
         
     def limpar_latin1(texto):
-        return str(texto).encode('latin-1', 'ignore').decode('latin-1')
+        # Arranca emojis e caracteres que o FPDF não suporta, evitando o Crash.
+        texto = str(texto).replace("🧬", "").replace("🍀", "").replace("🎫", "").replace("⚠️", "")
+        return texto.encode('latin-1', 'ignore').decode('latin-1')
 
     pdf = FPDF()
     pdf.add_page()
@@ -54,7 +59,7 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
             
         y_start = pdf.get_y()
         
-        estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')).replace("🧬", "").replace("🍀", "").strip())
+        estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')))
         dezenas = j.get('dezenas', [])
         alvo = limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
         
@@ -99,11 +104,11 @@ def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
             pdf.set_font('Arial', 'B', 7)
             pdf.cell(6, 6, f"{num:02d}", align='C')
             
-        # Rodapé
+        # Rodapé (EMOJI REMOVIDO DAQUI)
         pdf.set_text_color(147, 0, 137)
         pdf.set_font('Arial', 'I', 8)
         pdf.set_xy(18, y_start + 58)
-        pdf.cell(170, 5, "🧬 Fechamento Exato - Matemática Pura", ln=0, align='C')
+        pdf.cell(170, 5, "Fechamento Exato - Matematica Pura", ln=0, align='C')
         
         pdf.set_y(y_start + 70)
         
@@ -147,9 +152,8 @@ def render_performance_grid(dezenas_lista, titulo):
     st.bar_chart(df)
 
 # =====================================================================
-# TABELA MATEMÁTICA EXATA - MATRIZ DE LÓTT (Custo do Bilhete: R$ 3.50)
+# TABELA MATEMÁTICA EXATA - MATRIZ DE LÓTT E SINCRONIZAÇÃO DE CUSTO
 # =====================================================================
-# O sistema agora é "Plano A Only". Esta tabela dita o número EXATO de jogos.
 TABELA_FECHAMENTO_EXATO = {
     16: {15: 16, 14: 4, 13: 4},
     17: {15: 136, 14: 14, 13: 6},
@@ -158,35 +162,22 @@ TABELA_FECHAMENTO_EXATO = {
     20: {15: 15504, 14: 253, 13: 53}
 }
 
-def obter_dados_fechamento(tamanho_matriz, garantia):
-    """Retorna os jogos e o custo exato da matriz para o front-end"""
-    if tamanho_matriz in TABELA_FECHAMENTO_EXATO and garantia in TABELA_FECHAMENTO_EXATO[tamanho_matriz]:
-        jogos = TABELA_FECHAMENTO_EXATO[tamanho_matriz][garantia]
-        custo = jogos * 3.50
-        return jogos, custo
-    return 0, 0.0
-
-# =====================================================================
-# MOTOR DE INTELIGÊNCIA MATEMÁTICA - FECHAMENTO PURO E TRAVADO
-# =====================================================================
-import itertools
-
 @st.cache_data(show_spinner="🧠 Processando Matriz de Lótt (Matemática Exata)...")
-def gerar_fechamento_matematico(dezenas, garantia):
+def gerar_fechamento_matematico(dezenas_tuple, garantia):
     """
-    Motor Bitwise de Alta Performance.
-    Ele agora trava exatamente no limite da Tabela Institucional.
+    Recebe 'dezenas_tuple' para permitir que o cache do Streamlit funcione.
+    O motor roda e devolve a rede exata travada no limite.
     """
+    import itertools
+    dezenas = list(dezenas_tuple)
     todas_comb_15 = list(itertools.combinations(dezenas, 15))
     qtd_dezenas = len(dezenas)
     
     if garantia == 15 or qtd_dezenas <= 15:
         return [list(c) for c in todas_comb_15]
 
-    # Trava Institucional: A máquina PARA de gerar no número exato da tabela.
     limite_bilhetes = TABELA_FECHAMENTO_EXATO.get(qtd_dezenas, {}).get(garantia, 99999)
 
-    # Transformação Quântica - Bits
     comb_bits = []
     for c in todas_comb_15:
         bits = 0
@@ -197,7 +188,6 @@ def gerar_fechamento_matematico(dezenas, garantia):
     sorteios_possiveis = set(range(len(comb_bits)))
     bilhetes_escolhidos = []
     
-    # Pré-cálculo Bitwise 
     cobertura = []
     for b in comb_bits:
         cobre = set()
@@ -206,7 +196,6 @@ def gerar_fechamento_matematico(dezenas, garantia):
                 cobre.add(j)
         cobertura.append(cobre)
         
-    # Extração Gulosa Absoluta travada no limite
     while sorteios_possiveis and len(bilhetes_escolhidos) < limite_bilhetes:
         melhor_idx = -1
         max_cobertos = -1
@@ -221,6 +210,16 @@ def gerar_fechamento_matematico(dezenas, garantia):
         sorteios_possiveis -= cobertura[melhor_idx] 
         
     return bilhetes_escolhidos
+
+def obter_dados_fechamento(matriz_base, garantia):
+    """
+    Roda a função de geração silenciosamente no background.
+    Garante que o painel mostre o valor e a quantidade IDÊNTICA ao botão de gerar.
+    """
+    jogos = gerar_fechamento_matematico(tuple(matriz_base), garantia)
+    qtd = len(jogos)
+    custo = qtd * 3.50
+    return qtd, custo
 
 def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estrategias=None):
     if not historico:
@@ -683,7 +682,8 @@ with tabs[1]:
             
             st.markdown(f"### 🎯 Matriz Cirúrgica de {tamanho_m} Dezenas (Fechamento Exato)")
             
-            # --- O NOVO SELETOR DE GARANTIA (Exclusivo Plano A) ---
+            
+            # --- O NOVO SELETOR DE GARANTIA ---
             with st.container(border=True):
                 st.markdown("#### 💰 Simulação de Custo (Matemática Pura)")
                 st.markdown("Selecione qual prêmio você quer **GARANTIR 100%** caso as 15 sorteadas caiam dentro da matriz:")
@@ -696,16 +696,43 @@ with tabs[1]:
                     key="radio_garantia_aba2"
                 )
                 
-                # Busca os valores cravados na tabela da Aba 1
-                jogos_exatos, custo_exato = obter_dados_fechamento(tamanho_m, garantia_alvo)
+                # Agora puxamos o cálculo EXATO cravado do motor
+                jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
                 
                 st.success(
                     f"**Diagnóstico de Operação:**\n"
-                    f"Para garantir **{garantia_alvo} pontos** em uma matriz de **{tamanho_m} dezenas**, "
-                    f"o sistema vai gerar exatos **{jogos_exatos} bilhetes**.\n\n"
-                    f"💸 **Custo Fixo da Operação:** R$ {custo_exato:.2f}\n\n"
-                    f"*(Este é o mínimo matemático absoluto. Não há filtros nem cortes. Se acertar as 15 na matriz, o prêmio está obrigatoriamente preso na rede).* "
+                    f"Para garantir **{garantia_alvo} pontos**, o sistema vai gerar exatamente **{jogos_exatos} bilhetes**.\n\n"
+                    f"💸 **Custo Exato da Operação:** R$ {custo_exato:.2f}"
                 )
+
+            # =======================================================
+            # DE VOLTA: RETROSPECTIVA CRÍTICA PERMANENTE (FORÇA DA MATRIZ)
+            # =======================================================
+            st.markdown("#### 🎯 Retrospectiva Crítica Permanente (Força da Matriz)")
+            acertos_totais = {11: 0, 12: 0, 13: 0, 14: 0, 15: 0}
+            soma_acertos = 0
+            
+            for h in historico_painel:
+                acertos = len(set(ia['matriz_base']).intersection(set(h['dezenas'])))
+                soma_acertos += acertos
+                if acertos >= 11:
+                    acertos_totais[acertos] += 1
+                    
+            media_matriz = soma_acertos / len(historico_painel) if historico_painel else 0
+            
+            c1, c2 = st.columns(2)
+            c1.metric("🧩 Média Histórica de Acertos (Matriz Cheia)", f"{media_matriz:.2f} / 15")
+            c2.metric("💎 Frequência de Elite (14 e 15 pts)", f"{acertos_totais[14] + acertos_totais[15]} vezes no histórico")
+            
+            st.markdown("**Distribuição Exata de Prêmios (Se a matriz fosse jogada cheia no histórico):**")
+            cp1, cp2, cp3, cp4, cp5 = st.columns(5)
+            cp1.metric("11 Pontos", acertos_totais[11])
+            cp2.metric("12 Pontos", acertos_totais[12])
+            cp3.metric("13 Pontos", acertos_totais[13])
+            cp4.metric("14 Pontos", acertos_totais[14])
+            cp5.metric("15 Pontos", acertos_totais[15])
+            st.divider()
+            # =======================================================
 
             # --- DIAGNÓSTICO DO CONCURSO ALVO ---
             st.markdown(f"#### 🧠 Diagnóstico Autônomo — Concurso Alvo {ia['alvo']}")
@@ -791,17 +818,18 @@ with tabs[2]:
                 key="radio_garantia_aba3"
             )
             
-            jogos_exatos, custo_exato = obter_dados_fechamento(tamanho_m, garantia_alvo)
+            # Chamada conectada no gerador (Custo Real)
+            jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
             
-            st.info(f"📊 **Volume do Desdobramento:** {jogos_exatos} Bilhetes | 💸 **Custo do Fechamento:** R$ {custo_exato:.2f}")
+            st.info(f"📊 **Volume Exato do Desdobramento:** {jogos_exatos} Bilhetes | 💸 **Custo Fixo do Fechamento:** R$ {custo_exato:.2f}")
 
             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
             
             if st.button("🧬 GERAR FECHAMENTO EXATO", type="primary", use_container_width=True):
                 st.info("⚙️ **Acionando MOTOR A (Plano Exato):** Processando matriz de Lótt...")
                 
-                # Gera a matriz exatamente travada no número de bilhetes oficial
-                matriz_reduzida = gerar_fechamento_matematico(ia['matriz_base'], garantia_alvo)
+                # Chama a versão com tuple para funcionar no cache certinho
+                matriz_reduzida = gerar_fechamento_matematico(tuple(ia['matriz_base']), garantia_alvo)
                 
                 qtd_gerados = len(matriz_reduzida)
                 gasto = qtd_gerados * 3.50
@@ -1279,6 +1307,22 @@ with tabs[4]:
                         st.rerun()
                 except ValueError:
                     st.error("Erro estrutural na conversão de números.")
+        # =====================================================================
+        # BOTÃO TÁTICO: FORÇAR RECÁLCULO DA IA PARA O PRÓXIMO SORTEIO
+        # =====================================================================
+        with st.container(border=True):
+            st.markdown("#### 🧠 Forçar Reprocessamento da Inteligência Artificial")
+            st.write("Antes de gerar novos jogos, clique aqui para obrigar a IA a reler o histórico inteiro e recalcular todas as tendências, ciclos e pesos para o concurso que está por vir.")
+        
+            if st.button("🔄 ATUALIZAR E FORÇAR LEITURA PARA O PRÓXIMO SORTEIO", type="primary", use_container_width=True):
+                # Limpa qualquer resíduo da memória da IA
+                st.session_state.data["ia_memoria"] = {}
+                if 'ultimo_aprendizado' in st.session_state:
+                    st.session_state.ultimo_aprendizado = []
+            
+                salvar_dados(st.session_state.data)
+                st.success("✅ Memória Cache zerada! A IA recalculará a matriz com base 100% no histórico atualizado.")
+                st.rerun()            
 
     st.divider()
 
