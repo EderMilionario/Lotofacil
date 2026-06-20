@@ -674,7 +674,7 @@ with tabs[1]:
         c4.metric("📈 ROI Financeiro", f"{roi_pct:.1f}%", f"R$ {roi_val:.2f}")
 
     # =======================================================
-    # O PAINEL DE DESEMPENHO DA MATRIZ VOLTOU (VIDA REAL)
+    # O PAINEL DE DESEMPENHO DA MATRIZ (VIDA REAL + MÉDIA)
     # =======================================================
     st.markdown("### 🏆 Performance Oficial (Pós-Auditoria Vida Real)")
     
@@ -686,9 +686,18 @@ with tabs[1]:
     tm_15 = hits_matriz.get(15, 0) + hits_matriz.get("15", 0)
     tm_total = hits_matriz.get("total", 0)
 
+    # Cálculo da média de acertos da matriz
+    soma_acertos_ponderada = (tm_11 * 11) + (tm_12 * 12) + (tm_13 * 13) + (tm_14 * 14) + (tm_15 * 15)
+    media_acertos_matriz = soma_acertos_ponderada / tm_total if tm_total > 0 else 0
+
     with st.container(border=True):
-        st.markdown("#### 🎯 Força da Matriz da IA (Quantas dezenas a IA cravou dentro do grupo?)")
-        st.caption(f"Total de Matrizes Auditadas: **{tm_total}**. Isso mede o poder puro da IA, independente do fechamento escolhido.")
+        st.markdown("#### 🎯 Força da Matriz da IA (Quantas dezenas a IA cravou?)")
+        st.caption(f"Total de Matrizes Auditadas: **{tm_total}**.")
+        
+        # Exibe a Média de Acertos em destaque
+        st.metric("Média de Acertos da Matriz", f"{media_acertos_matriz:.2f} / 15")
+        
+        st.markdown("---")
         cm1, cm2, cm3, cm4, cm5 = st.columns(5)
         cm1.metric("Matriz Acertou 11", tm_11)
         cm2.metric("Matriz Acertou 12", tm_12)
@@ -712,7 +721,6 @@ with tabs[1]:
         cb3.metric("Bilhetes com 13", tb_13)
         cb4.metric("Bilhetes com 14", tb_14)
         cb5.metric("Bilhetes com 15", tb_15)
-
     historico_painel = st.session_state.data.get("historico_dados", [])
     
     if historico_painel:
