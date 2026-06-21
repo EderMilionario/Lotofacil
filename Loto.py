@@ -439,8 +439,6 @@ def cb_carregar_cofre():
 
 from collections import Counter
 
-from collections import Counter
-
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
@@ -509,10 +507,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         qtd_matriz = 19
         tatic_desc = "Padrão de Equilíbrio."
 
-    
-    if len(matriz_final) < qtd_matriz:
-        for n in candidatos:
-    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---        
+    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---   
     unified_scores = {}
     for n in range(1, 26):
         n = int(n)
@@ -606,7 +601,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1, 
         "qtd_matriz": int(qtd_matriz), 
         "matriz_base": matriz_final, "perf": {}, "volatilidade": media_volatilidade
-    } 
+    }
 # =====================================================================
 # INTERFACE PRINCIPAL
 # =====================================================================
