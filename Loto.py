@@ -13,13 +13,12 @@ import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- INICIALIZAÇÃO DE PESOS (COLOCAR NO TOPO DO ARQUIVO) ---
-if "ia_pesos" not in st.session_state:
-    st.session_state.ia_pesos = {
-        "Tendencia Forte": {"curtas": 20.0, "longas": 5.0, "delay1": 40.0},
-        "Simetria Conjunta": {"longas": 15.0, "curtas": 8.0, "delay1": 30.0, "delay2": 20.0},
-        "Reversao de Tendencia": {"longas": 10.0, "delay3": 100.0},
-        "Default": {"curtas": 12.0, "longas": 8.0, "delay2": 25.0}
+if "ia_pesos" not in st.session_state.data:
+    st.session_state.data["ia_pesos"] = {
+        "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
+        "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
+        "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
+        "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
     }
 
 # =====================================================================
@@ -527,31 +526,37 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         tatic_desc = "Padrão de Equilíbrio."
 
     
-    pesos = st.session_state.ia_pesos.get(cod_est, st.session_state.ia_pesos["Default"])
+    # Carrega os pesos dinâmicos do seu estado
+    est_pesos = st.session_state.data["ia_pesos"].get(cod_est, st.session_state.data["ia_pesos"]["Default"])
 
-    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO ---
     unified_scores = {}
     for n in range(1, 26):
-        # ... (seu código atual define aparicoes_curtas, longas, delay)
-        
-        # SUBSTITUA OS CÁLCULOS POR ISTO:
+        n = int(n)
+        aparicoes_curtas = freq_micro.get(n, 0)
+        aparicoes_longas = freq_recente.get(n, 0)
+        delay = atrasos.get(n, 0)
+        score_calc = 0.0
+
         if cod_est == "Tendencia Forte":
-            score_calc = (aparicoes_curtas * pesos["curtas"]) + (aparicoes_longas * pesos["longas"])
-            if n in ausentes and delay == 1: score_calc += pesos["delay1"]
+            score_calc = (aparicoes_curtas * est_pesos.get("p1", 20.0)) + (aparicoes_longas * est_pesos.get("p2", 5.0))
+            if n in ausentes and delay == 1: score_calc += est_pesos.get("bonus", 40.0)
             
         elif cod_est == "Simetria Conjunta":
-            score_calc = (aparicoes_longas * pesos["longas"]) + (aparicoes_curtas * pesos["curtas"])
+            score_calc = (aparicoes_longas * est_pesos.get("p1", 15.0)) + (aparicoes_curtas * est_pesos.get("p2", 8.0))
             if n in ausentes:
-                if delay == 1: score_calc += pesos["delay1"]
-                elif delay == 2: score_calc += pesos["delay2"]
+                if delay == 1: score_calc += est_pesos.get("bonus1", 30.0)
+                elif delay == 2: score_calc += est_pesos.get("bonus2", 20.0)
 
         elif cod_est == "Reversao de Tendencia":
-            score_calc = (aparicoes_longas * pesos["longas"])
-            if n in ausentes and delay >= 3: score_calc += pesos["delay3"]
+            score_calc = (aparicoes_longas * est_pesos.get("p1", 10.0))
+            if n in ausentes and delay >= 3: score_calc += est_pesos.get("bonus", 100.0)
 
         else: 
-            score_calc = (aparicoes_curtas * pesos["curtas"]) + (aparicoes_longas * pesos["longas"])
-            if n in ausentes and delay <= 2: score_calc += pesos["delay2"]
+            score_calc = (aparicoes_curtas * est_pesos.get("p1", 12.0)) + (aparicoes_longas * est_pesos.get("p2", 8.0))
+            if n in ausentes and delay <= 2: score_calc += est_pesos.get("bonus", 25.0)
+
+        if qtd_faltam <= 3 and n in faltam_ciclo:
+            score_calc += 5000.0
             
         unified_scores[n] = float(score_calc)
 
@@ -1121,12 +1126,13 @@ with tabs[4]:
     exibir_mini_painel_financeiro()
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
 
-    def ajustar_ia(cod_est, acertos):
-        if "ia_pesos" not in st.session_state: return
-        fator = 1.02 if acertos >= 12 else 0.98
-        est_key = cod_est if cod_est in st.session_state.ia_pesos else "Default"
-        for k in st.session_state.ia_pesos[est_key]:
-            st.session_state.ia_pesos[est_key][k] = round(st.session_state.ia_pesos[est_key][k] * fator, 2)
+    def atualizar_pesos_ia(cod_est, acertos):
+    # Se fez 12 ou mais, aumenta o peso em 2%. Se fez menos, reduz em 2%.
+    fator = 1.02 if acertos >= 12 else 0.98
+    pesos = st.session_state.data["ia_pesos"].get(cod_est, st.session_state.data["ia_pesos"]["Default"])
+    for k in pesos:
+        pesos[k] = round(pesos[k] * fator, 2)
+    st.session_state.data["ia_pesos"][cod_est] = pesos
     
     # =====================================================================
     # 🧠 MOTOR DE AUDITORIA CONTÁBIL EXATA E FORÇA DA MATRIZ
@@ -1174,7 +1180,7 @@ with tabs[4]:
                 ledger["bilhetes"] += 1
                 
                 pontos = len(set(j.get('dezenas', [])).intersection(sorteio_set))
-                ajustar_ia(j.get("estrategia_usada", "Default"), pontos)
+                atualizar_pesos_ia(j.get("estrategia", "Default"), pontos)
                 j['acertos'] = pontos
                 j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
                 
