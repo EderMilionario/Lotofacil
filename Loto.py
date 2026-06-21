@@ -439,9 +439,12 @@ def cb_carregar_cofre():
 
 from collections import Counter
 
+from collections import Counter
+
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
+    # --- 1. LEITURA DE DADOS E MÉDIAS ---
     ultimos_12 = historico[-12:] if len(historico) >= 12 else historico
     
     media_soma = float(sum([sum(h['dezenas']) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 190.0
@@ -455,6 +458,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     freq_micro = Counter([int(n) for h in ultimos_12 for n in h['dezenas']])
     freq_recente = Counter([int(n) for h in historico[-30:] for n in h['dezenas']])
     
+    # --- 2. ATRASOS, VOLATILIDADE E CICLO ---
     atrasos = {int(n): 0 for n in range(1, 26)}
     dezena_encontrada = {int(n): False for n in range(1, 26)}
     for h in reversed(historico):
@@ -487,7 +491,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except:
         media_volatilidade = 9.0
 
-    # Definição Dinâmica da Matriz (Textos limpos e alinhados)
+    # --- 3. DEFINIÇÃO DA ESTRATÉGIA (ENGESSAMENTO INTELIGENTE) ---
     if qtd_faltam <= 2:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
@@ -505,7 +509,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         qtd_matriz = 19
         tatic_desc = "Padrão de Equilíbrio."
 
-    # --- 🧠 3. MOTOR DE SELEÇÃO: FORÇA BRUTA (REPETIDAS) + BISTURI (AUSENTES) ---
+    # --- 4. MOTOR DE SELEÇÃO: PONTUAÇÃO (PESOS E BISTURI) ---
     unified_scores = {}
     
     for n in range(1, 26):
@@ -523,47 +527,52 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
             elif delay >= 4:
                 score_calc -= 50.0 
                 
+        # AQUI O CICLO É BLINDADO! Ele ganha +1000 e vai pro topo da fila.
+        # Vai entrar na matriz ANTES de qualquer filtro atingir o limite.
         if qtd_faltam <= 3 and n in faltam_ciclo:
             score_calc += 1000.0 
                 
         unified_scores[n] = score_calc
 
-    # --- 🧠 4. FILTRO DE OURO PROPORCIONAL E CÁLCULO REAL ---
+    # --- 5. FILTRO DE OURO: PROPORCIONALIDADE ABSOLUTA ---
     IMPARES_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
     PRIMOS_SET = {2, 3, 5, 7, 11, 13, 17, 19, 23}
     MOLDURA_SET = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
     FIBO_SET = {1, 2, 3, 5, 8, 13, 21}
     MULT3_SET = {3, 6, 9, 12, 15, 18, 21, 24}
     ULT_SORT_SET = set(ultimo_sorteio)
+    AUSENTES_SET = set(range(1, 26)) - ULT_SORT_SET
     
-    # Proporcionalidade exata ativada para TUDO (Calculado via round)
+    # Cálculos exatos baseados na qtd_matriz atual
     max_imp = round(qtd_matriz * 0.54)
     max_prim = round(qtd_matriz * 0.36)
     max_mold = round(qtd_matriz * 0.66)
     max_fibo = round(qtd_matriz * 0.30)
     max_mult3 = round(qtd_matriz * 0.33)
     max_rep = round(qtd_matriz * 0.60)
+    max_aus = qtd_matriz - max_rep # A TRAVA MATEMÁTICA QUE FALTAVA
 
     matriz_final = []
+    # Ordena do maior pro menor score (Os VIPs do Ciclo entram primeiro)
     candidatos = sorted(range(1, 26), key=lambda n: unified_scores.get(n, 0), reverse=True)
     
     for n in candidatos:
         if len(matriz_final) >= qtd_matriz: break
         
-        # Travas rigorosas baseadas na proporcionalidade da piscina
+        # Travas ativadas para TODOS os filtros sem exceção
         if n in IMPARES_SET and sum(1 for x in matriz_final if x in IMPARES_SET) >= max_imp: continue
         if n in PRIMOS_SET and sum(1 for x in matriz_final if x in PRIMOS_SET) >= max_prim: continue
         if n in MOLDURA_SET and sum(1 for x in matriz_final if x in MOLDURA_SET) >= max_mold: continue
         if n in FIBO_SET and sum(1 for x in matriz_final if x in FIBO_SET) >= max_fibo: continue
         if n in MULT3_SET and sum(1 for x in matriz_final if x in MULT3_SET) >= max_mult3: continue
         if n in ULT_SORT_SET and sum(1 for x in matriz_final if x in ULT_SORT_SET) >= max_rep: continue
+        if n in AUSENTES_SET and sum(1 for x in matriz_final if x in AUSENTES_SET) >= max_aus: continue
         
         matriz_final.append(n)
         
     matriz_final = sorted(matriz_final)
 
-    # --- 🧠 5. CÁLCULO DAS ESTATÍSTICAS REAIS DA MATRIZ GERADA ---
-    # Contagem cirúrgica do que DE FATO caiu na matriz final
+    # --- 6. EXTRAÇÃO DOS RESULTADOS EXATOS DA MATRIZ ---
     cont_impares = sum(1 for n in matriz_final if n in IMPARES_SET)
     cont_pares = len(matriz_final) - cont_impares
     cont_primos = sum(1 for n in matriz_final if n in PRIMOS_SET)
@@ -573,7 +582,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     cont_repetidas = len(set(matriz_final).intersection(ULT_SORT_SET))
     cont_ausentes = len(matriz_final) - cont_repetidas
 
-    # Relatório absoluto e definitivo para a Aba 2 ler (Todos os dados mapeados)
+    # Justificativa completa e cravada para a Aba 2
     justificativa_completa = (
         f"DIRETRIZ: {tatic_desc} (Matriz: {qtd_matriz}) | "
         f"COMPOSIÇÃO: {cont_impares} Ímpares, {cont_pares} Pares, "
@@ -582,7 +591,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         f"STATUS: {cont_repetidas} Repetidas, {cont_ausentes} Ausentes."
     )
 
-    # --- 🧠 6. EXPORTAÇÃO ---
+    # --- 7. RETORNO PARA O SISTEMA ---
     pesos_reais = {int(x): round(float(unified_scores.get(x, 0.0)), 2) for x in range(1, 26)}
 
     return {
