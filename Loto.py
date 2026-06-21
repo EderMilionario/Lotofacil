@@ -544,49 +544,47 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
     ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
     
-    # --- FILTRO DE OURO PROPORCIONAL (A Lógica que faltava) ---
-    IMPARES = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
-    PRIMOS = {2, 3, 5, 7, 11, 13, 17, 19, 23}
-    MOLDURA = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
+    # --- 🧠 4. FILTRO DE OURO PROPORCIONAL E CÁLCULO REAL ---
+    IMPARES_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
+    PRIMOS_SET = {2, 3, 5, 7, 11, 13, 17, 19, 23}
+    MOLDURA_SET = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
     
-    # Cotas proporcionais ao tamanho que a IA decidiu
-    max_imp = int(qtd_matriz * 0.55) # ~55% de ímpares
-    max_prim = int(qtd_matriz * 0.35) # ~35% de primos
-    max_mold = int(qtd_matriz * 0.65) # ~65% de moldura
+    max_imp = int(qtd_matriz * 0.55)
+    max_prim = int(qtd_matriz * 0.35)
+    max_mold = int(qtd_matriz * 0.65)
 
     matriz_final = []
-    # Cria uma lista única de candidatos já ordenados pelo score
     candidatos = sorted(range(1, 26), key=lambda n: unified_scores.get(n, 0), reverse=True)
     
     for n in candidatos:
         if len(matriz_final) >= qtd_matriz: break
-        
-        # Filtros de segurança
-        if n in IMPARES and sum(1 for x in matriz_final if x in IMPARES) >= max_imp: continue
-        if n in PRIMOS and sum(1 for x in matriz_final if x in PRIMOS) >= max_prim: continue
-        if n in MOLDURA and sum(1 for x in matriz_final if x in MOLDURA) >= max_mold: continue
-        
+        if n in IMPARES_SET and sum(1 for x in matriz_final if x in IMPARES_SET) >= max_imp: continue
+        if n in PRIMOS_SET and sum(1 for x in matriz_final if x in PRIMOS_SET) >= max_prim: continue
+        if n in MOLDURA_SET and sum(1 for x in matriz_final if x in MOLDURA_SET) >= max_mold: continue
         matriz_final.append(n)
         
     matriz_final = sorted(matriz_final)
 
-    # --- 🧠 4. EXPORTAÇÃO BLINDADA (STREAMLIT SEGURO) ---
-    pesos_reais = {}
-    for x in range(1, 26):
-        val = unified_scores.get(x, 0.0)
-        pesos_reais[int(x)] = round(float(val), 2)
-
-    alvo = int((historico[-1]['concurso'] + 1)) if historico else 1
+    # --- 🧠 5. CÁLCULO DAS ESTATÍSTICAS REAIS DA MATRIZ GERADA ---
+    ult_sort = set(historico[-1]['dezenas'])
+    
+    cont_impares = sum(1 for n in matriz_final if n in IMPARES_SET)
+    cont_pares = len(matriz_final) - cont_impares
+    cont_primos = sum(1 for n in matriz_final if n in PRIMOS_SET)
+    cont_moldura = sum(1 for n in matriz_final if n in MOLDURA_SET)
+    cont_repetidas = len(set(matriz_final).intersection(ult_sort))
+    cont_ausentes = len(matriz_final) - cont_repetidas
 
     justificativa_completa = (
-        f"{tatic_desc} "
-        f"| ESTATÍSTICAS: {media_impares:.1f} Ímpares, "
-        f"{media_primos:.1f} Primos, "
-        f"{media_moldura:.1f} Moldura, "
-        f"Volatilidade: {media_volatilidade:.1f}."
+        f"{tatic_desc} | "
+        f"COMPOSIÇÃO: {cont_impares} Ímpares, {cont_pares} Pares, "
+        f"{cont_primos} Primos, {cont_moldura} Moldura | "
+        f"STATUS: {cont_repetidas} Repetidas, {cont_ausentes} Ausentes."
     )
 
-    
+    # --- 🧠 6. EXPORTAÇÃO ---
+    pesos_reais = {int(x): round(float(unified_scores.get(x, 0.0)), 2) for x in range(1, 26)}
+
     return {
         "estrategia": str(cod_est), 
         "cod_estrategia": str(cod_est), 
@@ -598,10 +596,12 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         "ciclo_tam": int(jogos_ciclo), 
         "faltam_ciclo": faltam_ciclo,
         "soma": media_soma, 
-        "impares": media_impares, 
-        "primos": media_primos, 
-        "moldura": media_moldura, 
-        "alvo": alvo, 
+        "impares": cont_impares, 
+        "primos": cont_primos, 
+        "moldura": cont_moldura,
+        "repetidas": cont_repetidas,
+        "ausentes": cont_ausentes,
+        "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1, 
         "qtd_matriz": int(qtd_matriz), 
         "matriz_base": matriz_final, 
         "perf": {}, 
