@@ -753,13 +753,14 @@ with tabs[1]:
         c3.metric("💎 Freq. de Elite (14/15 nos Bilhetes)", f"{elite_rate:.1f}%" if elite_rate > 0 else "0.0%")
         c4.metric("📈 ROI Financeiro", f"{roi_pct:.1f}%", f"R$ {roi_val:.2f}")
 
-    # =======================================================
+   # =======================================================
     # O PAINEL DE DESEMPENHO DA MATRIZ (AGORA LIMPO E EXATO)
     # =======================================================
     st.markdown("### 🏆 Performance Oficial (Pós-Auditoria Vida Real)")
     
     hits_matriz = st.session_state.data.get("matrizes_reais_hits", {})
-    # Lendo APENAS a chave inteira. Sem somar com strings!
+    
+    # Lendo APENAS a chave inteira dos prêmios
     tm_11 = hits_matriz.get(11, 0)
     tm_12 = hits_matriz.get(12, 0)
     tm_13 = hits_matriz.get(13, 0)
@@ -767,8 +768,12 @@ with tabs[1]:
     tm_15 = hits_matriz.get(15, 0)
     tm_total = hits_matriz.get("total", 0)
 
-    soma_acertos_ponderada = (tm_11 * 11) + (tm_12 * 12) + (tm_13 * 13) + (tm_14 * 14) + (tm_15 * 15)
-    media_acertos_matriz = soma_acertos_ponderada / tm_total if tm_total > 0 else 0
+    # --- A CORREÇÃO MÁGICA DA MÉDIA ---
+    # Puxa a soma real e absoluta de pontos de todas as matrizes (mesmo as que fizeram 8, 9, 10...)
+    soma_real_acertos = hits_matriz.get("soma_acertos", 0)
+    
+    # Calcula a média verdadeira sem jogar pontos fora
+    media_acertos_matriz = soma_real_acertos / tm_total if tm_total > 0 else 0.0
 
     with st.container(border=True):
         st.markdown("#### 🎯 Força da Matriz da IA")
@@ -798,7 +803,6 @@ with tabs[1]:
         cb3.metric("Bilhetes com 13", tb_13)
         cb4.metric("Bilhetes com 14", tb_14)
         cb5.metric("Bilhetes com 15", tb_15)
-
     historico_painel = st.session_state.data.get("historico_dados", [])
     
     if historico_painel:
