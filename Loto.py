@@ -528,13 +528,12 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
                 score_calc -= 50.0 
                 
         # AQUI O CICLO É BLINDADO! Ele ganha +1000 e vai pro topo da fila.
-        # Vai entrar na matriz ANTES de qualquer filtro atingir o limite.
         if qtd_faltam <= 3 and n in faltam_ciclo:
             score_calc += 1000.0 
                 
         unified_scores[n] = score_calc
 
-    # --- 5. FILTRO DE OURO: PROPORCIONALIDADE ABSOLUTA ---
+    # --- 5. FILTRO DE OURO: PROPORCIONALIDADE E ANTI-TRAVAMENTO ---
     IMPARES_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
     PRIMOS_SET = {2, 3, 5, 7, 11, 13, 17, 19, 23}
     MOLDURA_SET = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
@@ -543,32 +542,47 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     ULT_SORT_SET = set(ultimo_sorteio)
     AUSENTES_SET = set(range(1, 26)) - ULT_SORT_SET
     
-    # Cálculos exatos baseados na qtd_matriz atual
-    max_imp = round(qtd_matriz * 0.54)
-    max_prim = round(qtd_matriz * 0.36)
-    max_mold = round(qtd_matriz * 0.66)
-    max_fibo = round(qtd_matriz * 0.30)
-    max_mult3 = round(qtd_matriz * 0.33)
+    # REGRAS ABSOLUTAS (O que define o fechamento - SEM FOLGA)
     max_rep = round(qtd_matriz * 0.60)
-    max_aus = qtd_matriz - max_rep # A TRAVA MATEMÁTICA QUE FALTAVA
+    max_aus = qtd_matriz - max_rep
+
+    # REGRAS SECUNDÁRIAS (Com Válvula de Escape +1 para não travar a matriz)
+    max_imp = round(qtd_matriz * 0.54) + 1
+    max_prim = round(qtd_matriz * 0.36) + 1
+    max_mold = round(qtd_matriz * 0.66) + 1
+    max_fibo = round(qtd_matriz * 0.30) + 1
+    max_mult3 = round(qtd_matriz * 0.33) + 1
 
     matriz_final = []
-    # Ordena do maior pro menor score (Os VIPs do Ciclo entram primeiro)
+    # Ordena VIPs primeiro
     candidatos = sorted(range(1, 26), key=lambda n: unified_scores.get(n, 0), reverse=True)
     
+    # LOOP PRINCIPAL
     for n in candidatos:
         if len(matriz_final) >= qtd_matriz: break
         
-        # Travas ativadas para TODOS os filtros sem exceção
+        # Filtros de Estrutura
         if n in IMPARES_SET and sum(1 for x in matriz_final if x in IMPARES_SET) >= max_imp: continue
         if n in PRIMOS_SET and sum(1 for x in matriz_final if x in PRIMOS_SET) >= max_prim: continue
         if n in MOLDURA_SET and sum(1 for x in matriz_final if x in MOLDURA_SET) >= max_mold: continue
         if n in FIBO_SET and sum(1 for x in matriz_final if x in FIBO_SET) >= max_fibo: continue
         if n in MULT3_SET and sum(1 for x in matriz_final if x in MULT3_SET) >= max_mult3: continue
+        
+        # Filtros de Fechamento Absoluto
         if n in ULT_SORT_SET and sum(1 for x in matriz_final if x in ULT_SORT_SET) >= max_rep: continue
         if n in AUSENTES_SET and sum(1 for x in matriz_final if x in AUSENTES_SET) >= max_aus: continue
         
         matriz_final.append(n)
+
+    # LOOP DE EMERGÊNCIA (Se a matemática dos filtros travou a matriz antes de chegar no tamanho)
+    if len(matriz_final) < qtd_matriz:
+        for n in candidatos:
+            if len(matriz_final) >= qtd_matriz: break
+            if n not in matriz_final:
+                # Na emergência, ignora a frescura e garante as Repetidas/Ausentes necessárias!
+                if n in ULT_SORT_SET and sum(1 for x in matriz_final if x in ULT_SORT_SET) >= max_rep: continue
+                if n in AUSENTES_SET and sum(1 for x in matriz_final if x in AUSENTES_SET) >= max_aus: continue
+                matriz_final.append(n)
         
     matriz_final = sorted(matriz_final)
 
@@ -582,7 +596,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     cont_repetidas = len(set(matriz_final).intersection(ULT_SORT_SET))
     cont_ausentes = len(matriz_final) - cont_repetidas
 
-    # Justificativa completa e cravada para a Aba 2
+    # Justificativa cravada para a Aba 2 (Só lê a verdade final)
     justificativa_completa = (
         f"DIRETRIZ: {tatic_desc} (Matriz: {qtd_matriz}) | "
         f"COMPOSIÇÃO: {cont_impares} Ímpares, {cont_pares} Pares, "
