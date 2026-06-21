@@ -13,6 +13,10 @@ import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# --- INICIALIZAÇÃO SEGURA (COLOCAR NO TOPO) ---
+if "data" not in st.session_state:
+    st.session_state.data = {}
+
 if "ia_pesos" not in st.session_state.data:
     st.session_state.data["ia_pesos"] = {
         "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
@@ -20,7 +24,6 @@ if "ia_pesos" not in st.session_state.data:
         "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
         "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
     }
-
 # =====================================================================
 # GERADOR DE PDF (COM RODAPÉ DE GARANTIA DINÂMICA 100% EXATA)
 # =====================================================================
