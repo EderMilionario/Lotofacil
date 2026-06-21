@@ -509,36 +509,58 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         qtd_matriz = 19
         tatic_desc = "Padrão de Equilíbrio."
 
-    # --- 4. MOTOR DE SELEÇÃO E FILTRO DE OURO (BLINDADO E DEFINITIVO) ---
+    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---
     unified_scores = {}
     for n in range(1, 26):
         n = int(n)
-        aparicoes_12 = freq_micro.get(n, 0)
-        peso_tendencia = aparicoes_12 * 15.0 
-        score_calc = float(peso_tendencia + (freq_recente.get(n, 0) * 2.0))
-        if n in ausentes:
-            delay = atrasos.get(n, 0)
-            if delay == 1: score_calc += 45.0 
-            elif delay == 2: score_calc += 15.0 
-            elif delay >= 4: score_calc -= 50.0 
-        if qtd_faltam <= 3 and n in faltam_ciclo: score_calc += 1000.0 
-        unified_scores[n] = score_calc
+        aparicoes_curtas = freq_micro.get(n, 0)
+        aparicoes_longas = freq_recente.get(n, 0)
+        delay = atrasos.get(n, 0)
+        score_calc = 0.0
 
-    # DEFINIÇÃO DOS FILTROS
-    IMPARES_SET, PRIMOS_SET, MOLDURA_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}, {2, 3, 5, 7, 11, 13, 17, 19, 23}, {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
-    FIBO_SET, MULT3_SET = {1, 2, 3, 5, 8, 13, 21}, {3, 6, 9, 12, 15, 18, 21, 24}
+        if cod_est == "Tendencia Forte":
+            score_calc = (aparicoes_curtas * 20.0) + (aparicoes_longas * 5.0)
+            if n in ausentes and delay == 1: score_calc += 40.0
+            
+        elif cod_est == "Simetria Conjunta":
+            score_calc = (aparicoes_longas * 15.0) + (aparicoes_curtas * 8.0)
+            if n in ausentes:
+                if delay == 1: score_calc += 30.0
+                elif delay == 2: score_calc += 20.0
+
+        elif cod_est == "Reversao de Tendencia":
+            score_calc = (aparicoes_longas * 10.0)
+            if n in ausentes and delay >= 3: score_calc += 100.0
+
+        else: 
+            score_calc = (aparicoes_curtas * 12.0) + (aparicoes_longas * 8.0)
+            if n in ausentes and delay <= 2: score_calc += 25.0
+
+        if qtd_faltam <= 3 and n in faltam_ciclo:
+            score_calc += 5000.0
+            
+        unified_scores[n] = float(score_calc)
+
+    # --- 5. FILTRO DE OURO: PROPORCIONALIDADE E ANTI-TRAVAMENTO ---
+    IMPARES_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
+    PRIMOS_SET = {2, 3, 5, 7, 11, 13, 17, 19, 23}
+    MOLDURA_SET = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
+    FIBO_SET = {1, 2, 3, 5, 8, 13, 21}
+    MULT3_SET = {3, 6, 9, 12, 15, 18, 21, 24}
     ULT_SORT_SET = set(ultimo_sorteio)
     AUSENTES_SET = set(range(1, 26)) - ULT_SORT_SET
     
-    # COTAS PROPORCIONAIS (A base de tudo)
     max_rep = round(qtd_matriz * 0.60)
     max_aus = qtd_matriz - max_rep
-    max_imp, max_prim, max_mold, max_fibo, max_mult3 = round(qtd_matriz * 0.54)+1, round(qtd_matriz * 0.36)+1, round(qtd_matriz * 0.66)+1, round(qtd_matriz * 0.30)+1, round(qtd_matriz * 0.33)+1
+    max_imp = round(qtd_matriz * 0.54) + 1
+    max_prim = round(qtd_matriz * 0.36) + 1
+    max_mold = round(qtd_matriz * 0.66) + 1
+    max_fibo = round(qtd_matriz * 0.30) + 1
+    max_mult3 = round(qtd_matriz * 0.33) + 1
 
     matriz_final = []
     candidatos = sorted(range(1, 26), key=lambda n: unified_scores.get(n, 0), reverse=True)
     
-    # TENTATIVA 1: Filtro Rígido (Respeita todas as proporções)
     for n in candidatos:
         if len(matriz_final) >= qtd_matriz: break
         if n in IMPARES_SET and sum(1 for x in matriz_final if x in IMPARES_SET) >= max_imp: continue
@@ -550,7 +572,6 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         if n in AUSENTES_SET and sum(1 for x in matriz_final if x in AUSENTES_SET) >= max_aus: continue
         matriz_final.append(n)
 
-    # TENTATIVA 2: Válvula de Escape (Se não preencheu, relaxa os filtros secundários, mas mantém REPETIDAS/AUSENTES)
     if len(matriz_final) < qtd_matriz:
         for n in candidatos:
             if len(matriz_final) >= qtd_matriz: break
@@ -562,12 +583,14 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     matriz_final = sorted(matriz_final)
 
     # --- 6. EXTRAÇÃO E RESULTADO ---
-    c_imp, c_prim, c_mold = sum(1 for n in matriz_final if n in IMPARES_SET), sum(1 for n in matriz_final if n in PRIMOS_SET), sum(1 for n in matriz_final if n in MOLDURA_SET)
-    c_fibo, c_mult3 = sum(1 for n in matriz_final if n in FIBO_SET), sum(1 for n in matriz_final if n in MULT3_SET)
+    c_imp = sum(1 for n in matriz_final if n in IMPARES_SET)
+    c_prim = sum(1 for n in matriz_final if n in PRIMOS_SET)
+    c_mold = sum(1 for n in matriz_final if n in MOLDURA_SET)
+    c_fibo = sum(1 for n in matriz_final if n in FIBO_SET)
+    c_mult3 = sum(1 for n in matriz_final if n in MULT3_SET)
     c_rep = len(set(matriz_final).intersection(ULT_SORT_SET))
     
     justificativa = f"DIRETRIZ: {tatic_desc} (Matriz: {qtd_matriz}) | COMPOSIÇÃO: {c_imp} Ímpares, {len(matriz_final)-c_imp} Pares, {c_prim} Primos, {c_mold} Moldura, {c_fibo} Fibonacci, {c_mult3} Múltiplos de 3 | STATUS: {c_rep} Repetidas, {len(matriz_final)-c_rep} Ausentes."
-
     return {
         "estrategia": str(cod_est), "cod_estrategia": str(cod_est), "estrategia_usada": str(cod_est), 
         "motivo_est": justificativa,
