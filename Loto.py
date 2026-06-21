@@ -13,10 +13,12 @@ import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- INICIALIZAÇÃO SEGURA (COLOCAR NO TOPO) ---
+# --- INICIALIZAÇÃO SEGURA (SUBSTITUA A ATUAL POR ESTA) ---
 if "data" not in st.session_state:
-    st.session_state.data = {}
+    # Garantimos que todas as chaves (historico_dados, etc.) sejam criadas
+    st.session_state.data = sanitizar_dados({}) 
 
+# Garantimos que os pesos da IA existam
 if "ia_pesos" not in st.session_state.data:
     st.session_state.data["ia_pesos"] = {
         "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
