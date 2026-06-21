@@ -512,7 +512,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     
     if len(matriz_final) < qtd_matriz:
         for n in candidatos:
-        # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---
+    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---
     unified_scores = {}
     for n in range(1, 26):
         n = int(n)
