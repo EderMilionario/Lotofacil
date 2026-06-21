@@ -13,19 +13,7 @@ import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- INICIALIZAÇÃO SEGURA (SUBSTITUA A ATUAL POR ESTA) ---
-if "data" not in st.session_state:
-    # Garantimos que todas as chaves (historico_dados, etc.) sejam criadas
-    st.session_state.data = sanitizar_dados({}) 
 
-# Garantimos que os pesos da IA existam
-if "ia_pesos" not in st.session_state.data:
-    st.session_state.data["ia_pesos"] = {
-        "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
-        "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
-        "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
-        "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
-    }
 # =====================================================================
 # GERADOR DE PDF (COM RODAPÉ DE GARANTIA DINÂMICA 100% EXATA)
 # =====================================================================
@@ -402,14 +390,21 @@ def calcular_premio_multiplo(tamanho, acertos, v11=7.0, v12=14.0, v13=35.0, v14=
     
     return premio
 
-# =====================================================================
-# BLINDAGEM DE MEMÓRIA (REMOVIDA A "BANCA VIRTUAL")
-# =====================================================================
 def sanitizar_dados(d):
     if "historico_dados" not in d: d["historico_dados"] = []
     if "jogos_salvos" not in d: d["jogos_salvos"] = []
     if "historico_custos" not in d: d["historico_custos"] = 0.0
     if "historico_premios" not in d: d["historico_premios"] = 0.0
+    
+    # ADICIONE ISSO AQUI:
+    if "ia_pesos" not in d:
+        d["ia_pesos"] = {
+            "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
+            "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
+            "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
+            "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
+        }
+        
     if "ia_memoria" not in d: 
         d["ia_memoria"] = {
             "Tendencia": {"usos": 0, "pontos": 0}, 
@@ -428,9 +423,38 @@ def sanitizar_dados(d):
         if "justificativa" not in j: j["justificativa"] = "Jogo recuperado."
     return d
 
-if 'data' not in st.session_state:
-    st.session_state.data = sanitizar_dados({})
+# --- INICIALIZAÇÃO SEGURA (SEM CHAMAR FUNÇÕES EXTERNAS) ---
+if "data" not in st.session_state:
+    st.session_state.data = {
+        "historico_dados": [],
+        "jogos_salvos": [],
+        "historico_premios": 0.0,
+        "global_hits": {11: 0, 12: 0, 13: 0, 14: 0, 15: 0},
+        "ledger_track": {"bilhetes": 0, "premiados_geral": 0, "elite": 0},
+        "matrizes_reais_hits": {11: 0, 12: 0, 13: 0, 14: 0, 15: 0, "total": 0, "soma_acertos": 0},
+        "matrizes_auditadas_ids": [],
+        "ia_pesos": {
+            "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
+            "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
+            "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
+            "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
+        }
+    }
 
+def ajustar_ia(cod_est, acertos):
+    # O caminho correto é st.session_state.data["ia_pesos"]
+    fator = 1.02 if acertos >= 12 else 0.98 
+    
+    # Busca a estratégia dentro do dicionário correto
+    # Se não achar a estratégia, pega a Default
+    ia_pesos = st.session_state.data["ia_pesos"]
+    est_key = cod_est if cod_est in ia_pesos else "Default"
+    
+    for k in ia_pesos[est_key]:
+        ia_pesos[est_key][k] = round(ia_pesos[est_key][k] * fator, 2)
+    
+    # Atualiza o estado
+    st.session_state.data["ia_pesos"] = ia_pesos
 # =====================================================================
 # FUNÇÕES DE CALLBACK DE LIMPEZA
 # =====================================================================
@@ -451,16 +475,6 @@ def cb_carregar_cofre():
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
 from collections import Counter
-
-def ajustar_ia(cod_est, acertos):
-    # Ajusta o fator: se fez 12+, recompensa. Se fez <11, pune.
-    fator = 1.02 if acertos >= 12 else 0.98 
-    
-    # Busca a estratégia ou usa a Default
-    est_key = cod_est if cod_est in st.session_state.ia_pesos else "Default"
-    
-    for k in st.session_state.ia_pesos[est_key]:
-        st.session_state.ia_pesos[est_key][k] = round(st.session_state.ia_pesos[est_key][k] * fator, 2)
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
@@ -1130,14 +1144,6 @@ with tabs[3]:
 with tabs[4]:
     exibir_mini_painel_financeiro()
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
-
-    def atualizar_pesos_ia(cod_est, acertos):
-        # Se fez 12 ou mais, aumenta o peso em 2%. Se fez menos, reduz em 2%.
-        fator = 1.02 if acertos >= 12 else 0.98
-        pesos = st.session_state.data["ia_pesos"].get(cod_est, st.session_state.data["ia_pesos"]["Default"])
-        for k in pesos:
-            pesos[k] = round(pesos[k] * fator, 2)
-        st.session_state.data["ia_pesos"][cod_est] = pesos
     
     # =====================================================================
     # 🧠 MOTOR DE AUDITORIA CONTÁBIL EXATA E FORÇA DA MATRIZ
