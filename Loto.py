@@ -674,7 +674,7 @@ with tabs[1]:
         cb4.metric("Bilhetes com 14", tb_14)
         cb5.metric("Bilhetes com 15", tb_15)
 
-    # =======================================================
+   # =======================================================
     # NOVO PAINEL: RAIO-X DO APRENDIZADO NEURAL (PESOS DA IA)
     # =======================================================
     st.markdown("#### 🧬 Raio-X da Evolução Neural (Pesos Dinâmicos)")
@@ -684,15 +684,33 @@ with tabs[1]:
     if pesos_ia:
         # Cria colunas proporcionais ao número de estratégias
         cols_pesos = st.columns(len(pesos_ia))
+        
         for idx, (nome_est, parametros) in enumerate(pesos_ia.items()):
             with cols_pesos[idx]:
-                st.markdown(f"<div style='background-color: white; padding: 10px; border-radius: 8px; border-top: 4px solid #930089; box-shadow: 1px 1px 4px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
-                st.markdown(f"<span style='font-size: 13px; font-weight: bold; color: #333;'>{nome_est}</span>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+                # 1. Abre a caixa principal HTML e o título centralizado
+                html_card = f"""
+                <div style='background-color: white; padding: 15px; border-radius: 10px; border-top: 5px solid #930089; box-shadow: 0px 4px 10px rgba(0,0,0,0.06); height: 100%;'>
+                    <div style='font-size: 14px; font-weight: 900; color: #333; text-align: center; margin-bottom: 5px;'>
+                        {nome_est.upper()}
+                    </div>
+                    <hr style='margin: 10px 0; border: none; border-top: 1px solid #f0f0f0;'>
+                """
+                
+                # 2. Insere as linhas de peso dinamicamente com alinhamento elegante (esquerda/direita)
                 for chave, valor in parametros.items():
-                    # Formata bonitinho para você ver o valor exato do peso
-                    st.markdown(f"<span style='font-size: 12px; color: #555;'>{chave.upper()}: </span> <span style='font-size: 14px; font-weight: bold; color: #930089;'>{valor:.2f}</span>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+                    html_card += f"""
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;'>
+                        <span style='font-size: 12px; color: #777; font-weight: 700;'>{chave.upper()}</span>
+                        <span style='font-size: 15px; font-weight: 900; color: #930089;'>{valor:.2f}</span>
+                    </div>
+                    """
+                
+                # 3. Fecha a caixa HTML
+                html_card += "</div>"
+                
+                # 4. Desenha tudo de uma única vez no Streamlit
+                st.markdown(html_card, unsafe_allow_html=True)
+                
     st.write("") # Espaçamento
     # =======================================================
         
