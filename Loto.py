@@ -13,6 +13,15 @@ import os
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# --- INICIALIZAÇÃO DE PESOS (COLOCAR NO TOPO DO ARQUIVO) ---
+if "ia_pesos" not in st.session_state:
+    st.session_state.ia_pesos = {
+        "Tendencia Forte": {"curtas": 20.0, "longas": 5.0, "delay1": 40.0},
+        "Simetria Conjunta": {"longas": 15.0, "curtas": 8.0, "delay1": 30.0, "delay2": 20.0},
+        "Reversao de Tendencia": {"longas": 10.0, "delay3": 100.0},
+        "Default": {"curtas": 12.0, "longas": 8.0, "delay2": 25.0}
+    }
+
 # =====================================================================
 # GERADOR DE PDF (COM RODAPÉ DE GARANTIA DINÂMICA 100% EXATA)
 # =====================================================================
@@ -439,6 +448,16 @@ def cb_carregar_cofre():
 
 from collections import Counter
 
+def ajustar_ia(cod_est, acertos):
+    # Ajusta o fator: se fez 12+, recompensa. Se fez <11, pune.
+    fator = 1.02 if acertos >= 12 else 0.98 
+    
+    # Busca a estratégia ou usa a Default
+    est_key = cod_est if cod_est in st.session_state.ia_pesos else "Default"
+    
+    for k in st.session_state.ia_pesos[est_key]:
+        st.session_state.ia_pesos[est_key][k] = round(st.session_state.ia_pesos[est_key][k] * fator, 2)
+
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
     if not historico: return None
     
@@ -507,35 +526,32 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         qtd_matriz = 19
         tatic_desc = "Padrão de Equilíbrio."
 
-    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---   
+    
+    pesos = st.session_state.ia_pesos.get(cod_est, st.session_state.ia_pesos["Default"])
+
+    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO ---
     unified_scores = {}
     for n in range(1, 26):
-        n = int(n)
-        aparicoes_curtas = freq_micro.get(n, 0)
-        aparicoes_longas = freq_recente.get(n, 0)
-        delay = atrasos.get(n, 0)
-        score_calc = 0.0
-
+        # ... (seu código atual define aparicoes_curtas, longas, delay)
+        
+        # SUBSTITUA OS CÁLCULOS POR ISTO:
         if cod_est == "Tendencia Forte":
-            score_calc = (aparicoes_curtas * 20.0) + (aparicoes_longas * 5.0)
-            if n in ausentes and delay == 1: score_calc += 40.0
+            score_calc = (aparicoes_curtas * pesos["curtas"]) + (aparicoes_longas * pesos["longas"])
+            if n in ausentes and delay == 1: score_calc += pesos["delay1"]
             
         elif cod_est == "Simetria Conjunta":
-            score_calc = (aparicoes_longas * 15.0) + (aparicoes_curtas * 8.0)
+            score_calc = (aparicoes_longas * pesos["longas"]) + (aparicoes_curtas * pesos["curtas"])
             if n in ausentes:
-                if delay == 1: score_calc += 30.0
-                elif delay == 2: score_calc += 20.0
+                if delay == 1: score_calc += pesos["delay1"]
+                elif delay == 2: score_calc += pesos["delay2"]
 
         elif cod_est == "Reversao de Tendencia":
-            score_calc = (aparicoes_longas * 10.0)
-            if n in ausentes and delay >= 3: score_calc += 100.0
+            score_calc = (aparicoes_longas * pesos["longas"])
+            if n in ausentes and delay >= 3: score_calc += pesos["delay3"]
 
         else: 
-            score_calc = (aparicoes_curtas * 12.0) + (aparicoes_longas * 8.0)
-            if n in ausentes and delay <= 2: score_calc += 25.0
-
-        if qtd_faltam <= 3 and n in faltam_ciclo:
-            score_calc += 5000.0
+            score_calc = (aparicoes_curtas * pesos["curtas"]) + (aparicoes_longas * pesos["longas"])
+            if n in ausentes and delay <= 2: score_calc += pesos["delay2"]
             
         unified_scores[n] = float(score_calc)
 
@@ -1104,6 +1120,13 @@ with tabs[3]:
 with tabs[4]:
     exibir_mini_painel_financeiro()
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
+
+    def ajustar_ia(cod_est, acertos):
+        if "ia_pesos" not in st.session_state: return
+        fator = 1.02 if acertos >= 12 else 0.98
+        est_key = cod_est if cod_est in st.session_state.ia_pesos else "Default"
+        for k in st.session_state.ia_pesos[est_key]:
+            st.session_state.ia_pesos[est_key][k] = round(st.session_state.ia_pesos[est_key][k] * fator, 2)
     
     # =====================================================================
     # 🧠 MOTOR DE AUDITORIA CONTÁBIL EXATA E FORÇA DA MATRIZ
@@ -1151,6 +1174,7 @@ with tabs[4]:
                 ledger["bilhetes"] += 1
                 
                 pontos = len(set(j.get('dezenas', [])).intersection(sorteio_set))
+                ajustar_ia(j.get("estrategia_usada", "Default"), pontos)
                 j['acertos'] = pontos
                 j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
                 
