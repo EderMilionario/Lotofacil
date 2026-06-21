@@ -578,6 +578,13 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
 
     alvo = int((historico[-1]['concurso'] + 1)) if historico else 1
 
+    # Aqui estamos pegando os dados que a função já calculou e colocando na tela
+    motivo_painel = (
+        f"TÁTICA: {cod_est} | Matriz: {qtd_matriz} dezenas. "
+        f"ESTATÍSTICAS: {media_impares:.1f} Ímpares | {media_primos:.1f} Primos | "
+        f"{media_moldura:.1f} Moldura | Volatilidade: {media_volatilidade:.1f}."
+    )
+
     return {
         "estrategia": str(cod_est), 
         "cod_estrategia": str(cod_est), 
