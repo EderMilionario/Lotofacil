@@ -673,6 +673,28 @@ with tabs[1]:
         cb3.metric("Bilhetes com 13", tb_13)
         cb4.metric("Bilhetes com 14", tb_14)
         cb5.metric("Bilhetes com 15", tb_15)
+
+    # =======================================================
+    # NOVO PAINEL: RAIO-X DO APRENDIZADO NEURAL (PESOS DA IA)
+    # =======================================================
+    st.markdown("#### 🧬 Raio-X da Evolução Neural (Pesos Dinâmicos)")
+    st.caption("Acompanhe em tempo real como o 'Cérebro' está recalibrando a força de cada estratégia após as auditorias.")
+    
+    pesos_ia = st.session_state.data.get("ia_pesos", {})
+    if pesos_ia:
+        # Cria colunas proporcionais ao número de estratégias
+        cols_pesos = st.columns(len(pesos_ia))
+        for idx, (nome_est, parametros) in enumerate(pesos_ia.items()):
+            with cols_pesos[idx]:
+                st.markdown(f"<div style='background-color: white; padding: 10px; border-radius: 8px; border-top: 4px solid #930089; box-shadow: 1px 1px 4px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
+                st.markdown(f"<span style='font-size: 13px; font-weight: bold; color: #333;'>{nome_est}</span>", unsafe_allow_html=True)
+                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+                for chave, valor in parametros.items():
+                    # Formata bonitinho para você ver o valor exato do peso
+                    st.markdown(f"<span style='font-size: 12px; color: #555;'>{chave.upper()}: </span> <span style='font-size: 14px; font-weight: bold; color: #930089;'>{valor:.2f}</span>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+    st.write("") # Espaçamento
+    # =======================================================
         
     historico_painel = st.session_state.data.get("historico_dados", [])
     
