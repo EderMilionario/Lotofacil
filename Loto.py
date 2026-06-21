@@ -591,7 +591,7 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         "estrategia": str(cod_est), 
         "cod_estrategia": str(cod_est), 
         "estrategia_usada": str(cod_est), 
-        "motivo_est": str(f"DIRETRIZ: {tatic_desc}"), 
+        "motivo_est": justificativa_completa,
         "pesos": pesos_reais, 
         "freq": dict(freq_recente), 
         "atrasos": dict(atrasos), 
