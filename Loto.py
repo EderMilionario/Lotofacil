@@ -1153,7 +1153,8 @@ with tabs[4]:
             
         # INICIA O CONTROLE DE DESEMPENHO DA MATRIZ (VIDA REAL)
         if "matrizes_reais_hits" not in st.session_state.data:
-            st.session_state.data["matrizes_reais_hits"] = {"11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "total": 0}
+            # CORREÇÃO: Adicionado o "soma_acertos" para a média não dar quebra.
+            st.session_state.data["matrizes_reais_hits"] = {11: 0, 12: 0, 13: 0, 14: 0, 15: 0, "total": 0, "soma_acertos": 0}
         if "matrizes_auditadas_ids" not in st.session_state.data:
             st.session_state.data["matrizes_auditadas_ids"] = []
             
@@ -1203,15 +1204,20 @@ with tabs[4]:
         if matriz_usada_neste_concurso and selo_matriz not in matrizes_auditadas:
             acertos_matriz = len(set(matriz_usada_neste_concurso).intersection(sorteio_set))
             matrizes_auditadas.append(selo_matriz)
+            
+            # Conta mais uma matriz auditada
             matrizes_hits["total"] = matrizes_hits.get("total", 0) + 1
             
+            # CORREÇÃO DA MÉDIA: Agora ele soma TODOS os acertos reais, mesmo que seja nota 8 ou 9.
+            matrizes_hits["soma_acertos"] = matrizes_hits.get("soma_acertos", 0) + acertos_matriz
+            
             if acertos_matriz >= 11:
-                # CORREÇÃO: Removemos o str() para salvar apenas como INTEIRO
                 chave = int(min(acertos_matriz, 15)) 
                 matrizes_hits[chave] = matrizes_hits.get(chave, 0) + 1
             
         st.session_state.data["matrizes_reais_hits"] = matrizes_hits
         st.session_state.data["matrizes_auditadas_ids"] = matrizes_auditadas
+        # ------------------------------------
         # ------------------------------------
         
         st.session_state.data["global_hits"] = hits_bilhetes
