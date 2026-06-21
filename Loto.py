@@ -720,23 +720,24 @@ with tabs[1]:
         c4.metric("📈 ROI Financeiro", f"{roi_pct:.1f}%", f"R$ {roi_val:.2f}")
 
     # =======================================================
-    # O PAINEL DE DESEMPENHO DA MATRIZ (VIDA REAL + MÉDIA)
+    # O PAINEL DE DESEMPENHO DA MATRIZ (AGORA LIMPO E EXATO)
     # =======================================================
     st.markdown("### 🏆 Performance Oficial (Pós-Auditoria Vida Real)")
     
     hits_matriz = st.session_state.data.get("matrizes_reais_hits", {})
-    tm_11 = hits_matriz.get(11, 0) + hits_matriz.get("11", 0)
-    tm_12 = hits_matriz.get(12, 0) + hits_matriz.get("12", 0)
-    tm_13 = hits_matriz.get(13, 0) + hits_matriz.get("13", 0)
-    tm_14 = hits_matriz.get(14, 0) + hits_matriz.get("14", 0)
-    tm_15 = hits_matriz.get(15, 0) + hits_matriz.get("15", 0)
+    # Lendo APENAS a chave inteira. Sem somar com strings!
+    tm_11 = hits_matriz.get(11, 0)
+    tm_12 = hits_matriz.get(12, 0)
+    tm_13 = hits_matriz.get(13, 0)
+    tm_14 = hits_matriz.get(14, 0)
+    tm_15 = hits_matriz.get(15, 0)
     tm_total = hits_matriz.get("total", 0)
 
     soma_acertos_ponderada = (tm_11 * 11) + (tm_12 * 12) + (tm_13 * 13) + (tm_14 * 14) + (tm_15 * 15)
     media_acertos_matriz = soma_acertos_ponderada / tm_total if tm_total > 0 else 0
 
     with st.container(border=True):
-        st.markdown("#### 🎯 Força da Matriz da IA (Quantas dezenas a IA cravou?)")
+        st.markdown("#### 🎯 Força da Matriz da IA")
         st.caption(f"Total de Matrizes Auditadas: **{tm_total}**.")
         st.metric("Média de Acertos da Matriz", f"{media_acertos_matriz:.2f} / 15")
         st.markdown("---")
@@ -748,15 +749,15 @@ with tabs[1]:
         cm5.metric("Matriz Acertou 15", tm_15)
 
     hits_bilhetes = st.session_state.data.get("global_hits", {})
-    tb_11 = hits_bilhetes.get(11, 0) + hits_bilhetes.get("11", 0)
-    tb_12 = hits_bilhetes.get(12, 0) + hits_bilhetes.get("12", 0)
-    tb_13 = hits_bilhetes.get(13, 0) + hits_bilhetes.get("13", 0)
-    tb_14 = hits_bilhetes.get(14, 0) + hits_bilhetes.get("14", 0)
-    tb_15 = hits_bilhetes.get(15, 0) + hits_bilhetes.get("15", 0)
+    # Lendo APENAS a chave inteira.
+    tb_11 = hits_bilhetes.get(11, 0)
+    tb_12 = hits_bilhetes.get(12, 0)
+    tb_13 = hits_bilhetes.get(13, 0)
+    tb_14 = hits_bilhetes.get(14, 0)
+    tb_15 = hits_bilhetes.get(15, 0)
 
     with st.container(border=True):
-        st.markdown("#### 🎫 Prêmios Retidos nos Bilhetes (O que caiu de fato no volante)")
-        st.caption("Aqui mostra a quantidade exata de bilhetes premiados que foram pro seu bolso.")
+        st.markdown("#### 🎫 Prêmios Retidos nos Bilhetes")
         cb1, cb2, cb3, cb4, cb5 = st.columns(5)
         cb1.metric("Bilhetes com 11", tb_11)
         cb2.metric("Bilhetes com 12", tb_12)
@@ -1154,15 +1155,13 @@ with tabs[4]:
                     
                     ledger["premiados_geral"] += 1
                     if pontos >= 14:
-                        ledger["elite"] += 1
-                        
-                    chave_str = str(pontos)
-                    hits_bilhetes[chave_str] = hits_bilhetes.get(chave_str, 0) + 1
+                        ledger["elite"] += 1    
+                    
                     hits_bilhetes[pontos] = hits_bilhetes.get(pontos, 0) + 1
                 else:
                     j['status'] = "Não Premiado"
         
-        # --- AUDITORIA DA FORÇA DA MATRIZ ---
+        # --- AUDITORIA DA FORÇA DA MATRIZ (CORRIGIDO) ---
         matrizes_hits = st.session_state.data["matrizes_reais_hits"]
         matrizes_auditadas = st.session_state.data["matrizes_auditadas_ids"]
         selo_matriz = f"conc_{concurso}"
@@ -1173,9 +1172,10 @@ with tabs[4]:
             matrizes_hits["total"] = matrizes_hits.get("total", 0) + 1
             
             if acertos_matriz >= 11:
-                chave = str(min(acertos_matriz, 15)) # Garante que vai salvar ate 15
+                # CORREÇÃO: Removemos o str() para salvar apenas como INTEIRO
+                chave = int(min(acertos_matriz, 15)) 
                 matrizes_hits[chave] = matrizes_hits.get(chave, 0) + 1
-                
+            
         st.session_state.data["matrizes_reais_hits"] = matrizes_hits
         st.session_state.data["matrizes_auditadas_ids"] = matrizes_auditadas
         # ------------------------------------
