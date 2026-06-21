@@ -509,41 +509,36 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         qtd_matriz = 19
         tatic_desc = "Padrão de Equilíbrio."
 
-    # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA DINÂMICA) ---
-    unified_scores = {}
     
+    if len(matriz_final) < qtd_matriz:
+        for n in candidatos:
+        # --- 4. MOTOR DE SELEÇÃO E PONTUAÇÃO (INTELIGÊNCIA MACRO/MICRO) ---
+    unified_scores = {}
     for n in range(1, 26):
         n = int(n)
-        # Identificação de Comportamento
-        is_quente = freq_micro.get(n, 0) >= 6 # Saiu mais da metade nos últimos 12
-        is_fria = freq_micro.get(n, 0) <= 2  # Saiu quase nada
+        aparicoes_curtas = freq_micro.get(n, 0)
+        aparicoes_longas = freq_recente.get(n, 0)
         delay = atrasos.get(n, 0)
-        
         score_calc = 0.0
 
-        # ESTRATÉGIA: TENDÊNCIA (17) -> Aposta na continuidade.
         if cod_est == "Tendencia Forte":
-            score_calc = (freq_micro.get(n, 0) * 20.0)
-            if delay == 1: score_calc += 50.0  # Bate-volta (Máxima prioridade)
-            elif delay == 0: score_calc += 30.0 # Repetida (Segurança)
-
-        # ESTRATÉGIA: SIMETRIA (19) -> Aposta na média histórica com aceleração.
+            score_calc = (aparicoes_curtas * 20.0) + (aparicoes_longas * 5.0)
+            if n in ausentes and delay == 1: score_calc += 40.0
+            
         elif cod_est == "Simetria Conjunta":
-            score_calc = (freq_recente.get(n, 0) * 10.0) + (freq_micro.get(n, 0) * 10.0)
-            if delay <= 2: score_calc += 20.0 # Recompensa consistência
+            score_calc = (aparicoes_longas * 15.0) + (aparicoes_curtas * 8.0)
+            if n in ausentes:
+                if delay == 1: score_calc += 30.0
+                elif delay == 2: score_calc += 20.0
 
-        # ESTRATÉGIA: REVERSÃO (20) -> Aposta na Zebra (Frios que voltam).
         elif cod_est == "Reversao de Tendencia":
-            score_calc = (freq_recente.get(n, 0) * 5.0) # Base histórica
-            if delay >= 3: score_calc += 120.0 # BÔNUS DE ZEBRA (Força a entrada do frio)
-            elif delay == 0: score_calc -= 20.0 # Desprioriza quem já saiu muito
+            score_calc = (aparicoes_longas * 10.0)
+            if n in ausentes and delay >= 3: score_calc += 100.0
 
-        # ESTRATÉGIA: CICLO (18) -> Tática pura de fechamento.
         else: 
-            score_calc = (freq_micro.get(n, 0) * 15.0)
-            if delay == 1: score_calc += 30.0
+            score_calc = (aparicoes_curtas * 12.0) + (aparicoes_longas * 8.0)
+            if n in ausentes and delay <= 2: score_calc += 25.0
 
-        # GATILHO VIP (Blindagem): A dezena que falta para fechar o ciclo NÃO PODE ser ignorada.
         if qtd_faltam <= 3 and n in faltam_ciclo:
             score_calc += 5000.0
             
