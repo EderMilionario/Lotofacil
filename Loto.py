@@ -249,6 +249,7 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
         repeticoes_recentes.append(rep)
     vol_real = sum(repeticoes_recentes) / len(repeticoes_recentes) if repeticoes_recentes else 9.0
 
+    # Engessamento tático mantido (Gestão de Risco). Textos limpos.
     if qtd_ausentes <= 3:
         tamanho_matriz = 18
         motivo = f"🚨 ALERTA DE CICLO ({qtd_ausentes} faltam). Escudo: Matriz 18."
@@ -266,7 +267,6 @@ def calcular_temperatura_e_confianca(historico, estrategia_atual, pontuacao_estr
     detalhes = {"ausentes_ciclo": qtd_ausentes, "volatilidade": vol_real}
     
     return tamanho_matriz, taxa_confianca, motivo, detalhes
-
 # =====================================================================
 # RENDERIZADOR DOS BILHETES NA TELA (COM RODAPÉ DINÂMICO 100% EXATO)
 # =====================================================================
@@ -437,9 +437,6 @@ def cb_carregar_cofre():
             st.toast("Cofre sincronizado com sucesso!", icon="✅")
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
-# =====================================================================
-# CÉREBRO PREDITIVO: ALGORITMO HÍBRIDO PERFEITO (HOT + BISTURI + VIP CICLO)
-# =====================================================================
 from collections import Counter
 
 def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
@@ -490,27 +487,23 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     except:
         media_volatilidade = 9.0
 
-    # Definição Dinâmica da Matriz (17 a 20 dezenas)
+    # Definição Dinâmica da Matriz (Textos limpos e alinhados)
     if qtd_faltam <= 2:
         cod_est = "Ciclo Supremo"
         qtd_matriz = 18
-        cota_rep, cota_aus = 10, 8  
-        tatic_desc = "Cerco Fim de Ciclo. Cotas Exatas: 10 Repetidas + 8 Ausentes."
+        tatic_desc = "Cerco Fim de Ciclo."
     elif media_volatilidade < 8.0:
         cod_est = "Reversao de Tendencia"
         qtd_matriz = 20
-        cota_rep, cota_aus = 11, 9
-        tatic_desc = "Caos/Reversão. Cotas Exatas: 11 Repetidas + 9 Ausentes."
+        tatic_desc = "Caos/Reversão."
     elif media_volatilidade > 9.5:
         cod_est = "Tendencia Forte"
         qtd_matriz = 17
-        cota_rep, cota_aus = 10, 7
-        tatic_desc = "Tendência Absoluta. Cotas Exatas: 10 Repetidas + 7 Ausentes."
+        tatic_desc = "Tendência Absoluta."
     else:
         cod_est = "Simetria Conjunta"
         qtd_matriz = 19
-        cota_rep, cota_aus = 11, 8
-        tatic_desc = "Padrão de Equilíbrio. Cotas Exatas: 11 Repetidas + 8 Ausentes."
+        tatic_desc = "Padrão de Equilíbrio."
 
     # --- 🧠 3. MOTOR DE SELEÇÃO: FORÇA BRUTA (REPETIDAS) + BISTURI (AUSENTES) ---
     unified_scores = {}
@@ -518,67 +511,74 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     for n in range(1, 26):
         n = int(n)
         aparicoes_12 = freq_micro.get(n, 0)
-        
-        # 1. FORÇA BRUTA: Fim da Fadiga. Dezenas quentes recebem pontuação máxima livremente.
         peso_tendencia = aparicoes_12 * 15.0 
         score_calc = float(peso_tendencia + (freq_recente.get(n, 0) * 2.0))
         
-        # 2. O BISTURI: Aplica-se apenas às ausentes
         if n in ausentes:
             delay = atrasos.get(n, 0)
             if delay == 1:
-                score_calc += 45.0 # Falha Simples: Maior chance de retorno
+                score_calc += 45.0 
             elif delay == 2:
                 score_calc += 15.0 
             elif delay >= 4:
-                # Coma estatístico. Risco alto de não sair. Sofre o corte do bisturi.
                 score_calc -= 50.0 
                 
-        # 3. BLINDAGEM DE CICLO (VIP SUPREMO)
-        # Se a dezena faltar para o ciclo, atropela qualquer regra (seja bisturi ou coma)
         if qtd_faltam <= 3 and n in faltam_ciclo:
             score_calc += 1000.0 
                 
         unified_scores[n] = score_calc
 
-    repetidas_ordenadas = sorted(repetidas, key=lambda n: unified_scores[n], reverse=True)
-    ausentes_ordenadas = sorted(ausentes, key=lambda n: unified_scores[n], reverse=True)
-    
     # --- 🧠 4. FILTRO DE OURO PROPORCIONAL E CÁLCULO REAL ---
     IMPARES_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
     PRIMOS_SET = {2, 3, 5, 7, 11, 13, 17, 19, 23}
     MOLDURA_SET = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
+    FIBO_SET = {1, 2, 3, 5, 8, 13, 21}
+    MULT3_SET = {3, 6, 9, 12, 15, 18, 21, 24}
+    ULT_SORT_SET = set(ultimo_sorteio)
     
-    max_imp = int(qtd_matriz * 0.55)
-    max_prim = int(qtd_matriz * 0.35)
-    max_mold = int(qtd_matriz * 0.65)
+    # Proporcionalidade exata ativada para TUDO (Calculado via round)
+    max_imp = round(qtd_matriz * 0.54)
+    max_prim = round(qtd_matriz * 0.36)
+    max_mold = round(qtd_matriz * 0.66)
+    max_fibo = round(qtd_matriz * 0.30)
+    max_mult3 = round(qtd_matriz * 0.33)
+    max_rep = round(qtd_matriz * 0.60)
 
     matriz_final = []
     candidatos = sorted(range(1, 26), key=lambda n: unified_scores.get(n, 0), reverse=True)
     
     for n in candidatos:
         if len(matriz_final) >= qtd_matriz: break
+        
+        # Travas rigorosas baseadas na proporcionalidade da piscina
         if n in IMPARES_SET and sum(1 for x in matriz_final if x in IMPARES_SET) >= max_imp: continue
         if n in PRIMOS_SET and sum(1 for x in matriz_final if x in PRIMOS_SET) >= max_prim: continue
         if n in MOLDURA_SET and sum(1 for x in matriz_final if x in MOLDURA_SET) >= max_mold: continue
+        if n in FIBO_SET and sum(1 for x in matriz_final if x in FIBO_SET) >= max_fibo: continue
+        if n in MULT3_SET and sum(1 for x in matriz_final if x in MULT3_SET) >= max_mult3: continue
+        if n in ULT_SORT_SET and sum(1 for x in matriz_final if x in ULT_SORT_SET) >= max_rep: continue
+        
         matriz_final.append(n)
         
     matriz_final = sorted(matriz_final)
 
     # --- 🧠 5. CÁLCULO DAS ESTATÍSTICAS REAIS DA MATRIZ GERADA ---
-    ult_sort = set(historico[-1]['dezenas'])
-    
+    # Contagem cirúrgica do que DE FATO caiu na matriz final
     cont_impares = sum(1 for n in matriz_final if n in IMPARES_SET)
     cont_pares = len(matriz_final) - cont_impares
     cont_primos = sum(1 for n in matriz_final if n in PRIMOS_SET)
     cont_moldura = sum(1 for n in matriz_final if n in MOLDURA_SET)
-    cont_repetidas = len(set(matriz_final).intersection(ult_sort))
+    cont_fibo = sum(1 for n in matriz_final if n in FIBO_SET)
+    cont_mult3 = sum(1 for n in matriz_final if n in MULT3_SET)
+    cont_repetidas = len(set(matriz_final).intersection(ULT_SORT_SET))
     cont_ausentes = len(matriz_final) - cont_repetidas
 
+    # Relatório absoluto e definitivo para a Aba 2 ler (Todos os dados mapeados)
     justificativa_completa = (
-        f"{tatic_desc} | "
+        f"DIRETRIZ: {tatic_desc} (Matriz: {qtd_matriz}) | "
         f"COMPOSIÇÃO: {cont_impares} Ímpares, {cont_pares} Pares, "
-        f"{cont_primos} Primos, {cont_moldura} Moldura | "
+        f"{cont_primos} Primos, {cont_moldura} Moldura, "
+        f"{cont_fibo} Fibonacci, {cont_mult3} Múltiplos de 3 | "
         f"STATUS: {cont_repetidas} Repetidas, {cont_ausentes} Ausentes."
     )
 
@@ -601,6 +601,8 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
         "moldura": cont_moldura,
         "repetidas": cont_repetidas,
         "ausentes": cont_ausentes,
+        "fibo": cont_fibo,
+        "mult3": cont_mult3,
         "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1, 
         "qtd_matriz": int(qtd_matriz), 
         "matriz_base": matriz_final, 
