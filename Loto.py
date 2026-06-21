@@ -1127,12 +1127,12 @@ with tabs[4]:
     st.markdown("### 🏆 Sincronização Oficial e Auditoria Pericial")
 
     def atualizar_pesos_ia(cod_est, acertos):
-    # Se fez 12 ou mais, aumenta o peso em 2%. Se fez menos, reduz em 2%.
-    fator = 1.02 if acertos >= 12 else 0.98
-    pesos = st.session_state.data["ia_pesos"].get(cod_est, st.session_state.data["ia_pesos"]["Default"])
-    for k in pesos:
-        pesos[k] = round(pesos[k] * fator, 2)
-    st.session_state.data["ia_pesos"][cod_est] = pesos
+        # Se fez 12 ou mais, aumenta o peso em 2%. Se fez menos, reduz em 2%.
+        fator = 1.02 if acertos >= 12 else 0.98
+        pesos = st.session_state.data["ia_pesos"].get(cod_est, st.session_state.data["ia_pesos"]["Default"])
+        for k in pesos:
+            pesos[k] = round(pesos[k] * fator, 2)
+        st.session_state.data["ia_pesos"][cod_est] = pesos
     
     # =====================================================================
     # 🧠 MOTOR DE AUDITORIA CONTÁBIL EXATA E FORÇA DA MATRIZ
