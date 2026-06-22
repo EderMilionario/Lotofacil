@@ -194,7 +194,7 @@ def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
     matrizes_auditadas = st.session_state.data["matrizes_auditadas_ids"]
     selo_matriz = f"conc_{concurso}"
     
-  if matriz_usada_neste_concurso and selo_matriz not in matrizes_auditadas:
+    if matriz_usada_neste_concurso and selo_matriz not in matrizes_auditadas:
         acertos_matriz = len(set(matriz_usada_neste_concurso).intersection(sorteio_set))
         matrizes_auditadas.append(selo_matriz)
         matrizes_hits["total"] = matrizes_hits.get("total", 0) + 1
