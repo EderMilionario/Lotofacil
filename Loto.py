@@ -72,14 +72,21 @@ def sanitizar_dados(d):
         if "justificativa" not in j: j["justificativa"] = "Jogo recuperado."
     return d
 
-def ajustar_ia(cod_est, acertos):
-    """Função de Aprendizado: Recompensa acertos altos, pune acertos baixos."""
-    fator = 1.02 if acertos >= 12 else 0.98 
+def ajustar_ia(cod_est, acertos_matriz):
+    """Função de Aprendizado Dinâmico: Recompensa ou pune baseado no sucesso da MATRIZ."""
+    # Se a matriz bater 13+, a IA aprende que a estratégia foi excelente.
+    if acertos_matriz >= 13: fator = 1.05
+    elif acertos_matriz == 12: fator = 1.01
+    else: fator = 0.95 # Punição leve se a matriz falhou
+    
     ia_pesos = st.session_state.data["ia_pesos"]
     est_key = cod_est if cod_est in ia_pesos else "Default"
     
     for k in ia_pesos[est_key]:
-        ia_pesos[est_key][k] = round(ia_pesos[est_key][k] * fator, 2)
+        novo_peso = ia_pesos[est_key][k] * fator
+        # BLINDAGEM: Impede a lobotomia (mínimo 2.0) e o estouro (máximo 300.0)
+        ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 300.0)), 2)
+        
     st.session_state.data["ia_pesos"] = ia_pesos
 
 def salvar_dados(dados):
@@ -165,9 +172,7 @@ def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
             
             pontos = len(set(j.get('dezenas', [])).intersection(sorteio_set))
             
-            # --- AUTO-APRENDIZADO DA IA ---
-            ajustar_ia(j.get("estrategia", "Default"), pontos)
-            
+                      
             j['acertos'] = pontos
             j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
             
@@ -193,6 +198,14 @@ def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
         matrizes_auditadas.append(selo_matriz)
         matrizes_hits["total"] = matrizes_hits.get("total", 0) + 1
         matrizes_hits["soma_acertos"] = matrizes_hits.get("soma_acertos", 0) + acertos_matriz
+        
+        # --- AUTO-APRENDIZADO DA IA (CORRETO: BASEADO NA MATRIZ) ---
+        est_da_matriz = "Default"
+        for j in st.session_state.data.get("jogos_salvos", []):
+            if j.get("matriz_origem") == matriz_usada_neste_concurso:
+                est_da_matriz = j.get("estrategia", "Default")
+                break
+        ajustar_ia(est_da_matriz, acertos_matriz)
         
         if acertos_matriz >= 11:
             chave = int(min(acertos_matriz, 15)) 
@@ -645,7 +658,13 @@ with tabs[1]:
     st.markdown("### 🏆 Performance Oficial (Pós-Auditoria Vida Real)")
     hits_matriz = st.session_state.data.get("matrizes_reais_hits", {})
     
-    tm_11, tm_12, tm_13, tm_14, tm_15 = hits_matriz.get(11, 0), hits_matriz.get(12, 0), hits_matriz.get(13, 0), hits_matriz.get(14, 0), hits_matriz.get(15, 0)
+    # Busca tanto a chave em número quanto em string (resolve o conflito do JSON)
+    tm_11 = hits_matriz.get(11, hits_matriz.get("11", 0))
+    tm_12 = hits_matriz.get(12, hits_matriz.get("12", 0))
+    tm_13 = hits_matriz.get(13, hits_matriz.get("13", 0))
+    tm_14 = hits_matriz.get(14, hits_matriz.get("14", 0))
+    tm_15 = hits_matriz.get(15, hits_matriz.get("15", 0))
+    
     tm_total = hits_matriz.get("total", 0)
     soma_real_acertos = hits_matriz.get("soma_acertos", 0)
     media_acertos_matriz = soma_real_acertos / tm_total if tm_total > 0 else 0.0
@@ -663,8 +682,12 @@ with tabs[1]:
         cm5.metric("Matriz Acertou 15", tm_15)
 
     hits_bilhetes = st.session_state.data.get("global_hits", {})
-    tb_11, tb_12, tb_13, tb_14, tb_15 = hits_bilhetes.get(11, 0), hits_bilhetes.get(12, 0), hits_bilhetes.get(13, 0), hits_bilhetes.get(14, 0), hits_bilhetes.get(15, 0)
-
+    tb_11 = hits_bilhetes.get(11, hits_bilhetes.get("11", 0))
+    tb_12 = hits_bilhetes.get(12, hits_bilhetes.get("12", 0))
+    tb_13 = hits_bilhetes.get(13, hits_bilhetes.get("13", 0))
+    tb_14 = hits_bilhetes.get(14, hits_bilhetes.get("14", 0))
+    tb_15 = hits_bilhetes.get(15, hits_bilhetes.get("15", 0))
+    
     with st.container(border=True):
         st.markdown("#### 🎫 Prêmios Retidos nos Bilhetes")
         cb1, cb2, cb3, cb4, cb5 = st.columns(5)
