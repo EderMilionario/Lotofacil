@@ -74,20 +74,34 @@ def sanitizar_dados(d):
     return d
 
 def ajustar_ia(cod_est, acertos_matriz):
-    """Função de Aprendizado: Avalia a força da MATRIZ e não do bilhete."""
-    # Recompensa forte para 13, 14 ou 15 pontos. Punição suave para falhas.
-    if acertos_matriz >= 13: fator = 1.05
-    elif acertos_matriz == 12: fator = 1.02
-    elif acertos_matriz == 11: fator = 1.00 # Neutro, mantém a nota
-    else: fator = 0.95 # Punição controlada
+    """
+    Função de Aprendizado: Ajuste de Precisão Cirúrgica.
+    Diferencia 'Sucesso Real' (13+) de 'Mediocridade' (11).
+    """
+    
+    # FATORES AGRESSIVOS: 
+    # 1.15 (15%) para sucesso real (13+) -> IA foca no que dá lucro
+    # 0.85 (15% de punição) para falha (11 ou menos) -> IA desconfia do que não dá lucro
+    
+    if acertos_matriz >= 13: 
+        fator = 1.15 
+    elif acertos_matriz == 12: 
+        fator = 1.05 
+    else: 
+        fator = 0.85 
     
     ia_pesos = st.session_state.data["ia_pesos"]
     est_key = cod_est if cod_est in ia_pesos else "Default"
     
     for k in ia_pesos[est_key]:
+        # Em vez de apenas multiplicar, usamos o fator para ajustar a intensidade da estratégia
         novo_peso = ia_pesos[est_key][k] * fator
-        # BLINDAGEM: Impede a IA de cair a zero ou subir ao infinito
-        ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 300.0)), 2)
+        
+        # BLINDAGEM DE SEGURANÇA:
+        # Aumentamos o teto para 500 para permitir que a IA realmente valorize as estratégias vencedoras
+        ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 500.0)), 2)
+        
+    st.session_state.data["ia_pesos"] = ia_pesos
         
     st.session_state.data["ia_pesos"] = ia_pesos
 def salvar_dados(dados):
