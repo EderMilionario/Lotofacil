@@ -75,29 +75,30 @@ def sanitizar_dados(d):
 
 def ajustar_ia(cod_est, acertos_matriz):
     """
-    Função de Aprendizado: Termômetro de Confiança Global.
-    A Lotofácil exige disciplina. Se erra, perde a confiança global (deixa os filtros atuarem). 
-    Se acerta, ganha autoridade. Nunca inverte a lógica das dezenas quentes.
+    Inteligência Financeira Real e Definitiva para Lotofácil:
+    - 15: Prêmio Máximo (Recompensa extrema +20%)
+    - 14: Lucro Real (Recompensa alta +10%)
+    - 13: Retorno de Caixa (Recompensa leve +5%)
+    - 12: PREJUÍZO FINANCEIRO (Punição global leve -5%. Reduz a confiança)
+    - <12: PREJUÍZO SEVERO (Punição global forte -10%. Reduz muito a confiança)
     """
-    if acertos_matriz >= 14: 
-        fator = 1.10   # ZONA DE LUCRO: Confiança forte na estratégia atual (+10%)
-    elif acertos_matriz == 13: 
-        fator = 1.05   # ZONA DE RECUPERAÇÃO: Confiança leve (+5%)
-    elif acertos_matriz == 12: 
-        fator = 1.00   # ZONA ACEITÁVEL: Empate técnico, mantém o curso (0%)
-    else: 
-        fator = 0.95   # FORA DO ALVO (<12): Punição global (-5%). Diminui a distância dos pontos para a Alfândega Final agir.
-    
     ia_pesos = st.session_state.data["ia_pesos"]
     est_key = cod_est if cod_est in ia_pesos else "Default"
+    pesos_atuais = ia_pesos[est_key]
     
-    for k in ia_pesos[est_key]:
-        # Aplica o fator de confiança globalmente na estratégia
-        novo_peso = ia_pesos[est_key][k] * fator
-        
-        # Limite rígido: não deixa o peso cair para zero (mínimo 2.0) nem explodir para o infinito (máx 500.0)
+    # 1. AVALIAÇÃO DE RESULTADO
+    if acertos_matriz == 15: fator = 1.20       # JACKPOT Absoluto
+    elif acertos_matriz == 14: fator = 1.10     # Lucro
+    elif acertos_matriz == 13: fator = 1.05     # Break-even (Paga o jogo)
+    elif acertos_matriz == 12: fator = 0.95     # Prejuízo (Punição)
+    else: fator = 0.90                          # Prejuízo Severo (Punição Forte)
+    
+    # 2. APLICAÇÃO MATEMÁTICA (Sem Inverter Pesos)
+    for k in pesos_atuais:
+        # Aumenta ou diminui a confiança na estratégia sem destruir o seu DNA
+        novo_peso = pesos_atuais[k] * fator
         ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 500.0)), 2)
-        
+            
     st.session_state.data["ia_pesos"] = ia_pesos
     
 def salvar_dados(dados):
@@ -898,16 +899,19 @@ with tabs[3]:
                         st.write(f"**Matriz de {tamanho_matriz} dezenas usada para gerar os jogos:**")
                         st.code(", ".join([f"{n:02d}" for n in sorted(list(elite_group))]))
                     
-                    # --- NOVA LÓGICA DE AUDITORIA FINANCEIRA ---
-                    if acertos_elite >= 14: 
-                        st.success(f"🏆 ZONA DE LUCRO REAL! A Matriz de {tamanho_matriz} dezenas cravou {acertos_elite} pontos no concurso {alvo_foco}!")
+                    # --- NOVA LÓGICA DE AUDITORIA FINANCEIRA (COM 15 PONTOS) ---
+                    if acertos_elite == 15: 
+                        st.balloons()
+                        st.success(f"💎 JACKPOT! A Matriz de {tamanho_matriz} dezenas CRAVOU 15 PONTOS no concurso {alvo_foco}! LUCRO MÁXIMO!")
+                    elif acertos_elite == 14: 
+                        st.success(f"🏆 ZONA DE LUCRO REAL! A Matriz de {tamanho_matriz} dezenas cravou 14 pontos no concurso {alvo_foco}!")
                     elif acertos_elite == 13:
-                        st.success(f"🎯 ZONA DE RECUPERAÇÃO: A Matriz de {tamanho_matriz} dezenas fez 13 pontos no concurso {alvo_foco}.")
+                        st.info(f"🎯 ZONA DE RECUPERAÇÃO: A Matriz de {tamanho_matriz} fez 13 pontos no concurso {alvo_foco} (Retorno de Caixa).")
                     elif acertos_elite == 12:
-                        st.info(f"⚖️ ZONA ACEITÁVEL: A Matriz de {tamanho_matriz} dezenas fez 12 pontos no concurso {alvo_foco}.")
+                        st.warning(f"⚠️ PREJUÍZO: A Matriz de {tamanho_matriz} fez 12 pontos no concurso {alvo_foco} (Não recupera o investimento).")
                     else: 
-                        st.warning(f"⚠️ FORA DO ALVO: A Matriz de {tamanho_matriz} dezenas fez apenas {acertos_elite} pontos (Abaixo da zona aceitável).")
-                    # -------------------------------------------
+                        st.error(f"❌ FORA DO ALVO: A Matriz de {tamanho_matriz} fez apenas {acertos_elite} pontos (Prejuízo total).")
+                    # ----------------------------------------------------------
             else:
                 with col_a1: st.metric(label=f"Sorteio Alvo", value=f"{alvo_foco}", delta="Aguardando Resultado...", delta_color="off")
                 with col_a2:
