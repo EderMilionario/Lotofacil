@@ -425,83 +425,128 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
 
 def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
     if dezenas_anteriores is None: dezenas_anteriores = []
+    
     def limpar_latin1(texto):
         texto = str(texto).replace("🧬", "").replace("🍀", "").replace("🎫", "").replace("⚠️", "")
         return texto.encode('latin-1', 'ignore').decode('latin-1')
+        
     pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_text_color(147, 0, 137)
-    pdf.set_font('Arial', 'B', 22)
-    pdf.set_xy(10, 12)
-    pdf.cell(0, 10, "LotoMatrix PRO - Volantes de Aposta", ln=0)
-    pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(100, 100, 100)
-    pdf.set_xy(10, 22)
-    pdf.cell(0, 8, "Relatorio Oficial Pericial (Fechamento Exato)", ln=0)
-    pdf.set_font('Arial', 'B', 11)
-    pdf.set_text_color(147, 0, 137)
-    pdf.set_xy(10, 12)
-    pdf.cell(190, 10, f"TOTAL: {len(jogos)} BILHETES", ln=0, align='R')
-    pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(120, 120, 120)
-    pdf.set_xy(10, 22)
-    pdf.cell(190, 8, datetime.now().strftime('%d/%m/%Y %H:%M'), ln=0, align='R')
-    pdf.ln(30)
-    for i, j in enumerate(jogos, 1):
-        if pdf.get_y() > 220: pdf.add_page()
-        y_start = pdf.get_y()
+    pdf.set_auto_page_break(auto=False) # Nós vamos controlar a quebra de página
+    
+    # Configuração da Grade na Folha A4 (6 Jogos por página = 2 col x 3 linhas)
+    margem_x = 10
+    margem_y = 35
+    largura_card = 90
+    altura_card = 80
+    espaco_x = 5  # Espaço entre colunas
+    espaco_y = 5  # Espaço entre linhas
+
+    sorteio_set = set(dezenas_anteriores)
+
+    for i, j in enumerate(jogos):
+        # Controle de nova página a cada 6 jogos (0, 6, 12, 18...)
+        if i % 6 == 0:
+            pdf.add_page()
+            # Cabeçalho da Página
+            pdf.set_text_color(147, 0, 137)
+            pdf.set_font('Arial', 'B', 16)
+            pdf.set_xy(10, 12)
+            pdf.cell(0, 10, "LotoMatrix PRO - Relatorio Oficial", ln=0)
+            
+            pdf.set_font('Arial', '', 9)
+            pdf.set_text_color(100, 100, 100)
+            pdf.set_xy(10, 20)
+            pdf.cell(0, 8, f"TOTAL: {len(jogos)} BILHETES  |  Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=0)
+            pdf.line(10, 28, 200, 28)
+
+        # Calcula a posição X e Y deste bilhete específico
+        coluna = (i % 6) % 2
+        linha = (i % 6) // 2
+        x_start = margem_x + (coluna * (largura_card + espaco_x))
+        y_start = margem_y + (linha * (altura_card + espaco_y))
+
         estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')))
         dezenas = j.get('dezenas', [])
         alvo = limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
+        
+        # Fundo do Cartão
         pdf.set_fill_color(252, 245, 255)
-        pdf.rect(10, y_start, 190, 65, 'F')
+        pdf.rect(x_start, y_start, largura_card, altura_card, 'F')
+        
+        # Borda lateral roxa
         pdf.set_fill_color(147, 0, 137)
-        pdf.rect(10, y_start, 3, 65, 'F')
+        pdf.rect(x_start, y_start, 2, altura_card, 'F')
+
+        # Título do Jogo
         pdf.set_text_color(40, 40, 40)
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_xy(18, y_start + 5)
-        pdf.cell(100, 8, f"JOGO {i:02d}  |  Alvo: {alvo}  |  {len(dezenas)} Dezenas", ln=0)
-        pdf.set_text_color(147, 0, 137) 
         pdf.set_font('Arial', 'B', 10)
-        pdf.set_xy(10, y_start + 5)
-        pdf.cell(185, 8, f"{estrategia}", ln=0, align='R')
-        start_x, start_y, espaco_x, espaco_y = 75, y_start + 18, 10, 8 
+        pdf.set_xy(x_start + 5, y_start + 4)
+        pdf.cell(50, 6, f"JOGO {(i+1):02d}", ln=0)
+        
+        # Concurso Alvo (Direita)
+        pdf.set_font('Arial', '', 8)
+        pdf.set_text_color(100, 100, 100)
+        pdf.set_xy(x_start + 40, y_start + 4)
+        pdf.cell(45, 6, f"Alvo: {alvo}", ln=0, align='R')
+
+        # Estratégia
+        pdf.set_text_color(147, 0, 137) 
+        pdf.set_font('Arial', 'B', 7)
+        pdf.set_xy(x_start + 5, y_start + 9)
+        pdf.cell(80, 5, f"{estrategia[:35]}", ln=0) # Limita a 35 letras para não quebrar a linha
+
+        # Desenhar as 25 Bolinhas (Matriz 5x5)
+        bolinha_x_start = x_start + 18
+        bolinha_y_start = y_start + 22
+        passo_x = 11
+        passo_y = 9
+        
         for num in range(1, 26):
-            linha = (num - 1) // 5
-            coluna = (num - 1) % 5
-            cx = start_x + (coluna * espaco_x)
-            cy = start_y + (linha * espaco_y)
+            lin = (num - 1) // 5
+            col = (num - 1) % 5
+            cx = bolinha_x_start + (col * passo_x)
+            cy = bolinha_y_start + (lin * passo_y)
+            
             if num in dezenas:
-                pdf.set_fill_color(147, 0, 137)
+                if num in sorteio_set:
+                    # Acertou (Verde)
+                    pdf.set_fill_color(40, 167, 69)
+                else:
+                    # Roxo normal
+                    pdf.set_fill_color(147, 0, 137)
                 pdf.set_text_color(255, 255, 255)
             else:
+                # Não marcou (Cinza claro)
                 pdf.set_fill_color(235, 235, 235)
-                pdf.set_text_color(160, 160, 160)
-            pdf.ellipse(cx, cy, 6, 6, 'F')
+                pdf.set_text_color(150, 150, 150)
+                
+            pdf.ellipse(cx, cy, 7, 7, 'F')
             pdf.set_xy(cx, cy)
             pdf.set_font('Arial', 'B', 7)
-            pdf.cell(6, 6, f"{num:02d}", align='C')
+            # Centraliza o texto dentro da bolinha
+            pdf.cell(7, 7, f"{num:02d}", align='C')
+
+        # Rodapé de Garantia
         justificativa_texto = str(j.get('justificativa', ''))
         match = re.search(r'(\d+) pts', justificativa_texto)
-        if match:
-            pontos = match.group(1)
-            texto_rodape = f"Fechamento 100% Matematico - Garantia de {pontos} Pontos"
-        else:
-            texto_rodape = "Fechamento 100% Matematico Absoluto"
-        pdf.set_text_color(147, 0, 137)
-        pdf.set_font('Arial', 'B', 8)
-        pdf.set_xy(18, y_start + 58)
-        pdf.cell(170, 5, texto_rodape, ln=0, align='C')
-        pdf.set_y(y_start + 70)
+        texto_rodape = f"Garantia: {match.group(1)} Pontos" if match else "Fechamento Absoluto"
+        
+        pdf.set_text_color(120, 120, 120)
+        pdf.set_font('Arial', 'B', 7)
+        pdf.set_xy(x_start + 5, y_start + altura_card - 8)
+        pdf.cell(80, 5, texto_rodape, ln=0, align='C')
+
+    # Retorna o arquivo gerado
     resultado = pdf.output(dest='S')
     if isinstance(resultado, str): return resultado.encode('latin-1', 'ignore')
     return bytes(resultado)
 
-def exibir_card_volante(jogo, numero_jogo):
+def exibir_card_volante(jogo, numero_jogo, sorteio_real=None):
     dezenas = jogo.get('dezenas', [])
     alvo = jogo.get('concurso_alvo', 'N/A')
     estrategia = jogo.get('estrategia', 'Padrão')
+    
+    # Mantém a sua lógica do rodapé de garantia
     justificativa = str(jogo.get('justificativa', ''))
     match = re.search(r'(\d+) pts', justificativa)
     if match:
@@ -509,27 +554,41 @@ def exibir_card_volante(jogo, numero_jogo):
         texto_rodape = f"Fechamento 100% Matemático - Garantia de {pontos} Pontos"
     else:
         texto_rodape = "Fechamento 100% Matemático Absoluto"
-    grid_html = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 10px;'>"
+        
+    sorteio_set = set(sorteio_real) if sorteio_real else set()
+
+    # Monta a grade 5x5 do volante
+    grid_html = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; justify-items: center;'>"
     for num in range(1, 26):
         if num in dezenas:
-            bg_color, txt_color, border = "#930089", "white", "none"
+            if num in sorteio_set:
+                # Acertou a dezena (Verde)
+                bg_color, txt_color, border, shadow = "#28a745", "white", "none", "box-shadow: 0 0 5px #28a745;"
+            else:
+                # Escolheu mas não foi sorteada (Roxo)
+                bg_color, txt_color, border, shadow = "#930089", "white", "none", "box-shadow: 0 2px 4px rgba(147,0,137,0.3);"
         else:
-            bg_color, txt_color, border = "#f4f6f9", "#ccc", "1px solid #eee"
-        grid_html += f"<div style='background-color: {bg_color}; color: {txt_color}; border: {border}; text-align: center; border-radius: 50%; width: 28px; height: 28px; line-height: 28px; font-size: 12px; font-weight: bold; margin: auto;'>{num:02d}</div>"
+            # Dezena fora do jogo (Cinza claro)
+            bg_color, txt_color, border, shadow = "#f4f6f9", "#bbb", "1px solid #ddd", ""
+            
+        grid_html += f"<div style='background-color: {bg_color}; color: {txt_color}; border: {border}; {shadow} text-align: center; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;'>{num:02d}</div>"
     grid_html += "</div>"
+    
+    # Monta o Cartão Geral
     html_card = f"""
-    <div style='background-color: #fcf5ff; border-left: 4px solid #930089; padding: 10px; border-radius: 5px; margin-bottom: 15px; box-shadow: 1px 1px 5px rgba(0,0,0,0.05);'>
-        <div style='font-size: 14px; font-weight: bold; color: #333;'>JOGO {numero_jogo:02d} <span style='font-size: 11px; font-weight: normal; color: #777; float: right;'>Alvo: {alvo}</span></div>
-        <div style='font-size: 11px; color: #930089; margin-bottom: 10px; font-weight: bold;'>{estrategia}</div>
+    <div style='background-color: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05);'>
+        <div style='display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;'>
+            <span style='font-size: 15px; font-weight: bold; color: #930089;'>🎫 JOGO {numero_jogo:02d}</span>
+            <span style='font-size: 12px; font-weight: bold; color: #666;'>Alvo: {alvo}</span>
+        </div>
+        <div style='font-size: 11px; color: #555; margin-bottom: 12px; font-weight: bold; text-transform: uppercase;'>ESTRATÉGIA: {estrategia}</div>
         {grid_html}
-        <div style='text-align: center; font-size: 10px; font-weight: bold; color: #930089; background: rgba(147, 0, 137, 0.1); padding: 4px; border-radius: 4px; margin-top: 5px;'>
+        <div style='text-align: center; font-size: 10px; font-weight: bold; color: #930089; background: rgba(147, 0, 137, 0.08); padding: 6px; border-radius: 4px; margin-top: 5px;'>
             {texto_rodape}
         </div>
     </div>
     """
     st.markdown(html_card, unsafe_allow_html=True)
-
-# Callbacks
 def cb_excluir_jogo(jogo_id):
     st.session_state.data['jogos_salvos'] = [j for j in st.session_state.data['jogos_salvos'] if j.get('id') != jogo_id]
     st.toast("Bilhete deletado.", icon="🗑️")
