@@ -75,35 +75,31 @@ def sanitizar_dados(d):
 
 def ajustar_ia(cod_est, acertos_matriz):
     """
-    Função de Aprendizado: Ajuste de Precisão Cirúrgica.
-    Diferencia 'Sucesso Real' (13+) de 'Mediocridade' (11).
+    Função de Aprendizado: Termômetro de Confiança Global.
+    A Lotofácil exige disciplina. Se erra, perde a confiança global (deixa os filtros atuarem). 
+    Se acerta, ganha autoridade. Nunca inverte a lógica das dezenas quentes.
     """
-    
-    # FATORES AGRESSIVOS: 
-    # 1.15 (15%) para sucesso real (13+) -> IA foca no que dá lucro
-    # 0.85 (15% de punição) para falha (11 ou menos) -> IA desconfia do que não dá lucro
-    
-    if acertos_matriz >= 13: 
-        fator = 1.15 
+    if acertos_matriz >= 14: 
+        fator = 1.10   # ZONA DE LUCRO: Confiança forte na estratégia atual (+10%)
+    elif acertos_matriz == 13: 
+        fator = 1.05   # ZONA DE RECUPERAÇÃO: Confiança leve (+5%)
     elif acertos_matriz == 12: 
-        fator = 1.05 
+        fator = 1.00   # ZONA ACEITÁVEL: Empate técnico, mantém o curso (0%)
     else: 
-        fator = 0.85 
+        fator = 0.95   # FORA DO ALVO (<12): Punição global (-5%). Diminui a distância dos pontos para a Alfândega Final agir.
     
     ia_pesos = st.session_state.data["ia_pesos"]
     est_key = cod_est if cod_est in ia_pesos else "Default"
     
     for k in ia_pesos[est_key]:
-        # Em vez de apenas multiplicar, usamos o fator para ajustar a intensidade da estratégia
+        # Aplica o fator de confiança globalmente na estratégia
         novo_peso = ia_pesos[est_key][k] * fator
         
-        # BLINDAGEM DE SEGURANÇA:
-        # Aumentamos o teto para 500 para permitir que a IA realmente valorize as estratégias vencedoras
+        # Limite rígido: não deixa o peso cair para zero (mínimo 2.0) nem explodir para o infinito (máx 500.0)
         ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 500.0)), 2)
         
     st.session_state.data["ia_pesos"] = ia_pesos
-        
-    st.session_state.data["ia_pesos"] = ia_pesos
+    
 def salvar_dados(dados):
     try:
         with open("Cofre.json", "w", encoding='utf-8') as f:
@@ -901,8 +897,17 @@ with tabs[3]:
                     with col_a2:
                         st.write(f"**Matriz de {tamanho_matriz} dezenas usada para gerar os jogos:**")
                         st.code(", ".join([f"{n:02d}" for n in sorted(list(elite_group))]))
-                    if acertos_elite >= 11: st.success(f"🎯 A Matriz de {tamanho_matriz} dezenas acertou {acertos_elite} pontos no concurso {alvo_foco}!")
-                    else: st.warning(f"A Matriz de {tamanho_matriz} dezenas não atingiu 11 pontos no concurso {alvo_foco}.")
+                    
+                    # --- NOVA LÓGICA DE AUDITORIA FINANCEIRA ---
+                    if acertos_elite >= 14: 
+                        st.success(f"🏆 ZONA DE LUCRO REAL! A Matriz de {tamanho_matriz} dezenas cravou {acertos_elite} pontos no concurso {alvo_foco}!")
+                    elif acertos_elite == 13:
+                        st.success(f"🎯 ZONA DE RECUPERAÇÃO: A Matriz de {tamanho_matriz} dezenas fez 13 pontos no concurso {alvo_foco}.")
+                    elif acertos_elite == 12:
+                        st.info(f"⚖️ ZONA ACEITÁVEL: A Matriz de {tamanho_matriz} dezenas fez 12 pontos no concurso {alvo_foco}.")
+                    else: 
+                        st.warning(f"⚠️ FORA DO ALVO: A Matriz de {tamanho_matriz} dezenas fez apenas {acertos_elite} pontos (Abaixo da zona aceitável).")
+                    # -------------------------------------------
             else:
                 with col_a1: st.metric(label=f"Sorteio Alvo", value=f"{alvo_foco}", delta="Aguardando Resultado...", delta_color="off")
                 with col_a2:
@@ -949,7 +954,7 @@ with tabs[3]:
                 st.button("🗑️ Apagar", key=f"del_{id_jogo}", on_click=cb_excluir_jogo, args=(id_jogo,), use_container_width=True)
                 st.markdown("<br><br>", unsafe_allow_html=True)
     else: st.info("Nenhum bilhete registrado na fila.")
-
+        
 # --- TAB 5: SINCRONIZAÇÃO E AUDITORIA (LIVRO-CAIXA REAL) ---
 with tabs[4]:
     exibir_mini_painel_financeiro()
