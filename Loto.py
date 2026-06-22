@@ -45,12 +45,13 @@ def sanitizar_dados(d):
     if "historico_custos" not in d: d["historico_custos"] = 0.0
     if "historico_premios" not in d: d["historico_premios"] = 0.0
     
-    # GARANTIA DA IA EXISTIR DESDE O MILISSEGUNDO ZERO
+    # GARANTIA DA IA EXISTIR E TER O CICLO SUPREMO NOMEADO
     if "ia_pesos" not in d:
         d["ia_pesos"] = {
             "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
             "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
             "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
+            "Ciclo Supremo": {"p1": 15.0, "p2": 5.0, "bonus": 30.0}, # AGORA TEM CÉREBRO PRÓPRIO
             "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
         }
         
@@ -73,22 +74,22 @@ def sanitizar_dados(d):
     return d
 
 def ajustar_ia(cod_est, acertos_matriz):
-    """Função de Aprendizado Dinâmico: Recompensa ou pune baseado no sucesso da MATRIZ."""
-    # Se a matriz bater 13+, a IA aprende que a estratégia foi excelente.
+    """Função de Aprendizado: Avalia a força da MATRIZ e não do bilhete."""
+    # Recompensa forte para 13, 14 ou 15 pontos. Punição suave para falhas.
     if acertos_matriz >= 13: fator = 1.05
-    elif acertos_matriz == 12: fator = 1.01
-    else: fator = 0.95 # Punição leve se a matriz falhou
+    elif acertos_matriz == 12: fator = 1.02
+    elif acertos_matriz == 11: fator = 1.00 # Neutro, mantém a nota
+    else: fator = 0.95 # Punição controlada
     
     ia_pesos = st.session_state.data["ia_pesos"]
     est_key = cod_est if cod_est in ia_pesos else "Default"
     
     for k in ia_pesos[est_key]:
         novo_peso = ia_pesos[est_key][k] * fator
-        # BLINDAGEM: Impede a lobotomia (mínimo 2.0) e o estouro (máximo 300.0)
+        # BLINDAGEM: Impede a IA de cair a zero ou subir ao infinito
         ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 300.0)), 2)
         
     st.session_state.data["ia_pesos"] = ia_pesos
-
 def salvar_dados(dados):
     try:
         with open("Cofre.json", "w", encoding='utf-8') as f:
@@ -193,24 +194,26 @@ def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
     matrizes_auditadas = st.session_state.data["matrizes_auditadas_ids"]
     selo_matriz = f"conc_{concurso}"
     
-    if matriz_usada_neste_concurso and selo_matriz not in matrizes_auditadas:
+  if matriz_usada_neste_concurso and selo_matriz not in matrizes_auditadas:
         acertos_matriz = len(set(matriz_usada_neste_concurso).intersection(sorteio_set))
         matrizes_auditadas.append(selo_matriz)
         matrizes_hits["total"] = matrizes_hits.get("total", 0) + 1
         matrizes_hits["soma_acertos"] = matrizes_hits.get("soma_acertos", 0) + acertos_matriz
         
-        # --- AUTO-APRENDIZADO DA IA (CORRETO: BASEADO NA MATRIZ) ---
+        # --- APRENDIZADO CORRETO: A IA APRENDE UMA VEZ POR SORTEIO BASEADO NA MATRIZ ---
         est_da_matriz = "Default"
         for j in st.session_state.data.get("jogos_salvos", []):
             if j.get("matriz_origem") == matriz_usada_neste_concurso:
                 est_da_matriz = j.get("estrategia", "Default")
                 break
         ajustar_ia(est_da_matriz, acertos_matriz)
+        # --------------------------------------------------------------------------------
         
         if acertos_matriz >= 11:
             chave = int(min(acertos_matriz, 15)) 
-            matrizes_hits[chave] = matrizes_hits.get(chave, 0) + 1
+            matrizes_hits[chave] = matrizes_hits.get(chave, 0) + 1 
         
+                
     st.session_state.data["matrizes_reais_hits"] = matrizes_hits
     st.session_state.data["matrizes_auditadas_ids"] = matrizes_auditadas
     st.session_state.data["global_hits"] = hits_bilhetes
@@ -658,7 +661,7 @@ with tabs[1]:
     st.markdown("### 🏆 Performance Oficial (Pós-Auditoria Vida Real)")
     hits_matriz = st.session_state.data.get("matrizes_reais_hits", {})
     
-    # Busca tanto a chave em número quanto em string (resolve o conflito do JSON)
+    # Correção: O painel procura tanto por int (11) quanto por string ("11")
     tm_11 = hits_matriz.get(11, hits_matriz.get("11", 0))
     tm_12 = hits_matriz.get(12, hits_matriz.get("12", 0))
     tm_13 = hits_matriz.get(13, hits_matriz.get("13", 0))
