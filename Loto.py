@@ -639,7 +639,7 @@ if not st.session_state.auth:
 # =====================================================================
 # 5. INTERFACE PRINCIPAL (TABS)
 # =====================================================================
-st.markdown("<h2 style='text-align: center; color: #930089; font-weight: 900;'>🍀 LotoMatrix PRO - Fechamento</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #930089; font-weight: 900;'>🍀 LotoMatrix PRO - Fechamento Matematico</h2>", unsafe_allow_html=True)
 tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio", "🏆 5. Sincronização e Entrada"])
 
 # --- TAB 1: BANCO DE DADOS E BALANÇO FINANCEIRO ---
