@@ -678,12 +678,12 @@ def tela_lobby():
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("<div style='background-color: #fcf5ff; border: 2px solid #930089; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #930089;'>🟣 Lotofácil</h3></div><br>", unsafe_allow_html=True)
+        st.markdown("<div style='background-color: #fcf5ff; border: 2px solid #930089; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #930089;'>🍀 Lotofácil</h3></div><br>", unsafe_allow_html=True)
         if st.button("Acessar Motor", key="btn_loto", use_container_width=True, type="primary"):
             st.session_state.pagina_atual = "lotofacil"
             st.rerun()
     with col2:
-        st.markdown("<div style='background-color: #f2fbf6; border: 2px solid #209869; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #209869;'>🟢 Mega-Sena</h3></div><br>", unsafe_allow_html=True)
+        st.markdown("<div style='background-color: #f2fbf6; border: 2px solid #209869; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #209869;'>🍀 Mega-Sena</h3></div><br>", unsafe_allow_html=True)
         if st.button("Acessar Motor", key="btn_mega", use_container_width=True):
             st.session_state.pagina_atual = "megasena"
             st.rerun()
