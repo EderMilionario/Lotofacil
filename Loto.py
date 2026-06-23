@@ -12,7 +12,7 @@ import pandas as pd
 # =====================================================================
 # 1. CONFIGURAÇÃO INICIAL E ROTEADOR DE PÁGINAS
 # =====================================================================
-st.set_page_config(page_title="Loterias Pro", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Loterias Pro", page_icon="🍀", layout="wide")
 
 if "pagina_atual" not in st.session_state:
     st.session_state.pagina_atual = "login"
@@ -71,7 +71,7 @@ def tela_login():
             usuario = st.text_input("Usuário")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar no Sistema", use_container_width=True):
-                if usuario == "admin" and senha == "admin123":
+                if usuario == "777" and senha == "777":
                     st.session_state.autenticado = True
                     st.session_state.pagina_atual = "lobby"
                     st.rerun()
