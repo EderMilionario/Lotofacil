@@ -70,6 +70,22 @@ def exibir_rodape():
 # =====================================================================
 # 3. TODAS AS SUAS FUNÇÕES DA LOTOFÁCIL
 # =====================================================================
+st.markdown("""
+<style>
+    :root { --roxo: #930089; --roxo-hover: #7a0072; }
+    .stApp { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .stTabs [data-baseweb="tab"] { border-radius: 8px; padding: 10px 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; transition: all 0.3s ease; }
+    .stTabs [aria-selected="true"] { background-color: var(--roxo) !important; color: white !important; border: none; box-shadow: 0 4px 10px rgba(147,0,137,0.3); }
+    div[data-testid="stMetric"] { background-color: white; padding: 20px; border-radius: 12px; border-left: 6px solid var(--roxo); box-shadow: 0 4px 6px rgba(0,0,0,0.04); }
+    div[data-testid="stAlert"] { background-color: #fdf5ff !important; border-left: 5px solid var(--roxo) !important; color: #333 !important; border-radius: 8px !important; }
+    button[kind="primary"] { background-color: var(--roxo) !important; border: none !important; border-radius: 8px !important; font-weight: bold !important; color: white !important; box-shadow: 0 4px 10px rgba(147,0,137,0.4) !important; transition: all 0.3s ease !important; }
+    button[kind="primary"]:hover { background-color: var(--roxo-hover) !important; transform: translateY(-2px); }
+    .login-box { max-width: 420px; margin: 80px auto; padding: 40px; background: white; border-radius: 16px; border-top: 6px solid var(--roxo); box-shadow: 0 10px 30px rgba(147,0,137,0.15); text-align: center; }
+    .login-title { color: var(--roxo); font-weight: 900; font-size: 26px; margin-bottom: 5px; }
+    .login-sub { color: #666; font-size: 14px; margin-bottom: 25px; }
+</style>
+""", unsafe_allow_html=True)
 def sanitizar_dados(d):
     if "historico_dados" not in d: d["historico_dados"] = []
     if "jogos_salvos" not in d: d["jogos_salvos"] = []
@@ -648,7 +664,7 @@ def tela_login():
             usuario = st.text_input("Usuário")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Autenticar Operador", use_container_width=True):
-                if usuario == "admin" and senha == "admin":  # Altere para a senha que desejar
+                if usuario == "777" and senha == "777":  # Altere para a senha que desejar
                     st.session_state.autenticado = True
                     st.session_state.pagina_atual = "lobby"
                     st.rerun()
@@ -677,7 +693,7 @@ def tela_lobby():
     exibir_rodape()
 
 def tela_lotofacil():
-    exibir_cabecalho(loteria_especifica="LOTOFÁCIL PRO", cor_loteria="#930089", icone_loteria="🟣")
+    exibir_cabecalho(loteria_especifica="LOTOFÁCIL PRO", cor_loteria="#930089", icone_loteria="🍀")
     
     # --- CARREGAMENTO DE DADOS DA LOTOFÁCIL ---
     if "data" not in st.session_state:
