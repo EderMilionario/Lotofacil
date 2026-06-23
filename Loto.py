@@ -1279,7 +1279,7 @@ def tela_lotofacil():
     exibir_rodape()
 
 def tela_megasena():
-    exibir_cabecalho(loteria_especifica="MEGA-SENA PRO", cor_loteria="#209869", icone_loteria="🟢")
+    exibir_cabecalho(loteria_especifica="MEGA-SENA PRO", cor_loteria="#209869", icone_loteria="🍀")
     st.info("🚧 Módulo Mega-Sena em desenvolvimento. IA Espacial sendo configurada.")
     exibir_rodape()
 
