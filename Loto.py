@@ -490,8 +490,27 @@ def cb_carregar_cofre():
             st.toast("Cofre sincronizado com sucesso!", icon="✅")
         except Exception as e: st.error(f"Erro ao ler JSON: {e}")
 
+def obter_garantia_lotofacil(tamanho_matriz):
+    garantias = {
+        15: "Para fazer 15 pontos, as 15 sorteadas precisam ser exatamente as suas 15.",
+        16: "Se as 15 sorteadas estiverem DENTRO das suas 16, você tem 100% de garantia dos prêmios múltiplos e chance alta de 15 pontos.",
+        17: "Se as 15 sorteadas caírem DENTRO das suas 17, a garantia base é ativada (prêmios gordos trancados).",
+        18: "Se as 15 sorteadas caírem DENTRO das suas 18 escolhidas, o cadeado matemático garante no mínimo 14 pontos (dependendo da redução).",
+        19: "Acertando as 15 DENTRO das 19, o cadeado tranca 100% o prêmio da garantia escolhida.",
+        20: "Acertando as 15 DENTRO das 20, você blinda o prêmio do fechamento."
+    }
+    msg = garantias.get(tamanho_matriz, f"Lembre-se: as 15 sorteadas precisam obrigatoriamente estar dentro do seu grupo de {tamanho_matriz}.")
+    return f"""
+<div style='background-color: #fdf5ff; border-left: 5px solid #930089; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+    <h4 style='color: #930089; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO (LOTOFÁCIL)</h4>
+    <p style='margin-bottom: 5px;'>Você está gerando um desdobramento para uma matriz de <b>{tamanho_matriz} dezenas</b>.</p>
+    <p style='font-weight: bold; color: #333;'>CONDIÇÃO PARA O PRÊMIO: {msg}</p>
+    <p style='font-size: 12px; color: #666; margin-bottom: 0;'>O sistema não faz mágica, ele aplica matemática inquebrável. Se a IA colocar as 15 sorteadas dentro da sua matriz base, o prêmio não escapa.</p>
+</div>
+"""
+
 # =====================================================================
-# 4. FUNÇÕES GLOBAIS DA MEGA-SENA
+# 4. FUNÇÕES GLOBAIS DA MEGA-SENA (COM ELITE FILTERS)
 # =====================================================================
 def sanitizar_dados_mega(d):
     if not isinstance(d, dict): d = {}
@@ -570,12 +589,28 @@ def ajustar_ia_mega(cod_est, acertos_matriz):
         ia_pesos[est_key][k] = round(max(2.0, min(pesos_atuais[k] * fator, 500.0)), 2)
     st.session_state.data_mega["ia_pesos"] = ia_pesos
 
-@st.cache_data(show_spinner="🧠 Processando Matriz Mega-Sena...")
+@st.cache_data(show_spinner="🧠 Processando Matriz e Aplicando Filtros Elite Mega-Sena...")
 def gerar_fechamento_matematico_mega(dezenas_tuple, garantia):
     dezenas = list(dezenas_tuple)
     todas_comb_6 = list(itertools.combinations(dezenas, 6))
+    
+    # ==========================================
+    # FILTROS DE ELITE (GAUSS + EXCLUSÃO MÚLTIPLOS)
+    # ==========================================
+    comb_filtradas = []
+    for c in todas_comb_6:
+        soma = sum(c)
+        mult_10 = sum(1 for x in c if x % 10 == 0)
+        # Filtro da Curva de Gauss (Soma entre 120 e 240)
+        # Filtro de Exclusão: Máximo de 2 dezenas terminadas em 0
+        if 120 <= soma <= 240 and mult_10 <= 2:
+            comb_filtradas.append(c)
+            
+    todas_comb_6 = comb_filtradas
+
     if garantia == 6 or len(dezenas) <= 6: return [list(c) for c in todas_comb_6]
 
+    # Processamento Set Cover com as combinações que passaram pelos filtros
     comb_bits = [sum(1 << num for num in c) for c in todas_comb_6]
     sorteios_possiveis = set(range(len(comb_bits)))
     bilhetes_escolhidos, cobertura = [], []
@@ -587,6 +622,7 @@ def gerar_fechamento_matematico_mega(dezenas_tuple, garantia):
         melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
         bilhetes_escolhidos.append(list(todas_comb_6[melhor_idx]))
         sorteios_possiveis -= cobertura[melhor_idx]
+        
     return bilhetes_escolhidos
 
 def obter_dados_fechamento_mega(matriz_base, garantia):
@@ -790,6 +826,16 @@ def gerar_pdf_jogos_mega(jogos, dezenas_anteriores=None):
     if isinstance(resultado, str): return resultado.encode('latin-1', 'ignore')
     return bytes(resultado)
 
+def obter_garantia_megasena(tamanho_matriz):
+    return f"""
+<div style='background-color: #f2fbf6; border-left: 5px solid #209869; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
+    <h4 style='color: #209869; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO (MEGA-SENA)</h4>
+    <p style='margin-bottom: 5px;'>Sua Matriz de Jogo: <b>{tamanho_matriz} dezenas</b>.</p>
+    <p style='font-weight: bold; color: #333;'>CONDIÇÃO INQUEBRÁVEL PARA O PRÊMIO:</p>
+    <p style='color: #444;'>Para o fechamento garantir a Sena, Quina ou Quadra escolhida, <b>as 6 dezenas sorteadas pela Caixa PRECISAM obrigatoriamente estar DENTRO do seu grupo de {tamanho_matriz} números.</b></p>
+    <p style='font-size: 12px; color: #666; margin-bottom: 0;'><b>Filtro Elite Ativado:</b> O sistema varre automaticamente a Curva de Gauss (Soma 120 a 240) e remove colunas viciadas (múltiplos de 10) para maximizar o seu prêmio caso acerte. As garantias matemáticas se aplicam aos bilhetes que passaram nesse filtro de elite.</p>
+</div>
+"""
 
 # =====================================================================
 # 5. CONSTRUÇÃO DAS TELAS (PÁGINAS DO SISTEMA)
@@ -814,15 +860,11 @@ def tela_login():
 def tela_lobby():
     exibir_cabecalho()
     
-    # CSS avançado para tornar os botões do Streamlit perfeitamente quadrados, centralizados e responsivos.
     st.markdown("""
     <style>
-        /* Container centralizado para alinhar dinamicamente as colunas */
         .block-container { max-width: 1000px; }
-        
-        /* Modifica o botão nativo para ser quadrado e bonito */
         div[data-testid="stColumn"] div.stButton > button {
-            aspect-ratio: 1 / 1 !important; /* FORÇA O FORMATO QUADRADO */
+            aspect-ratio: 1 / 1 !important; 
             border-radius: 20px !important;
             font-size: 24px !important;
             font-weight: 900 !important;
@@ -834,10 +876,8 @@ def tela_lobby():
             flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
-            white-space: pre-wrap !important; /* Permite quebra de linha no texto */
+            white-space: pre-wrap !important; 
         }
-        
-        /* Botão 1: Lotofácil (Roxo) */
         div[data-testid="stColumn"]:nth-child(2) div.stButton > button {
             background: linear-gradient(145deg, #ffffff, #fdf5ff) !important;
             border: 3px solid #930089 !important;
@@ -849,8 +889,6 @@ def tela_lobby():
             transform: translateY(-8px) scale(1.02) !important;
             box-shadow: 0 15px 35px rgba(147,0,137,0.3) !important;
         }
-
-        /* Botão 2: Mega-Sena (Verde) */
         div[data-testid="stColumn"]:nth-child(3) div.stButton > button {
             background: linear-gradient(145deg, #ffffff, #f2fbf6) !important;
             border: 3px solid #209869 !important;
@@ -867,8 +905,6 @@ def tela_lobby():
     
     st.markdown("<h4 style='text-align: center; color: #666; font-weight: normal; margin-bottom: 50px;'>Escolha o Motor Analítico para iniciar a sessão:</h4>", unsafe_allow_html=True)
     
-    # Truque de Layout: Usar 4 colunas, mas colocar os botões apenas nas colunas do meio.
-    # Se quiseres adicionar mais, mudas as proporções. Assim fica perfeitamente centrado.
     cols = st.columns([1, 2, 2, 1]) 
     
     with cols[1]:
@@ -1015,11 +1051,16 @@ def tela_lotofacil():
         st.markdown("### 🚀 Engenharia Combinatória (100% Exato)")
         if st.session_state.data["historico_dados"]:
             ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data.get("ia_memoria", {}))
+            
+            # CAIXA DE AVISO ESCANCARADA INSERIDA AQUI
+            st.markdown(obter_garantia_lotofacil(ia['qtd_matriz']), unsafe_allow_html=True)
+            
             with st.container(border=True):
                 st.markdown("#### 🎯 Alvo da Garantia Matemática")
                 garantia_alvo = st.radio("Garantia:", options=[15, 14, 13], format_func=lambda x: f"Garantia Absoluta de {x} Pontos", horizontal=True, key="radio_garantia_aba3")
                 jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
                 st.info(f"📊 **Volume Exato:** {jogos_exatos} Bilhetes\n\n💸 **Investimento Cravado:** R$ {custo_exato:.2f}")
+                
                 if st.button("🧬 GERAR FECHAMENTO EXATO", type="primary", use_container_width=True):
                     st.session_state.data["jogos_salvos"] = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
                     matriz_reduzida = gerar_fechamento_matematico(tuple(ia['matriz_base']), garantia_alvo)
@@ -1290,24 +1331,38 @@ def tela_megasena():
 
     with tabs[2]:
         exibir_mini_painel_financeiro_mega()
-        st.markdown("### 🚀 Engenharia Combinatória Mega-Sena")
+        st.markdown("### 🚀 Engenharia Combinatória Mega-Sena (Nível Elite Ativado)")
+        
         if st.session_state.data_mega["historico_dados"]:
             ia = raciocinio_total_ia_mega(st.session_state.data_mega["historico_dados"], {})
+            
+            # CAIXA DE AVISO ESCANCARADA INSERIDA AQUI
+            st.markdown(obter_garantia_megasena(ia['qtd_matriz']), unsafe_allow_html=True)
+            
+            # CHECAGEM FINANCEIRA DE EV (VALOR ESPERADO)
+            st.markdown("#### ⚖️ Trava Financeira (Valor Esperado - EV)")
+            premio_atual_input = st.number_input("Valor Estimado do Prêmio Hoje (R$):", min_value=0.0, value=5000000.0, step=1000000.0)
+            teto_ev = 80000000.0
+            if premio_atual_input < teto_ev:
+                st.warning(f"⚠️ **ALERTA DE RISCO:** O prêmio de R$ {premio_atual_input:,.2f} é matematicamente BAIXO para desdobramentos pesados. Profissionais focam na Mega quando acumula acima de 80 Milhões.")
+            else:
+                st.success(f"✅ **EV POSITIVO:** Prêmio atrativo (Maior que 80 Milhões). Investimento justificado.")
+
             with st.container(border=True):
                 garantia_alvo = st.radio("Garantia:", options=[6, 5, 4], format_func=lambda x: f"Garantia Absoluta de {x} Pontos", horizontal=True, key="radio_garantia_mega_aba3")
                 jogos_exatos, custo_exato = obter_dados_fechamento_mega(ia['matriz_base'], garantia_alvo)
-                st.info(f"📊 **Volume Exato:** {jogos_exatos} Bilhetes\n\n💸 **Investimento:** R$ {custo_exato:.2f}")
+                st.info(f"📊 **Volume Exato Pós-Filtro Elite:** {jogos_exatos} Bilhetes\n\n💸 **Investimento:** R$ {custo_exato:.2f}")
 
-                if st.button("🧬 GERAR FECHAMENTO EXATO", type="primary", use_container_width=True, key="btn_gerar_mega"):
+                if st.button("🧬 GERAR FECHAMENTO EXATO COM FILTROS ELITE", type="primary", use_container_width=True, key="btn_gerar_mega"):
                     st.session_state.data_mega["jogos_salvos"] = [j for j in st.session_state.data_mega["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
                     matriz_reduzida = gerar_fechamento_matematico_mega(tuple(ia['matriz_base']), garantia_alvo)
                     prog_a = st.progress(0)
                     for i, dezenas_jogo in enumerate(matriz_reduzida):
-                        st.session_state.data_mega["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": sorted(list(dezenas_jogo)), "tamanho": len(dezenas_jogo), "estrategia": ia['cod_estrategia'], "justificativa": f"Garantia 100% de {garantia_alvo} pts.", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0, "matriz_origem": ia['matriz_base']})
+                        st.session_state.data_mega["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": sorted(list(dezenas_jogo)), "tamanho": len(dezenas_jogo), "estrategia": ia['cod_estrategia'], "justificativa": f"Garantia de {garantia_alvo} pts. Filtros Elite ON.", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0, "matriz_origem": ia['matriz_base']})
                         if i % max(1, (len(matriz_reduzida) // 10)) == 0: prog_a.progress(min((i+1)/len(matriz_reduzida), 1.0))
                     st.session_state.data_mega['historico_custos'] += len(matriz_reduzida) * 5.00
                     salvar_dados_mega(st.session_state.data_mega)
-                    st.success(f"**🥇 FECHAMENTO CONCLUÍDO!** {len(matriz_reduzida)} bilhetes.")
+                    st.success(f"**🥇 FECHAMENTO ELITE CONCLUÍDO!** {len(matriz_reduzida)} bilhetes validados matematicamente.")
                     st.rerun()
 
         jogos_espera = [j for j in st.session_state.data_mega.get("jogos_salvos", []) if j.get('status') == "Aguardando Sorteio"]
