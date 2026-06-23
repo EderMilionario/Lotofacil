@@ -17,7 +17,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # =====================================================================
 # 1. CONFIGURAÇÃO INICIAL E ROTEAMENTO (DEVE SER A LINHA 1)
 # =====================================================================
-st.set_page_config(page_title="Loterias Pro", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Loterias Pro", page_icon="🍀", layout="wide")
 
 if "pagina_atual" not in st.session_state:
     st.session_state.pagina_atual = "login"
