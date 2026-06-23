@@ -674,24 +674,44 @@ def tela_login():
 
 def tela_lobby():
     exibir_cabecalho()
-    st.markdown("<h4 style='text-align: center; color: #555;'>Painel de Operações</h4><br>", unsafe_allow_html=True)
+    
+    # CSS para transformar os botões em Cards clicáveis gigantes
+    st.markdown("""
+    <style>
+        .botao-card-roxo button { height: 120px !important; border: 2px solid #930089 !important; background-color: #fcf5ff !important; color: #930089 !important; font-size: 24px !important; font-weight: bold !important; border-radius: 12px !important; transition: all 0.3s !important; }
+        .botao-card-roxo button:hover { background-color: #930089 !important; color: white !important; transform: scale(1.02); }
+        
+        .botao-card-verde button { height: 120px !important; border: 2px solid #209869 !important; background-color: #f2fbf6 !important; color: #209869 !important; font-size: 24px !important; font-weight: bold !important; border-radius: 12px !important; transition: all 0.3s !important; }
+        .botao-card-verde button:hover { background-color: #209869 !important; color: white !important; transform: scale(1.02); }
+        
+        .botao-card-cinza button { height: 120px !important; border: 2px solid #ccc !important; background-color: #f4f6f9 !important; color: #777 !important; font-size: 24px !important; font-weight: bold !important; border-radius: 12px !important; }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<h4 style='text-align: center; color: #555;'>Selecione o Módulo de Operação</h4><br>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
+    
     with col1:
-        st.markdown("<div style='background-color: #fcf5ff; border: 2px solid #930089; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #930089;'>🍀 Lotofácil</h3></div><br>", unsafe_allow_html=True)
-        if st.button("Acessar Motor", key="btn_loto", use_container_width=True, type="primary"):
+        st.markdown('<div class="botao-card-roxo">', unsafe_allow_html=True)
+        if st.button("🍀 Lotofácil\nIA de Frequência", key="btn_loto", use_container_width=True):
             st.session_state.pagina_atual = "lotofacil"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
     with col2:
-        st.markdown("<div style='background-color: #f2fbf6; border: 2px solid #209869; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #209869;'>🍀 Mega-Sena</h3></div><br>", unsafe_allow_html=True)
-        if st.button("Acessar Motor", key="btn_mega", use_container_width=True):
+        st.markdown('<div class="botao-card-verde">', unsafe_allow_html=True)
+        if st.button("🍀 Mega-Sena\nIA Espacial", key="btn_mega", use_container_width=True):
             st.session_state.pagina_atual = "megasena"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
     with col3:
-        st.markdown("<div style='background-color: #f4f6f9; border: 2px solid #ccc; border-radius: 8px; padding: 15px; text-align: center;'><h3 style='color: #777;'>⚙️ Expansão</h3></div><br>", unsafe_allow_html=True)
-        st.button("Módulo Bloqueado", disabled=True, use_container_width=True)
+        st.markdown('<div class="botao-card-cinza">', unsafe_allow_html=True)
+        st.button("⚙️ Expansão\nEm Breve", disabled=True, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
     exibir_rodape()
-
 def tela_lotofacil():
     exibir_cabecalho(loteria_especifica="LOTOFÁCIL PRO", cor_loteria="#930089", icone_loteria="🍀")
     
