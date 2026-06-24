@@ -15,14 +15,67 @@ import os
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # =====================================================================
-# 1. CONFIGURAÇÃO INICIAL E ROTEAMENTO
+# 1. CONFIGURAÇÃO INICIAL E BANCO DE DADOS ÚNICO
 # =====================================================================
-st.set_page_config(page_title="Loterias Pro", page_icon="🍀", layout="wide")
+st.set_page_config(page_title="LoteriasMatrix Pro", page_icon="🍀", layout="wide")
 
-if "pagina_atual" not in st.session_state:
-    st.session_state.pagina_atual = "login"
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
+ARQUIVO_DB = "LoteriasMatrix_Pro.json"
+
+LOTERIAS_CONFIG = {
+    "lotofacil": {"nome": "Lotofácil", "custo": 3.50, "api": "lotofacil"},
+    "megasena": {"nome": "Mega-Sena", "custo": 6.00, "api": "megasena"},
+    "lotomania": {"nome": "Lotomania", "custo": 3.00, "api": "lotomania"},
+    "quina": {"nome": "Quina", "custo": 3.00, "api": "quina"},
+    "duplasena": {"nome": "Dupla Sena", "custo": 3.00, "api": "duplasena"},
+    "maismilionaria": {"nome": "+Milionária", "custo": 6.00, "api": "maismilionaria"}
+}
+
+def estrutura_padrao_loteria():
+    return {
+        "historico_dados": [], "jogos_salvos": [], 
+        "historico_custos": 0.0, "historico_premios": 0.0,
+        "global_hits": {}, "ledger_track": {"bilhetes": 0, "premiados_geral": 0, "elite": 0},
+        "matrizes_reais_hits": {"total": 0, "soma_acertos": 0}, "matrizes_auditadas_ids": [],
+        "ia_pesos": {}, "ia_memoria": {}
+    }
+
+def carregar_db_unico():
+    db = {k: estrutura_padrao_loteria() for k in LOTERIAS_CONFIG.keys()}
+    if os.path.exists(ARQUIVO_DB):
+        try:
+            with open(ARQUIVO_DB, "r", encoding='utf-8') as f:
+                dados_salvos = json.load(f)
+                for k in db.keys():
+                    if k in dados_salvos: db[k].update(dados_salvos[k])
+        except Exception: pass
+    
+    # Pesos Iniciais padrão caso vazios
+    if not db["lotofacil"]["ia_pesos"]:
+        db["lotofacil"]["ia_pesos"] = {
+            "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
+            "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
+            "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
+            "Ciclo Supremo": {"p1": 15.0, "p2": 5.0, "bonus": 30.0},
+            "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
+        }
+    if not db["megasena"]["ia_pesos"]:
+        db["megasena"]["ia_pesos"] = {
+            "Arbitragem de Massa": {"p_termo": 30.0, "p_comport": 20.0, "p_final": 15.0},
+            "Caos Térmico": {"p_termo": 50.0, "p_comport": 10.0, "p_final": 25.0},
+            "Dispersão Ortogonal": {"p_termo": 20.0, "p_comport": 40.0, "p_final": 30.0},
+            "Default": {"p_termo": 25.0, "p_comport": 25.0, "p_final": 20.0}
+        }
+    return db
+
+def salvar_db_unico():
+    try:
+        with open(ARQUIVO_DB, "w", encoding='utf-8') as f:
+            json.dump(st.session_state.db, f, ensure_ascii=False, indent=4)
+    except Exception as e: st.error(f"Erro ao salvar banco: {e}")
+
+if "db" not in st.session_state: st.session_state.db = carregar_db_unico()
+if "pagina_atual" not in st.session_state: st.session_state.pagina_atual = "login"
+if "autenticado" not in st.session_state: st.session_state.autenticado = False
 
 # =====================================================================
 # 2. DESIGN DO SISTEMA (CABEÇALHO E RODAPÉ)
@@ -30,18 +83,9 @@ if "autenticado" not in st.session_state:
 def exibir_cabecalho(loteria_especifica=None, cor_loteria=None, icone_loteria=None):
     titulo_multicolorido = """
     <div style='text-align: center; margin-bottom: 10px;'>
-        <span style='color: #209869; font-size: 36px; font-weight: bold;'>L</span>
-        <span style='color: #930089; font-size: 36px; font-weight: bold;'>o</span>
-        <span style='color: #260085; font-size: 36px; font-weight: bold;'>t</span>
-        <span style='color: #F78100; font-size: 36px; font-weight: bold;'>e</span>
-        <span style='color: #0066b3; font-size: 36px; font-weight: bold;'>r</span>
-        <span style='color: #ED1622; font-size: 36px; font-weight: bold;'>i</span>
-        <span style='color: #B8922A; font-size: 36px; font-weight: bold;'>a</span>
-        <span style='color: #209869; font-size: 36px; font-weight: bold;'>s</span>
-        <span style='color: #333333; font-size: 36px; font-weight: bold;'> </span>
-        <span style='color: #930089; font-size: 36px; font-weight: bold;'>P</span>
-        <span style='color: #260085; font-size: 36px; font-weight: bold;'>r</span>
-        <span style='color: #F78100; font-size: 36px; font-weight: bold;'>o</span>
+        <span style='color: #209869; font-size: 36px; font-weight: bold;'>L</span><span style='color: #930089; font-size: 36px; font-weight: bold;'>o</span><span style='color: #260085; font-size: 36px; font-weight: bold;'>t</span><span style='color: #F78100; font-size: 36px; font-weight: bold;'>e</span><span style='color: #0066b3; font-size: 36px; font-weight: bold;'>r</span><span style='color: #ED1622; font-size: 36px; font-weight: bold;'>i</span><span style='color: #B8922A; font-size: 36px; font-weight: bold;'>a</span><span style='color: #209869; font-size: 36px; font-weight: bold;'>s</span>
+        <span style='color: #930089; font-size: 36px; font-weight: bold;'>M</span><span style='color: #260085; font-size: 36px; font-weight: bold;'>a</span><span style='color: #F78100; font-size: 36px; font-weight: bold;'>t</span><span style='color: #0066b3; font-size: 36px; font-weight: bold;'>r</span><span style='color: #ED1622; font-size: 36px; font-weight: bold;'>i</span><span style='color: #B8922A; font-size: 36px; font-weight: bold;'>x</span>
+        <span style='color: #333333; font-size: 36px; font-weight: bold;'> Pro</span>
     </div>
     """
     st.markdown(titulo_multicolorido, unsafe_allow_html=True)
@@ -57,792 +101,127 @@ def exibir_cabecalho(loteria_especifica=None, cor_loteria=None, icone_loteria=No
         st.divider()
 
 def exibir_rodape():
-    ano_atual = datetime.now().year
-    rodape_html = f"""
-    <hr style='margin-top: 50px;'>
-    <div style='text-align: center; color: #888; font-size: 14px;'>
-        &copy; {ano_atual} Loterias Pro - Motor de Inferência Matemática e Algorítmica.<br>
-        Todos os direitos reservados.
-    </div>
-    """
-    st.markdown(rodape_html, unsafe_allow_html=True)
+    st.markdown(f"<hr style='margin-top: 50px;'><div style='text-align: center; color: #888; font-size: 14px;'>&copy; {datetime.now().year} LoteriasMatrix Pro - Sindicato de Inferência Matemática.<br>Operação Profissional.</div>", unsafe_allow_html=True)
 
-
-# =====================================================================
-# 3. FUNÇÕES GLOBAIS DA LOTOFÁCIL
-# =====================================================================
-def sanitizar_dados(d):
-    if "historico_dados" not in d: d["historico_dados"] = []
-    if "jogos_salvos" not in d: d["jogos_salvos"] = []
-    if "historico_custos" not in d: d["historico_custos"] = 0.0
-    if "historico_premios" not in d: d["historico_premios"] = 0.0
-    
-    if "ia_pesos" not in d:
-        d["ia_pesos"] = {
-            "Tendencia Forte": {"p1": 20.0, "p2": 5.0, "bonus": 40.0},
-            "Simetria Conjunta": {"p1": 15.0, "p2": 8.0, "bonus1": 30.0, "bonus2": 20.0},
-            "Reversao de Tendencia": {"p1": 10.0, "bonus": 100.0},
-            "Ciclo Supremo": {"p1": 15.0, "p2": 5.0, "bonus": 30.0},
-            "Default": {"p1": 12.0, "p2": 8.0, "bonus": 25.0}
-        }
-        
-    if "ia_memoria" not in d: 
-        d["ia_memoria"] = {
-            "Tendencia": {"usos": 0, "pontos": 0}, 
-            "Reversao": {"usos": 0, "pontos": 0},
-            "Ciclo": {"usos": 0, "pontos": 0},
-            "Simetria": {"usos": 0, "pontos": 0}
-        }
-    
-    for j in d["jogos_salvos"]:
-        if "id" not in j: j["id"] = str(uuid.uuid4())
-        if "concurso_alvo" not in j: j["concurso_alvo"] = "Legado"
-        if "tamanho" not in j: j["tamanho"] = len(j.get("dezenas", []))
-        if "status" not in j: j["status"] = "Aguardando Sorteio"
-        if "acertos" not in j: j["acertos"] = 0
-        if "estrategia" not in j: j["estrategia"] = "Plano A Exato"
-        if "justificativa" not in j: j["justificativa"] = "Jogo recuperado."
-    return d
-
-def ajustar_ia(cod_est, acertos_matriz):
-    ia_pesos = st.session_state.data["ia_pesos"]
-    est_key = cod_est if cod_est in ia_pesos else "Default"
-    pesos_atuais = ia_pesos[est_key]
-    
-    if acertos_matriz == 15: fator = 1.20       
-    elif acertos_matriz == 14: fator = 1.10     
-    elif acertos_matriz == 13: fator = 1.05     
-    elif acertos_matriz == 12: fator = 0.95     
-    else: fator = 0.90                          
-    
-    for k in pesos_atuais:
-        novo_peso = pesos_atuais[k] * fator
-        ia_pesos[est_key][k] = round(max(2.0, min(novo_peso, 500.0)), 2)
-            
-    st.session_state.data["ia_pesos"] = ia_pesos
-    
-def salvar_dados(dados):
-    try:
-        with open("Cofre.json", "w", encoding='utf-8') as f:
-            json.dump(dados, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        pass
-
-def exibir_mini_painel_financeiro():
-    t_custos = st.session_state.data.get("historico_custos", 0.0)
-    t_premios = st.session_state.data.get("historico_premios", 0.0)
+def exibir_mini_painel_financeiro(chave_loteria, cor_destaque="#930089"):
+    t_custos = st.session_state.db[chave_loteria].get("historico_custos", 0.0)
+    t_premios = st.session_state.db[chave_loteria].get("historico_premios", 0.0)
     res_global = t_premios - t_custos
     str_res = f"R$ {res_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    if res_global > 0: status_msg = f"🟢 **Lucro Global:** `{str_res}`"
-    elif res_global < 0: status_msg = f"🔴 **Prejuízo Global:** `{str_res}`"
-    else: status_msg = f"⚪ **Empate Global:** `{str_res}`"
-    st.markdown(f"> 📊 **Balanço da Operação Institucional:** {status_msg}")
-    st.write("")
+    if res_global > 0: status_msg = f"🟢 <b style='color:green;'>Lucro:</b> `{str_res}`"
+    elif res_global < 0: status_msg = f"🔴 <b style='color:red;'>Prejuízo:</b> `{str_res}`"
+    else: status_msg = f"⚪ <b>Empate:</b> `{str_res}`"
+    st.markdown(f"<div style='background-color:#f4f6f9; padding:10px; border-radius:5px; border-left:4px solid {cor_destaque}; margin-bottom:15px;'>📊 <b>Balanço da Operação:</b> {status_msg} | <b>Investido:</b> R$ {t_custos:,.2f} | <b>Retorno:</b> R$ {t_premios:,.2f}</div>", unsafe_allow_html=True)
 
-def calcular_premio_multiplo(tamanho, acertos, v11=7.0, v12=14.0, v13=35.0, v14=1500.0, v15=1500000.0):
-    if acertos < 11: return 0.0
-    premio = 0.0
-    if tamanho == 15:
-        if acertos == 11: premio = v11
-        elif acertos == 12: premio = v12
-        elif acertos == 13: premio = v13
-        elif acertos == 14: premio = v14
-        elif acertos == 15: premio = v15
-    elif tamanho == 16:
-        if acertos == 11: premio = 5 * v11
-        elif acertos == 12: premio = (4 * v12) + (12 * v11)
-        elif acertos == 13: premio = (3 * v13) + (13 * v12)
-        elif acertos == 14: premio = (2 * v14) + (14 * v13)
-        elif acertos == 15: premio = (1 * v15) + (15 * v14)
-    return premio
-
-def extrair_rateios_api(premiacoes):
-    rateios = {}
-    if premiacoes:
-        for p in premiacoes:
-            rateios[p.get('acertos', 0)] = float(p.get('premio', 0.0))
-    return rateios
-
-def auditar_e_aprender_unificado(concurso, dezenas_sorteadas, rateios=None):
-    if rateios is None: rateios = {}
-    v11, v12, v13, v14, v15 = rateios.get(11, 7.0), rateios.get(12, 14.0), rateios.get(13, 35.0), rateios.get(14, 1500.0), rateios.get(15, 1500000.0)
-    
-    lucro_total = 0.0
-    relatorio = []
-    sorteio_set = set(dezenas_sorteadas)
-    
-    jogos_processados = 0
-    premiados = 0
-    max_pts = 0
-    
-    if "global_hits" not in st.session_state.data: st.session_state.data["global_hits"] = {11: 0, 12: 0, 13: 0, 14: 0, 15: 0}
-    if "ledger_track" not in st.session_state.data: st.session_state.data["ledger_track"] = {"bilhetes": 0, "premiados_geral": 0, "elite": 0}
-    if "matrizes_reais_hits" not in st.session_state.data: st.session_state.data["matrizes_reais_hits"] = {11: 0, 12: 0, 13: 0, 14: 0, 15: 0, "total": 0, "soma_acertos": 0}
-    if "matrizes_auditadas_ids" not in st.session_state.data: st.session_state.data["matrizes_auditadas_ids"] = []
-        
-    ledger = st.session_state.data["ledger_track"]
-    hits_bilhetes = st.session_state.data["global_hits"]
-    matriz_usada_neste_concurso = None
-    
-    for j in st.session_state.data.get("jogos_salvos", []):
-        alvo_do_jogo = j.get('concurso_alvo')
-        pode_auditar = False
-        if str(alvo_do_jogo) == str(concurso) or (isinstance(alvo_do_jogo, int) and alvo_do_jogo <= concurso) or str(alvo_do_jogo) == "Legado":
-            pode_auditar = True
-            if j.get("matriz_origem"): matriz_usada_neste_concurso = j["matriz_origem"]
-        
-        if j.get('status') == "Aguardando Sorteio" and pode_auditar:
-            jogos_processados += 1
-            ledger["bilhetes"] += 1
-            pontos = len(set(j.get('dezenas', [])).intersection(sorteio_set))
-            j['acertos'] = pontos
-            j['premio_valor'] = calcular_premio_multiplo(j.get('tamanho', 15), pontos, v11, v12, v13, v14, v15)
-            max_pts = max(max_pts, pontos)
-            if pontos >= 11:
-                j['status'] = "Premiado"
-                lucro_total += j['premio_valor']
-                st.session_state.data["historico_premios"] += j['premio_valor']
-                premiados += 1
-                ledger["premiados_geral"] += 1
-                if pontos >= 14: ledger["elite"] += 1   
-                hits_bilhetes[pontos] = hits_bilhetes.get(pontos, 0) + 1
-            else: j['status'] = "Não Premiado"
-
-    matrizes_hits = st.session_state.data["matrizes_reais_hits"]
-    matrizes_auditadas = st.session_state.data["matrizes_auditadas_ids"]
-    selo_matriz = f"conc_{concurso}"
-    
-    if matriz_usada_neste_concurso and selo_matriz not in matrizes_auditadas:
-        acertos_matriz = len(set(matriz_usada_neste_concurso).intersection(sorteio_set))
-        matrizes_auditadas.append(selo_matriz)
-        matrizes_hits["total"] = matrizes_hits.get("total", 0) + 1
-        matrizes_hits["soma_acertos"] = matrizes_hits.get("soma_acertos", 0) + acertos_matriz
-        est_da_matriz = "Default"
-        for j in st.session_state.data.get("jogos_salvos", []):
-            if j.get("matriz_origem") == matriz_usada_neste_concurso:
-                est_da_matriz = j.get("estrategia", "Default")
-                break
-        ajustar_ia(est_da_matriz, acertos_matriz)
-        if acertos_matriz >= 11:
-            chave = int(min(acertos_matriz, 15)) 
-            matrizes_hits[chave] = matrizes_hits.get(chave, 0) + 1 
-                
-    st.session_state.data["matrizes_reais_hits"] = matrizes_hits
-    st.session_state.data["matrizes_auditadas_ids"] = matrizes_auditadas
-    st.session_state.data["global_hits"] = hits_bilhetes
-    st.session_state.data["ledger_track"] = ledger
-    
-    if jogos_processados > 0: relatorio.append(f"Auditoria Concurso {concurso}: {premiados}/{jogos_processados} bilhetes premiados. Pico: {max_pts} pts.")
-    return lucro_total, relatorio
-
-@st.cache_data(show_spinner="🧠 Processando Matriz (Fechamento Matemático)...")
-def gerar_fechamento_matematico(dezenas_tuple, garantia):
-    dezenas = list(dezenas_tuple)
-    todas_comb_15 = list(itertools.combinations(dezenas, 15))
-    if garantia == 15 or len(dezenas) <= 15: return [list(c) for c in todas_comb_15]
-
-    comb_bits = [sum(1 << num for num in c) for c in todas_comb_15]
-    sorteios_possiveis = set(range(len(comb_bits)))
-    bilhetes_escolhidos, cobertura = [], []
-    
-    for b in comb_bits:
-        cobertura.append({j for j, s in enumerate(comb_bits) if (b & s).bit_count() >= garantia})
-        
-    while sorteios_possiveis:
-        melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
-        bilhetes_escolhidos.append(list(todas_comb_15[melhor_idx]))
-        sorteios_possiveis -= cobertura[melhor_idx] 
-    return bilhetes_escolhidos
-
-def obter_dados_fechamento(matriz_base, garantia):
-    jogos = gerar_fechamento_matematico(tuple(matriz_base), garantia)
-    return len(jogos), len(jogos) * 3.50
-
-def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tamanho_instinto=18):
-    if not historico: return None
-    ultimos_12 = historico[-12:] if len(historico) >= 12 else historico
-    media_soma = float(sum([sum(h['dezenas']) for h in ultimos_12]) / len(ultimos_12)) if ultimos_12 else 190.0
-    
-    freq_micro = Counter([int(n) for h in ultimos_12 for n in h['dezenas']])
-    freq_recente = Counter([int(n) for h in historico[-30:] for n in h['dezenas']])
-    
-    atrasos = {int(n): 0 for n in range(1, 26)}
-    dezena_encontrada = {int(n): False for n in range(1, 26)}
-    for h in reversed(historico):
-        for n in range(1, 26):
-            if int(n) in h['dezenas']: dezena_encontrada[int(n)] = True
-            elif not dezena_encontrada[int(n)]: atrasos[int(n)] += 1
-
-    ciclo_atual, jogos_ciclo = set(), 0
-    for h in historico:
-        ciclo_atual.update(h['dezenas'])
-        jogos_ciclo += 1
-        if len(ciclo_atual) == 25: ciclo_atual, jogos_ciclo = set(), 0
-            
-    faltam_ciclo = sorted([int(x) for x in list(set(range(1, 26)) - ciclo_atual)])
-    qtd_faltam = len(faltam_ciclo)
-    ultimo_sorteio = [int(x) for x in historico[-1]['dezenas']]
-    ausentes = [int(n) for n in range(1, 26) if n not in ultimo_sorteio] 
-
-    repeticoes_recentes = []
+# =====================================================================
+# 3. ROTINAS DE SINCRONIZAÇÃO GERAL E PRE-LOBBY
+# =====================================================================
+def fetch_api(url):
     try:
-        for j in range(1, min(6, len(historico))):
-            rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
-            repeticoes_recentes.append(rep)
-        media_volatilidade = float(sum(repeticoes_recentes) / len(repeticoes_recentes)) if repeticoes_recentes else 9.0
-    except: media_volatilidade = 9.0
+        resp = requests.get(url, verify=False, timeout=15)
+        if resp.status_code == 200: return resp.json()
+    except: pass
+    return None
 
-    if qtd_faltam <= 2: cod_est, qtd_matriz, tatic_desc = "Ciclo Supremo", 18, "Cerco Fim de Ciclo."
-    elif media_volatilidade < 8.0: cod_est, qtd_matriz, tatic_desc = "Reversao de Tendencia", 20, "Caos/Reversão."
-    elif media_volatilidade > 9.5: cod_est, qtd_matriz, tatic_desc = "Tendencia Forte", 17, "Tendência Absoluta."
-    else: cod_est, qtd_matriz, tatic_desc = "Simetria Conjunta", 19, "Padrão de Equilíbrio."
-
-    est_pesos = st.session_state.data["ia_pesos"].get(cod_est, st.session_state.data["ia_pesos"]["Default"])
-
-    unified_scores = {}
-    for n in range(1, 26):
-        n = int(n)
-        aparicoes_curtas, aparicoes_longas, delay = freq_micro.get(n, 0), freq_recente.get(n, 0), atrasos.get(n, 0)
-        score_calc = 0.0
-
-        if cod_est == "Tendencia Forte":
-            score_calc = (aparicoes_curtas * est_pesos.get("p1", 20.0)) + (aparicoes_longas * est_pesos.get("p2", 5.0))
-            if n in ausentes and delay == 1: score_calc += est_pesos.get("bonus", 40.0)
-        elif cod_est == "Simetria Conjunta":
-            score_calc = (aparicoes_longas * est_pesos.get("p1", 15.0)) + (aparicoes_curtas * est_pesos.get("p2", 8.0))
-            if n in ausentes:
-                if delay == 1: score_calc += est_pesos.get("bonus1", 30.0)
-                elif delay == 2: score_calc += est_pesos.get("bonus2", 20.0)
-        elif cod_est == "Reversao de Tendencia":
-            score_calc = (aparicoes_longas * est_pesos.get("p1", 10.0))
-            if n in ausentes and delay >= 3: score_calc += est_pesos.get("bonus", 100.0)
-        else: 
-            score_calc = (aparicoes_curtas * est_pesos.get("p1", 12.0)) + (aparicoes_longas * est_pesos.get("p2", 8.0))
-            if n in ausentes and delay <= 2: score_calc += est_pesos.get("bonus", 25.0)
-
-        if qtd_faltam <= 3 and n in faltam_ciclo: score_calc += 5000.0
-        unified_scores[n] = float(score_calc)
-
-    IMPARES_SET = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25}
-    PRIMOS_SET = {2, 3, 5, 7, 11, 13, 17, 19, 23}
-    MOLDURA_SET = {1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25}
-    FIBO_SET = {1, 2, 3, 5, 8, 13, 21}
-    MULT3_SET = {3, 6, 9, 12, 15, 18, 21, 24}
-    ULT_SORT_SET, AUSENTES_SET = set(ultimo_sorteio), set(range(1, 26)) - set(ultimo_sorteio)
+def tela_pre_lobby():
+    exibir_cabecalho()
+    st.markdown("<h3 style='text-align: center; color: #333;'>🌐 Central de Sincronização e Auditoria (Pré-Lobby)</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #666;'>Realize a auditoria geral e calibração de TODAS as inteligências artificiais simultaneamente antes de operar.</p>", unsafe_allow_html=True)
     
-    max_rep = round(qtd_matriz * 0.60)
-    max_aus = qtd_matriz - max_rep
-    max_imp = round(qtd_matriz * 0.54) + 1
-    max_prim = round(qtd_matriz * 0.36) + 1
-    max_mold = round(qtd_matriz * 0.66) + 1
-    max_fibo = round(qtd_matriz * 0.30) + 1
-    max_mult3 = round(qtd_matriz * 0.33) + 1
-
-    matriz_final = []
-    candidatos = sorted(range(1, 26), key=lambda x: unified_scores.get(x, 0), reverse=True)
+    col1, col2 = st.columns(2)
     
-    for n in candidatos:
-        if len(matriz_final) >= qtd_matriz: break
-        if n in IMPARES_SET and sum(1 for x in matriz_final if x in IMPARES_SET) >= max_imp: continue
-        if n in PRIMOS_SET and sum(1 for x in matriz_final if x in PRIMOS_SET) >= max_prim: continue
-        if n in MOLDURA_SET and sum(1 for x in matriz_final if x in MOLDURA_SET) >= max_mold: continue
-        if n in FIBO_SET and sum(1 for x in matriz_final if x in FIBO_SET) >= max_fibo: continue
-        if n in MULT3_SET and sum(1 for x in matriz_final if x in MULT3_SET) >= max_mult3: continue
-        if n in ULT_SORT_SET and sum(1 for x in matriz_final if x in ULT_SORT_SET) >= max_rep: continue
-        if n in AUSENTES_SET and sum(1 for x in matriz_final if x in AUSENTES_SET) >= max_aus: continue
-        matriz_final.append(n)
-
-    if len(matriz_final) < qtd_matriz:
-        for n in candidatos:
-            if len(matriz_final) >= qtd_matriz: break
-            if n not in matriz_final:
-                if n in ULT_SORT_SET and sum(1 for x in matriz_final if x in ULT_SORT_SET) >= max_rep: continue
-                if n in AUSENTES_SET and sum(1 for x in matriz_final if x in AUSENTES_SET) >= max_aus: continue
-                matriz_final.append(n)
-        
-    matriz_final = sorted(matriz_final)
-    c_imp = sum(1 for n in matriz_final if n in IMPARES_SET)
-    c_prim = sum(1 for n in matriz_final if n in PRIMOS_SET)
-    c_mold = sum(1 for n in matriz_final if n in MOLDURA_SET)
-    c_fibo = sum(1 for n in matriz_final if n in FIBO_SET)
-    c_mult3 = sum(1 for n in matriz_final if n in MULT3_SET)
-    c_rep = len(set(matriz_final).intersection(ULT_SORT_SET))
-    
-    justificativa = f"DIRETRIZ: {tatic_desc} (Matriz: {qtd_matriz}) | COMPOSIÇÃO: {c_imp} Ímpares, {len(matriz_final)-c_imp} Pares, {c_prim} Primos, {c_mold} Moldura, {c_fibo} Fibonacci, {c_mult3} Múltiplos de 3 | STATUS: {c_rep} Repetidas, {len(matriz_final)-c_rep} Ausentes."
-    
-    return {
-        "estrategia": str(cod_est), "cod_estrategia": str(cod_est), "estrategia_usada": str(cod_est), 
-        "motivo_est": justificativa, "pesos": {int(x): round(float(unified_scores.get(x, 0.0)), 2) for x in range(1, 26)},
-        "freq": dict(freq_recente), "atrasos": dict(atrasos), "ciclo_tam": int(jogos_ciclo), 
-        "faltam_ciclo": faltam_ciclo, "soma": media_soma, "impares": c_imp, "primos": c_prim, "moldura": c_mold,
-        "repetidas": c_rep, "ausentes": len(matriz_final)-c_rep, "fibo": c_fibo, "mult3": c_mult3,
-        "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1, "qtd_matriz": int(qtd_matriz), 
-        "matriz_base": matriz_final, "perf": {}, "volatilidade": media_volatilidade
-    }
-
-def gerar_pdf_jogos(jogos, dezenas_anteriores=None):
-    if dezenas_anteriores is None: dezenas_anteriores = []
-    def limpar_latin1(texto): return str(texto).replace("🧬", "").replace("🍀", "").replace("🎫", "").replace("⚠️", "").encode('latin-1', 'ignore').decode('latin-1')
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=False)
-    margem_x, margem_y, largura_card, altura_card, espaco_x, espaco_y = 10, 35, 90, 80, 5, 5
-    sorteio_set = set(dezenas_anteriores)
-
-    for i, j in enumerate(jogos):
-        if i % 6 == 0:
-            pdf.add_page()
-            pdf.set_text_color(147, 0, 137)
-            pdf.set_font('Arial', 'B', 16)
-            pdf.set_xy(10, 12)
-            pdf.cell(0, 10, "LotoMatrix PRO - Relatorio Oficial", ln=0)
-            pdf.set_font('Arial', '', 9)
-            pdf.set_text_color(100, 100, 100)
-            pdf.set_xy(10, 20)
-            pdf.cell(0, 8, f"TOTAL: {len(jogos)} BILHETES  |  Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=0)
-            pdf.line(10, 28, 200, 28)
-
-        coluna, linha = (i % 6) % 2, (i % 6) // 2
-        x_start = margem_x + (coluna * (largura_card + espaco_x))
-        y_start = margem_y + (linha * (altura_card + espaco_y))
-
-        estrategia = limpar_latin1(str(j.get('estrategia', 'Padrao')))
-        dezenas = j.get('dezenas', [])
-        alvo = limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
-        
-        pdf.set_fill_color(252, 245, 255)
-        pdf.rect(x_start, y_start, largura_card, altura_card, 'F')
-        pdf.set_fill_color(147, 0, 137)
-        pdf.rect(x_start, y_start, 2, altura_card, 'F')
-
-        pdf.set_text_color(40, 40, 40)
-        pdf.set_font('Arial', 'B', 10)
-        pdf.set_xy(x_start + 5, y_start + 4)
-        pdf.cell(50, 6, f"JOGO {(i+1):02d}", ln=0)
-        
-        pdf.set_font('Arial', '', 8)
-        pdf.set_text_color(100, 100, 100)
-        pdf.set_xy(x_start + 40, y_start + 4)
-        pdf.cell(45, 6, f"Alvo: {alvo}", ln=0, align='R')
-
-        pdf.set_text_color(147, 0, 137) 
-        pdf.set_font('Arial', 'B', 7)
-        pdf.set_xy(x_start + 5, y_start + 9)
-        pdf.cell(80, 5, f"{estrategia[:35]}", ln=0)
-
-        bolinha_x_start, bolinha_y_start, passo_x, passo_y = x_start + 18, y_start + 22, 11, 9
-        for num in range(1, 26):
-            lin, col = (num - 1) // 5, (num - 1) % 5
-            cx, cy = bolinha_x_start + (col * passo_x), bolinha_y_start + (lin * passo_y)
-            if num in dezenas:
-                if num in sorteio_set: pdf.set_fill_color(40, 167, 69)
-                else: pdf.set_fill_color(147, 0, 137)
-                pdf.set_text_color(255, 255, 255)
-            else:
-                pdf.set_fill_color(235, 235, 235)
-                pdf.set_text_color(150, 150, 150)
-            pdf.ellipse(cx, cy, 7, 7, 'F')
-            pdf.set_xy(cx, cy)
-            pdf.set_font('Arial', 'B', 7)
-            pdf.cell(7, 7, f"{num:02d}", align='C')
-
-        justificativa_texto = str(j.get('justificativa', ''))
-        match = re.search(r'(\d+) pts', justificativa_texto)
-        texto_rodape = f"Garantia: {match.group(1)} Pontos" if match else "Fechamento Absoluto"
-        pdf.set_text_color(120, 120, 120)
-        pdf.set_font('Arial', 'B', 7)
-        pdf.set_xy(x_start + 5, y_start + altura_card - 8)
-        pdf.cell(80, 5, texto_rodape, ln=0, align='C')
-
-    resultado = pdf.output(dest='S')
-    if isinstance(resultado, str): return resultado.encode('latin-1', 'ignore')
-    return bytes(resultado)
-
-def exibir_card_volante(jogo, numero_jogo, sorteio_real=None):
-    dezenas, alvo, estrategia = jogo.get('dezenas', []), jogo.get('concurso_alvo', 'N/A'), jogo.get('estrategia', 'Padrão')
-    match = re.search(r'(\d+) pts', str(jogo.get('justificativa', '')))
-    texto_rodape = f"Fechamento 100% Matemático - Garantia de {match.group(1)} Pontos" if match else "Fechamento Matemático Absoluto"
-    sorteio_set = set(sorteio_real) if sorteio_real else set()
-
-    grid_html = "<div style='display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; justify-items: center;'>"
-    for num in range(1, 26):
-        if num in dezenas:
-            bg_color, txt_color, border, shadow = ("#28a745", "white", "none", "box-shadow: 0 0 5px #28a745;") if num in sorteio_set else ("#930089", "white", "none", "box-shadow: 0 2px 4px rgba(147,0,137,0.3);")
-        else: bg_color, txt_color, border, shadow = "#f4f6f9", "#bbb", "1px solid #ddd", ""
-        grid_html += f"<div style='background-color: {bg_color}; color: {txt_color}; border: {border}; {shadow} text-align: center; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;'>{num:02d}</div>"
-    grid_html += "</div>"
-    
-    html_card = f"<div style='background-color: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05);'><div style='display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;'><span style='font-size: 15px; font-weight: bold; color: #930089;'>🎫 JOGO {numero_jogo:02d}</span><span style='font-size: 12px; font-weight: bold; color: #666;'>Alvo: {alvo}</span></div><div style='font-size: 11px; color: #555; margin-bottom: 12px; font-weight: bold; text-transform: uppercase;'>ESTRATÉGIA: {estrategia}</div>{grid_html}<div style='text-align: center; font-size: 10px; font-weight: bold; color: #930089; background: rgba(147, 0, 137, 0.08); padding: 6px; border-radius: 4px; margin-top: 5px;'>{texto_rodape}</div></div>"
-    st.markdown(html_card, unsafe_allow_html=True)
-
-def cb_excluir_jogo(jogo_id):
-    st.session_state.data['jogos_salvos'] = [j for j in st.session_state.data['jogos_salvos'] if j.get('id') != jogo_id]
-    st.toast("Bilhete deletado.", icon="🗑️")
-
-def cb_excluir_todos():
-    st.session_state.data['jogos_salvos'] = []
-    st.toast("Fila de espera limpa.", icon="🧹")
-
-def cb_carregar_cofre():
-    file = st.session_state.uploader_cofre
-    if file:
-        try:
-            st.session_state.data = sanitizar_dados(json.load(file))
-            st.toast("Cofre sincronizado com sucesso!", icon="✅")
-        except Exception as e: st.error(f"Erro ao ler JSON: {e}")
-
-def obter_garantia_lotofacil(tamanho_matriz):
-    garantias = {
-        15: "Para fazer 15 pontos, as 15 sorteadas precisam ser exatamente as suas 15.",
-        16: "Se as 15 sorteadas estiverem DENTRO das suas 16, você tem 100% de garantia dos prêmios múltiplos e chance alta de 15 pontos.",
-        17: "Se as 15 sorteadas caírem DENTRO das suas 17, a garantia base é ativada (prêmios gordos trancados).",
-        18: "Se as 15 sorteadas caírem DENTRO das suas 18 escolhidas, o cadeado matemático garante no mínimo 14 pontos (dependendo da redução).",
-        19: "Acertando as 15 DENTRO das 19, o cadeado tranca 100% o prêmio da garantia escolhida.",
-        20: "Acertando as 15 DENTRO das 20, você blinda o prêmio do fechamento."
-    }
-    msg = garantias.get(tamanho_matriz, f"Lembre-se: as 15 sorteadas precisam obrigatoriamente estar dentro do seu grupo de {tamanho_matriz}.")
-    return f"""
-<div style='background-color: #fdf5ff; border-left: 5px solid #930089; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
-    <h4 style='color: #930089; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO (LOTOFÁCIL)</h4>
-    <p style='margin-bottom: 5px;'>Você está gerando um desdobramento para uma matriz de <b>{tamanho_matriz} dezenas</b>.</p>
-    <p style='font-weight: bold; color: #333;'>CONDIÇÃO PARA O PRÊMIO: {msg}</p>
-    <p style='font-size: 12px; color: #666; margin-bottom: 0;'>O sistema não faz mágica, ele aplica matemática inquebrável. Se a IA colocar as 15 sorteadas dentro da sua matriz base, o prêmio não escapa.</p>
-</div>
-"""
-
-# =====================================================================
-# 4. FUNÇÕES GLOBAIS DA MEGA-SENA (COM ELITE FILTERS)
-# =====================================================================
-def sanitizar_dados_mega(d):
-    if not isinstance(d, dict): d = {}
-    if "historico_dados" not in d: d["historico_dados"] = []
-    if "jogos_salvos" not in d: d["jogos_salvos"] = []
-    if "historico_custos" not in d: d["historico_custos"] = 0.0
-    if "historico_premios" not in d: d["historico_premios"] = 0.0
-    if "ia_pesos" not in d:
-        d["ia_pesos"] = {
-            "Arbitragem de Massa": {"p_termo": 30.0, "p_comport": 20.0, "p_final": 15.0},
-            "Caos Térmico": {"p_termo": 50.0, "p_comport": 10.0, "p_final": 25.0},
-            "Dispersão Ortogonal": {"p_termo": 20.0, "p_comport": 40.0, "p_final": 30.0},
-            "Default": {"p_termo": 25.0, "p_comport": 25.0, "p_final": 20.0}
-        }
-    return d
-
-def salvar_dados_mega(dados):
-    try:
-        with open("Cofre_Mega.json", "w", encoding='utf-8') as f:
-            json.dump(dados, f, ensure_ascii=False, indent=4)
-    except Exception as e: pass
-
-def cb_carregar_cofre_mega():
-    file = st.session_state.uploader_cofre_mega
-    if file:
-        try:
-            st.session_state.data_mega = sanitizar_dados_mega(json.load(file))
-            st.toast("Cofre Mega-Sena sincronizado!", icon="✅")
-        except Exception as e: st.error(f"Erro: {e}")
-
-def cb_excluir_jogo_mega(jogo_id):
-    st.session_state.data_mega['jogos_salvos'] = [j for j in st.session_state.data_mega['jogos_salvos'] if j.get('id') != jogo_id]
-    st.toast("Bilhete deletado.", icon="🗑️")
-
-def cb_excluir_todos_mega():
-    st.session_state.data_mega['jogos_salvos'] = []
-    st.toast("Fila limpa.", icon="🧹")
-
-def extrair_rateios_api_mega(premiacoes):
-    rateios = {4: 1200.0, 5: 45000.0, 6: 35000000.0}
-    for p in premiacoes:
-        descricao = p.get('descricao', '').lower()
-        if '6 acertos' in descricao or 'sena' in descricao: rateios[6] = float(p.get('valorPremio', 35000000.0))
-        elif '5 acertos' in descricao or 'quina' in descricao: rateios[5] = float(p.get('valorPremio', 45000.0))
-        elif '4 acertos' in descricao or 'quadra' in descricao: rateios[4] = float(p.get('valorPremio', 1200.0))
-    return rateios
-
-def calcular_premio_multiplo_mega(pontos, v4, v5, v6):
-    if pontos == 6: return v6
-    if pontos == 5: return v5
-    if pontos == 4: return v4
-    return 0.0
-
-def exibir_mini_painel_financeiro_mega():
-    c = st.session_state.data_mega.get("historico_custos", 0.0)
-    p = st.session_state.data_mega.get("historico_premios", 0.0)
-    roi = p - c
-    cor_roi = "green" if roi >= 0 else "red"
-    col1, col2, col3 = st.columns(3)
-    with col1: st.metric("💸 Investimento Total", f"R$ {c:,.2f}")
-    with col2: st.metric("💰 Prêmios Recuperados", f"R$ {p:,.2f}")
-    with col3: st.markdown(f"<div style='background-color:white; padding:10px; border-radius:12px; border-left:6px solid {('#209869' if roi>=0 else '#dd3333')}; box-shadow: 0 4px 6px rgba(0,0,0,0.04);'><p style='margin:0; font-size:14px; color:#666; font-weight:bold;'>📈 ROI Líquido</p><h3 style='margin:0; color:{cor_roi};'>R$ {roi:,.2f}</h3></div>", unsafe_allow_html=True)
-    st.write("")
-
-def ajustar_ia_mega(cod_est, acertos_matriz):
-    ia_pesos = st.session_state.data_mega["ia_pesos"]
-    est_key = cod_est if cod_est in ia_pesos else "Default"
-    pesos_atuais = ia_pesos[est_key]
-    
-    if acertos_matriz == 6: fator = 1.25
-    elif acertos_matriz == 5: fator = 1.15
-    elif acertos_matriz == 4: fator = 1.05
-    else: fator = 0.95 
-    
-    for k in pesos_atuais:
-        ia_pesos[est_key][k] = round(max(2.0, min(pesos_atuais[k] * fator, 500.0)), 2)
-    st.session_state.data_mega["ia_pesos"] = ia_pesos
-
-@st.cache_data(show_spinner="🧠 Processando Matriz e Aplicando Filtros Elite Mega-Sena...")
-def gerar_fechamento_matematico_mega(dezenas_tuple, garantia):
-    dezenas = list(dezenas_tuple)
-    todas_comb_6 = list(itertools.combinations(dezenas, 6))
-    
-    # ==========================================
-    # FILTROS DE ELITE (GAUSS + EXCLUSÃO MÚLTIPLOS)
-    # ==========================================
-    comb_filtradas = []
-    for c in todas_comb_6:
-        soma = sum(c)
-        mult_10 = sum(1 for x in c if x % 10 == 0)
-        # Filtro da Curva de Gauss (Soma entre 120 e 240)
-        # Filtro de Exclusão: Máximo de 2 dezenas terminadas em 0
-        if 120 <= soma <= 240 and mult_10 <= 2:
-            comb_filtradas.append(c)
-            
-    todas_comb_6 = comb_filtradas
-
-    if garantia == 6 or len(dezenas) <= 6: return [list(c) for c in todas_comb_6]
-
-    # Processamento Set Cover com as combinações que passaram pelos filtros
-    comb_bits = [sum(1 << num for num in c) for c in todas_comb_6]
-    sorteios_possiveis = set(range(len(comb_bits)))
-    bilhetes_escolhidos, cobertura = [], []
-    
-    for b in comb_bits:
-        cobertura.append({j for j, s in enumerate(comb_bits) if (b & s).bit_count() >= garantia})
-        
-    while sorteios_possiveis:
-        melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
-        bilhetes_escolhidos.append(list(todas_comb_6[melhor_idx]))
-        sorteios_possiveis -= cobertura[melhor_idx]
-        
-    return bilhetes_escolhidos
-
-def obter_dados_fechamento_mega(matriz_base, garantia):
-    jogos = gerar_fechamento_matematico_mega(tuple(matriz_base), garantia)
-    return len(jogos), len(jogos) * 5.00
-
-def auditar_e_aprender_unificado_mega(concurso, dezenas_sorteadas, rateios=None):
-    if rateios is None: rateios = {4: 1200.0, 5: 45000.0, 6: 35000000.0}
-    v4, v5, v6 = rateios.get(4, 1200.0), rateios.get(5, 45000.0), rateios.get(6, 35000000.0)
-    lucro_total = 0.0
-    relatorio = []
-    sorteio_set = set(dezenas_sorteadas)
-    jogos_processados, premiados, max_pts = 0, 0, 0
-    
-    if "global_hits" not in st.session_state.data_mega: st.session_state.data_mega["global_hits"] = {4: 0, 5: 0, 6: 0}
-    if "ledger_track" not in st.session_state.data_mega: st.session_state.data_mega["ledger_track"] = {"bilhetes": 0, "premiados_geral": 0, "elite": 0}
-    if "matrizes_reais_hits" not in st.session_state.data_mega: st.session_state.data_mega["matrizes_reais_hits"] = {4: 0, 5: 0, 6: 0, "total": 0, "soma_acertos": 0}
-    if "matrizes_auditadas_ids" not in st.session_state.data_mega: st.session_state.data_mega["matrizes_auditadas_ids"] = []
-    
-    ledger = st.session_state.data_mega["ledger_track"]
-    hits_bilhetes = st.session_state.data_mega["global_hits"]
-    matriz_usada = None
-    
-    for j in st.session_state.data_mega.get("jogos_salvos", []):
-        alvo = j.get('concurso_alvo')
-        pode = str(alvo) == str(concurso) or (isinstance(alvo, int) and alvo <= concurso) or str(alvo) == "Legado"
-        if pode and j.get("matriz_origem"): matriz_usada = j["matriz_origem"]
+    with col1:
+        st.markdown("""
+        <div style='background-color: #fdf5ff; border: 2px solid #930089; padding: 20px; border-radius: 10px; height: 220px;'>
+            <h4 style='color: #930089; margin-top:0;'>📥 1. Calibração Rápida (Último Sorteio)</h4>
+            <p style='font-size:14px; color:#555;'>Busca o <b>último concurso</b> de todas as 6 loterias, audita seus bilhetes aguardando sorteio, calcula lucros e atualiza a estimativa do próximo prêmio.</p>
+        </div><br>
+        """, unsafe_allow_html=True)
+        if st.button("🚀 SINCRONIZAR ÚLTIMO SORTEIO (TODAS AS LOTERIAS)", type="primary", use_container_width=True):
+            with st.spinner("Sincronizando as 6 Loterias. Aguarde..."):
+                relatorio_sync = []
+                for chave, config in LOTERIAS_CONFIG.items():
+                    api_nome = config["api"]
+                    res = fetch_api(f"https://loteriascaixa-api.herokuapp.com/api/{api_nome}/latest")
+                    if res:
+                        num_c = int(res['concurso'])
+                        dez_o = [int(x) for x in res['dezenas']]
+                        
+                        if chave == "maismilionaria": # Tratar trevos
+                            trevos = [int(x) for x in res.get('trevos', [])]
+                            novo_dado = {"concurso": num_c, "data": res.get('data',''), "dezenas": dez_o, "trevos": trevos, "premiacoes": res.get('premiacoes', []), "proximo_premio": res.get('valorEstimadoProximoConcurso', 0)}
+                        else:
+                            novo_dado = {"concurso": num_c, "data": res.get('data',''), "dezenas": dez_o, "premiacoes": res.get('premiacoes', []), "proximo_premio": res.get('valorEstimadoProximoConcurso', 0)}
+                        
+                        # Salvar histórico
+                        if not any(h['concurso'] == num_c for h in st.session_state.db[chave]["historico_dados"]):
+                            st.session_state.db[chave]["historico_dados"].append(novo_dado)
+                            relatorio_sync.append(f"✅ {config['nome']}: Concurso {num_c} sincronizado. (Prêmio Est.: R$ {novo_dado['proximo_premio']:,.2f})")
+                        else:
+                            # Atualiza estimativa de premio mesmo se ja existe
+                            st.session_state.db[chave]["historico_dados"][-1]["proximo_premio"] = res.get('valorEstimadoProximoConcurso', 0)
+                            relatorio_sync.append(f"⚡ {config['nome']}: Já atualizado no conc. {num_c}. (Prêmio Est.: R$ {novo_dado['proximo_premio']:,.2f})")
+                            
+                        # Limpar IA Memoria para recalcular no próximo acesso
+                        st.session_state.db[chave]["ia_memoria"] = {}
                 
-        if j.get('status') == "Aguardando Sorteio" and pode:
-            jogos_processados += 1
-            ledger["bilhetes"] += 1
-            pontos = len(set(j.get('dezenas', [])).intersection(sorteio_set))
-            j['acertos'], j['premio_valor'] = pontos, calcular_premio_multiplo_mega(pontos, v4, v5, v6)
-            max_pts = max(max_pts, pontos)
-            
-            if pontos >= 4:
-                j['status'] = "Premiado"
-                lucro_total += j['premio_valor']
-                st.session_state.data_mega["historico_premios"] += j['premio_valor']
-                premiados += 1
-                ledger["premiados_geral"] += 1
-                if pontos >= 5: ledger["elite"] += 1
-                hits_bilhetes[pontos] = hits_bilhetes.get(pontos, 0) + 1
-            else: j['status'] = "Não Premiado"
+                salvar_db_unico()
+                st.session_state.logs_sync = relatorio_sync
+                st.success("Auditoria Completa Finalizada!")
+                st.rerun()
 
-    m_hits = st.session_state.data_mega["matrizes_reais_hits"]
-    m_ids = st.session_state.data_mega["matrizes_auditadas_ids"]
-    selo = f"conc_{concurso}"
+    with col2:
+        st.markdown("""
+        <div style='background-color: #f2fbf6; border: 2px solid #209869; padding: 20px; border-radius: 10px; height: 220px;'>
+            <h4 style='color: #209869; margin-top:0;'>☢️ 2. Deep Learning (Base Completa)</h4>
+            <p style='font-size:14px; color:#555;'>Força o download de <b>TODOS OS CONCURSOS da história</b> (do 1 ao atual) para alimentar as IAs. <b>Atenção:</b> Pode demorar vários minutos.</p>
+        </div><br>
+        """, unsafe_allow_html=True)
+        if st.button("📥 BAIXAR BASE COMPLETA HISTÓRICA (TODAS)", type="secondary", use_container_width=True):
+            with st.spinner("Fazendo download profundo. Isso vai demorar..."):
+                for chave, config in LOTERIAS_CONFIG.items():
+                    api_nome = config["api"]
+                    res_todos = fetch_api(f"https://loteriascaixa-api.herokuapp.com/api/{api_nome}")
+                    if res_todos:
+                        res_todos = sorted(res_todos, key=lambda k: int(k['concurso']))
+                        historico = []
+                        for r in res_todos:
+                            dado = {"concurso": int(r['concurso']), "dezenas": [int(d) for d in r['dezenas']], "data": r.get('data', '')}
+                            if chave == "maismilionaria": dado["trevos"] = [int(t) for t in r.get('trevos', [])]
+                            historico.append(dado)
+                        st.session_state.db[chave]["historico_dados"] = historico
+                salvar_db_unico()
+                st.success("Download Histórico de todas as loterias concluído com sucesso!")
+
+    st.divider()
     
-    if matriz_usada and selo not in m_ids:
-        acertos_matriz = len(set(matriz_usada).intersection(sorteio_set))
-        m_ids.append(selo)
-        m_hits["total"] = m_hits.get("total", 0) + 1
-        m_hits["soma_acertos"] = m_hits.get("soma_acertos", 0) + acertos_matriz
+    if "logs_sync" in st.session_state and st.session_state.logs_sync:
+        st.markdown("#### 📜 Relatório da Última Sincronização")
+        for log in st.session_state.logs_sync: st.write(log)
+        st.write("")
         
-        est_da_matriz = next((j.get("estrategia", "Default") for j in st.session_state.data_mega.get("jogos_salvos", []) if j.get("matriz_origem") == matriz_usada), "Default")
-        ajustar_ia_mega(est_da_matriz, acertos_matriz)
-        if acertos_matriz >= 4: m_hits[int(min(acertos_matriz, 6))] = m_hits.get(int(min(acertos_matriz, 6)), 0) + 1
-            
-    st.session_state.data_mega["matrizes_reais_hits"] = m_hits
-    st.session_state.data_mega["matrizes_auditadas_ids"] = m_ids
-    st.session_state.data_mega["global_hits"] = hits_bilhetes
-    st.session_state.data_mega["ledger_track"] = ledger
-    
-    if jogos_processados > 0: relatorio.append(f"Auditoria Mega {concurso}: {premiados}/{jogos_processados} bilhetes premiados.")
-    return lucro_total, relatorio
+    # Exibir Status e Próximos Prêmios
+    st.markdown("#### 💰 Radar de Prêmios Estimados (Próximos Concursos)")
+    cols_radar = st.columns(3)
+    for idx, (chave, config) in enumerate(LOTERIAS_CONFIG.items()):
+        hist = st.session_state.db[chave].get("historico_dados", [])
+        if hist:
+            ult = hist[-1]
+            premio_est = ult.get("proximo_premio", 0)
+            cor = "#930089" if chave=="lotofacil" else "#209869" if chave=="megasena" else "#F78100" if chave=="lotomania" else "#0066b3" if chave=="maismilionaria" else "#ED1622" if chave=="duplasena" else "#260085"
+            with cols_radar[idx % 3]:
+                st.markdown(f"<div style='border-left: 5px solid {cor}; padding: 10px; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px;'><b>{config['nome']}</b><br>Conc: {ult['concurso']}<br><span style='color:{cor}; font-weight:bold; font-size:18px;'>R$ {premio_est:,.2f}</span></div>", unsafe_allow_html=True)
 
-def raciocinio_total_ia_mega(historico, memoria):
-    if not historico: return None
-    atrasos, dez_enc = {n: 0 for n in range(1, 61)}, {n: False for n in range(1, 61)}
-    
-    for h in reversed(historico):
-        for n in range(1, 61):
-            if n in h['dezenas']: dez_enc[n] = True
-            elif not dez_enc[n]: atrasos[n] += 1
-
-    ultimo_sorteio = [int(x) for x in historico[-1]['dezenas']]
-    reps = len(set(ultimo_sorteio) & set(historico[-2]['dezenas'])) if len(historico) > 1 else 0
-    
-    if reps >= 2: cod_est, qtd_matriz, tatic_desc = "Dispersão Ortogonal", 12, "Quebra de Repetição."
-    elif sum(atrasos.values()) / 60 > 15.0: cod_est, qtd_matriz, tatic_desc = "Caos Térmico", 14, "Caça a Dezenas Adormecidas."
-    else: cod_est, qtd_matriz, tatic_desc = "Arbitragem de Massa", 13, "Fuga do Padrão Humano."
-
-    unified_scores = {}
-    for n in range(1, 61):
-        delay, score_calc = atrasos.get(n, 0), 0.0
-        if 5 <= delay <= 25: score_calc += 30.0
-        elif delay > 25: score_calc += 15.0 
-        else: score_calc += 5.0 
-        if n > 31: score_calc += 20.0
-        if n % 10 in [9, 0]: score_calc += 15.0
-        unified_scores[n] = float(score_calc)
-
-    Q1 = set(range(1, 6)) | set(range(11, 16)) | set(range(21, 26))
-    Q2 = set(range(6, 11)) | set(range(16, 21)) | set(range(26, 31))
-    Q3 = set(range(31, 36)) | set(range(41, 46)) | set(range(51, 56))
-    Q4 = set(range(36, 41)) | set(range(46, 51)) | set(range(56, 61))
-    
-    max_por_quad = round(qtd_matriz * 0.35) + 1 
-    matriz_final = []
-    candidatos = sorted(range(1, 61), key=lambda x: unified_scores.get(x, 0), reverse=True)
-    
-    for n in candidatos:
-        if len(matriz_final) >= qtd_matriz: break
-        if n in Q1 and sum(1 for x in matriz_final if x in Q1) >= max_por_quad: continue
-        if n in Q2 and sum(1 for x in matriz_final if x in Q2) >= max_por_quad: continue
-        if n in Q3 and sum(1 for x in matriz_final if x in Q3) >= max_por_quad: continue
-        if n in Q4 and sum(1 for x in matriz_final if x in Q4) >= max_por_quad: continue
-        matriz_final.append(n)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🚪 ENTRAR NO LOBBY OPERACIONAL", type="primary", use_container_width=True):
+        st.session_state.pagina_atual = "lobby"
+        st.rerun()
         
-    matriz_final = sorted(matriz_final)
-    justificativa = f"DIRETRIZ: {tatic_desc} | ESPAÇAMENTO: Q1({sum(1 for x in matriz_final if x in Q1)}) Q2({sum(1 for x in matriz_final if x in Q2)}) Q3({sum(1 for x in matriz_final if x in Q3)}) Q4({sum(1 for x in matriz_final if x in Q4)})"
-    
-    return {
-        "estrategia": str(cod_est), "cod_estrategia": str(cod_est), "motivo_est": justificativa, "atrasos": dict(atrasos),
-        "pesos": {n: round(float(unified_scores.get(n, 0.0)), 2) for n in range(1, 61)},
-        "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1, "qtd_matriz": int(qtd_matriz), "matriz_base": matriz_final
-    }
+    exibir_rodape()
 
-def exibir_card_volante_mega(jogo, numero_jogo, sorteio_real=None):
-    dezenas, alvo, estrategia = jogo.get('dezenas', []), jogo.get('concurso_alvo', 'N/A'), jogo.get('estrategia', 'Padrão Mega')
-    match = re.search(r'Garantia de (\d+)', str(jogo.get('justificativa', '')))
-    texto_rodape = f"Fechamento Matemático - Garantia de {match.group(1)} Pontos" if match else "Fechamento Mega-Sena"
-    sorteio_set = set(sorteio_real) if sorteio_real else set()
-
-    grid_html = "<div style='display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 12px; justify-items: center;'>"
-    for num in range(1, 61):
-        if num in dezenas: bg_color, txt_color, border, shadow = ("#28a745", "white", "none", "box-shadow: 0 0 5px #28a745;") if num in sorteio_set else ("#209869", "white", "none", "box-shadow: 0 2px 4px rgba(32,152,105,0.3);")
-        else: bg_color, txt_color, border, shadow = "#f4f6f9", "#ccc", "1px solid #eee", ""
-        grid_html += f"<div style='background-color: {bg_color}; color: {txt_color}; border: {border}; {shadow} text-align: center; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;'>{num:02d}</div>"
-    grid_html += "</div>"
-    
-    html_card = f"<div style='background-color: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05);'><div style='display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px;'><span style='font-size: 15px; font-weight: bold; color: #209869;'>🎫 JOGO {numero_jogo:02d}</span><span style='font-size: 12px; font-weight: bold; color: #666;'>Alvo: {alvo}</span></div><div style='font-size: 11px; color: #555; margin-bottom: 12px; font-weight: bold; text-transform: uppercase;'>ESTRATÉGIA: {estrategia}</div>{grid_html}<div style='text-align: center; font-size: 10px; font-weight: bold; color: #209869; background: rgba(32, 152, 105, 0.08); padding: 6px; border-radius: 4px; margin-top: 5px;'>{texto_rodape}</div></div>"
-    st.markdown(html_card, unsafe_allow_html=True)
-
-def gerar_pdf_jogos_mega(jogos, dezenas_anteriores=None):
-    if dezenas_anteriores is None: dezenas_anteriores = []
-    def limpar_latin1(t): return str(t).replace("🧬", "").replace("🍀", "").replace("🎫", "").replace("⚠️", "").encode('latin-1', 'ignore').decode('latin-1')
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=False)
-    margem_x, margem_y, largura_card, altura_card, espaco_x, espaco_y = 10, 35, 90, 80, 5, 5
-    sorteio_set = set(dezenas_anteriores)
-
-    for i, j in enumerate(jogos):
-        if i % 6 == 0:
-            pdf.add_page()
-            pdf.set_text_color(32, 152, 105)
-            pdf.set_font('Arial', 'B', 16)
-            pdf.set_xy(10, 12)
-            pdf.cell(0, 10, "Loterias PRO - Relatorio Mega-Sena", ln=0)
-            pdf.set_font('Arial', '', 9)
-            pdf.set_text_color(100, 100, 100)
-            pdf.set_xy(10, 20)
-            pdf.cell(0, 8, f"TOTAL: {len(jogos)} BILHETES  |  Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=0)
-            pdf.line(10, 28, 200, 28)
-
-        coluna, linha = (i % 6) % 2, (i % 6) // 2
-        x_start, y_start = margem_x + (coluna * (largura_card + espaco_x)), margem_y + (linha * (altura_card + espaco_y))
-        estrategia, dezenas, alvo = limpar_latin1(str(j.get('estrategia', 'Mega Padrão'))), j.get('dezenas', []), limpar_latin1(str(j.get('concurso_alvo', 'N/A')))
-        
-        pdf.set_fill_color(242, 251, 246) 
-        pdf.rect(x_start, y_start, largura_card, altura_card, 'F')
-        pdf.set_fill_color(32, 152, 105) 
-        pdf.rect(x_start, y_start, 2, altura_card, 'F')
-
-        pdf.set_text_color(40, 40, 40)
-        pdf.set_font('Arial', 'B', 10)
-        pdf.set_xy(x_start + 5, y_start + 4)
-        pdf.cell(50, 6, f"JOGO {(i+1):02d}", ln=0)
-        pdf.set_font('Arial', '', 8)
-        pdf.set_text_color(100, 100, 100)
-        pdf.set_xy(x_start + 40, y_start + 4)
-        pdf.cell(45, 6, f"Alvo: {alvo}", ln=0, align='R')
-        pdf.set_text_color(32, 152, 105) 
-        pdf.set_font('Arial', 'B', 7)
-        pdf.set_xy(x_start + 5, y_start + 9)
-        pdf.cell(80, 5, f"{estrategia[:35]}", ln=0)
-
-        bolinha_x_start, bolinha_y_start, passo_x, passo_y = x_start + 8, y_start + 18, 8, 8 
-        for num in range(1, 61):
-            lin, col = (num - 1) // 10, (num - 1) % 10
-            cx, cy = bolinha_x_start + (col * passo_x), bolinha_y_start + (lin * passo_y)
-            if num in dezenas:
-                if num in sorteio_set: pdf.set_fill_color(40, 167, 69)
-                else: pdf.set_fill_color(32, 152, 105)
-                pdf.set_text_color(255, 255, 255)
-            else:
-                pdf.set_fill_color(235, 235, 235)
-                pdf.set_text_color(160, 160, 160)
-            pdf.ellipse(cx, cy, 5.5, 5.5, 'F')
-            pdf.set_xy(cx, cy)
-            pdf.set_font('Arial', 'B', 5)
-            pdf.cell(5.5, 5.5, f"{num:02d}", align='C')
-
-        pdf.set_text_color(120, 120, 120)
-        pdf.set_font('Arial', 'B', 7)
-        pdf.set_xy(x_start + 5, y_start + altura_card - 8)
-        pdf.cell(80, 5, "Fechamento Mega-Sena Institucional", ln=0, align='C')
-
-    resultado = pdf.output(dest='S')
-    if isinstance(resultado, str): return resultado.encode('latin-1', 'ignore')
-    return bytes(resultado)
-
-def obter_garantia_megasena(tamanho_matriz):
-    return f"""
-<div style='background-color: #f2fbf6; border-left: 5px solid #209869; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
-    <h4 style='color: #209869; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO (MEGA-SENA)</h4>
-    <p style='margin-bottom: 5px;'>Sua Matriz de Jogo: <b>{tamanho_matriz} dezenas</b>.</p>
-    <p style='font-weight: bold; color: #333;'>CONDIÇÃO INQUEBRÁVEL PARA O PRÊMIO:</p>
-    <p style='color: #444;'>Para o fechamento garantir a Sena, Quina ou Quadra escolhida, <b>as 6 dezenas sorteadas pela Caixa PRECISAM obrigatoriamente estar DENTRO do seu grupo de {tamanho_matriz} números.</b></p>
-    <p style='font-size: 12px; color: #666; margin-bottom: 0;'><b>Filtro Elite Ativado:</b> O sistema varre automaticamente a Curva de Gauss (Soma 120 a 240) e remove colunas viciadas (múltiplos de 10) para maximizar o seu prêmio caso acerte. As garantias matemáticas se aplicam aos bilhetes que passaram nesse filtro de elite.</p>
-</div>
-"""
-
-# =====================================================================
-# 5. CONSTRUÇÃO DAS TELAS (PÁGINAS DO SISTEMA)
-# =====================================================================
 def tela_login():
     exibir_cabecalho()
-    st.markdown("<h4 style='text-align: center;'>Acesso Restrito ao Sistema</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Acesso Restrito ao Sistema Sindicato</h4>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         with st.form("form_login"):
@@ -851,10 +230,9 @@ def tela_login():
             if st.form_submit_button("Autenticar Operador", use_container_width=True):
                 if usuario == "777" and senha == "777": 
                     st.session_state.autenticado = True
-                    st.session_state.pagina_atual = "lobby"
+                    st.session_state.pagina_atual = "pre_lobby" # Redireciona pro pre-lobby
                     st.rerun()
-                else:
-                    st.error("Credenciais inválidas.")
+                else: st.error("Credenciais inválidas.")
     exibir_rodape()
 
 def tela_lobby():
@@ -862,660 +240,995 @@ def tela_lobby():
     
     st.markdown("""
     <style>
-        .block-container { max-width: 1000px; }
+        .block-container { max-width: 1100px; }
         div[data-testid="stColumn"] div.stButton > button {
             aspect-ratio: 1 / 1 !important; 
             border-radius: 20px !important;
-            font-size: 24px !important;
+            font-size: 20px !important;
             font-weight: 900 !important;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-            padding: 20px !important;
-            line-height: 1.4 !important;
+            padding: 15px !important;
+            line-height: 1.3 !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
             white-space: pre-wrap !important; 
         }
-        div[data-testid="stColumn"]:nth-child(2) div.stButton > button {
-            background: linear-gradient(145deg, #ffffff, #fdf5ff) !important;
-            border: 3px solid #930089 !important;
-            color: #930089 !important;
-        }
-        div[data-testid="stColumn"]:nth-child(2) div.stButton > button:hover {
-            background: #930089 !important;
-            color: white !important;
-            transform: translateY(-8px) scale(1.02) !important;
-            box-shadow: 0 15px 35px rgba(147,0,137,0.3) !important;
-        }
-        div[data-testid="stColumn"]:nth-child(3) div.stButton > button {
-            background: linear-gradient(145deg, #ffffff, #f2fbf6) !important;
-            border: 3px solid #209869 !important;
-            color: #209869 !important;
-        }
-        div[data-testid="stColumn"]:nth-child(3) div.stButton > button:hover {
-            background: #209869 !important;
-            color: white !important;
-            transform: translateY(-8px) scale(1.02) !important;
-            box-shadow: 0 15px 35px rgba(32,152,105,0.3) !important;
-        }
+        /* Cores Loterias */
+        div[data-testid="stColumn"]:nth-child(1) div.stButton > button { background: linear-gradient(145deg, #ffffff, #fdf5ff) !important; border: 3px solid #930089 !important; color: #930089 !important; }
+        div[data-testid="stColumn"]:nth-child(2) div.stButton > button { background: linear-gradient(145deg, #ffffff, #f2fbf6) !important; border: 3px solid #209869 !important; color: #209869 !important; }
+        div[data-testid="stColumn"]:nth-child(3) div.stButton > button { background: linear-gradient(145deg, #ffffff, #f0f4ff) !important; border: 3px solid #260085 !important; color: #260085 !important; }
+        div[data-testid="stColumn"]:nth-child(4) div.stButton > button { background: linear-gradient(145deg, #ffffff, #fff0f0) !important; border: 3px solid #ED1622 !important; color: #ED1622 !important; }
+        div[data-testid="stColumn"]:nth-child(5) div.stButton > button { background: linear-gradient(145deg, #ffffff, #fff8f0) !important; border: 3px solid #F78100 !important; color: #F78100 !important; }
+        div[data-testid="stColumn"]:nth-child(6) div.stButton > button { background: linear-gradient(145deg, #ffffff, #e6f3ff) !important; border: 3px solid #0066b3 !important; color: #0066b3 !important; }
+        /* Hovers */
+        div[data-testid="stColumn"]:nth-child(1) div.stButton > button:hover { background: #930089 !important; color: white !important; transform: translateY(-8px) scale(1.02) !important; }
+        div[data-testid="stColumn"]:nth-child(2) div.stButton > button:hover { background: #209869 !important; color: white !important; transform: translateY(-8px) scale(1.02) !important; }
+        div[data-testid="stColumn"]:nth-child(3) div.stButton > button:hover { background: #260085 !important; color: white !important; transform: translateY(-8px) scale(1.02) !important; }
+        div[data-testid="stColumn"]:nth-child(4) div.stButton > button:hover { background: #ED1622 !important; color: white !important; transform: translateY(-8px) scale(1.02) !important; }
+        div[data-testid="stColumn"]:nth-child(5) div.stButton > button:hover { background: #F78100 !important; color: white !important; transform: translateY(-8px) scale(1.02) !important; }
+        div[data-testid="stColumn"]:nth-child(6) div.stButton > button:hover { background: #0066b3 !important; color: white !important; transform: translateY(-8px) scale(1.02) !important; }
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown("<h4 style='text-align: center; color: #666; font-weight: normal; margin-bottom: 50px;'>Escolha o Motor Analítico para iniciar a sessão:</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #666; font-weight: normal; margin-bottom: 30px;'>Escolha o Motor Analítico para operar:</h4>", unsafe_allow_html=True)
     
-    cols = st.columns([1, 2, 2, 1]) 
-    
-    with cols[1]:
-        if st.button("🍀\nLotofácil\nIA de Frequência", key="btn_loto", use_container_width=True):
-            st.session_state.pagina_atual = "lotofacil"
-            st.rerun()
-            
-    with cols[2]:
-        if st.button("🍀\nMega-Sena\nIA Espacial", key="btn_mega", use_container_width=True):
-            st.session_state.pagina_atual = "megasena"
+    # 6 Loterias em Grid 3x2
+    cols1 = st.columns(3)
+    with cols1[0]:
+        if st.button("🍀\nLotofácil\n(Frequência)", key="btn_loto", use_container_width=True): st.session_state.pagina_atual = "lotofacil"; st.rerun()
+    with cols1[1]:
+        if st.button("🟢\nMega-Sena\n(Espacial)", key="btn_mega", use_container_width=True): st.session_state.pagina_atual = "megasena"; st.rerun()
+    with cols1[2]:
+        if st.button("🔵\nQuina\n(Dispersão)", key="btn_quina", use_container_width=True): st.session_state.pagina_atual = "quina"; st.rerun()
+
+    st.write("") # Espaçamento
+
+    cols2 = st.columns(3)
+    with cols2[0]:
+        if st.button("🔴\nDupla Sena\n(Sorteio Base)", key="btn_dupla", use_container_width=True): st.session_state.pagina_atual = "duplasena"; st.rerun()
+    with cols2[1]:
+        if st.button("🟠\nLotomania\n(Grupos/Espelho)", key="btn_lmania", use_container_width=True): st.session_state.pagina_atual = "lotomania"; st.rerun()
+    with cols2[2]:
+        if st.button("🌟\n+Milionária\n(Motor Misto)", key="btn_milionaria", use_container_width=True): st.session_state.pagina_atual = "maismilionaria"; st.rerun()
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col_voltar1, col_voltar2, col_voltar3 = st.columns([1,2,1])
+    with col_voltar2:
+        if st.button("⬅️ VOLTAR PARA PRÉ-LOBBY (SINCRONIZAÇÃO GERAL)", use_container_width=True):
+            st.session_state.pagina_atual = "pre_lobby"
             st.rerun()
             
     exibir_rodape()
+
+# =====================================================================
+# 4. MOTOR ANALÍTICO - LOTOFÁCIL
+# =====================================================================
+def calcular_premio_lotofacil(tamanho, acertos, rateios):
+    v11, v12, v13, v14, v15 = rateios.get(11, 7.0), rateios.get(12, 14.0), rateios.get(13, 35.0), rateios.get(14, 1500.0), rateios.get(15, 1500000.0)
+    if acertos < 11: return 0.0
+    if tamanho == 15:
+        if acertos == 11: return v11
+        elif acertos == 12: return v12
+        elif acertos == 13: return v13
+        elif acertos == 14: return v14
+        elif acertos == 15: return v15
+    return 0.0
+
+@st.cache_data(show_spinner="🧠 Lotofácil: Aplicando Set Cover Matemático...")
+def gerar_fechamento_lotofacil(dezenas_tuple, garantia):
+    dezenas = list(dezenas_tuple)
+    todas_comb = list(itertools.combinations(dezenas, 15))
+    if garantia == 15 or len(dezenas) <= 15: return [list(c) for c in todas_comb]
+
+    comb_bits = [sum(1 << num for num in c) for c in todas_comb]
+    sorteios_possiveis = set(range(len(comb_bits)))
+    bilhetes_escolhidos, cobertura = [], []
+    
+    for b in comb_bits:
+        cobertura.append({j for j, s in enumerate(comb_bits) if (b & s).bit_count() >= garantia})
+        
+    while sorteios_possiveis:
+        melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
+        bilhetes_escolhidos.append(list(todas_comb[melhor_idx]))
+        sorteios_possiveis -= cobertura[melhor_idx] 
+    return bilhetes_escolhidos
+
+def raciocinio_ia_lotofacil(historico, db_loto):
+    if not historico: return None
+    ultimos_12 = historico[-12:] if len(historico) >= 12 else historico
+    freq_micro = Counter([int(n) for h in ultimos_12 for n in h['dezenas']])
+    freq_recente = Counter([int(n) for h in historico[-30:] for n in h['dezenas']])
+    
+    atrasos = {int(n): 0 for n in range(1, 26)}
+    dez_enc = {int(n): False for n in range(1, 26)}
+    for h in reversed(historico):
+        for n in range(1, 26):
+            if int(n) in h['dezenas']: dez_enc[int(n)] = True
+            elif not dez_enc[int(n)]: atrasos[int(n)] += 1
+
+    ultimo_sorteio = [int(x) for x in historico[-1]['dezenas']]
+    ausentes = [int(n) for n in range(1, 26) if n not in ultimo_sorteio] 
+
+    cod_est, qtd_matriz, tatic_desc = "Tendencia Forte", 18, "Busca de Padrões Térmicos Ativos."
+    est_pesos = db_loto["ia_pesos"].get(cod_est, db_loto["ia_pesos"]["Default"])
+
+    scores = {}
+    for n in range(1, 26):
+        n = int(n)
+        sc = (freq_micro.get(n, 0) * est_pesos.get("p1", 20.0)) + (freq_recente.get(n, 0) * est_pesos.get("p2", 5.0))
+        if n in ausentes and atrasos.get(n, 0) == 1: sc += est_pesos.get("bonus", 40.0)
+        scores[n] = float(sc)
+
+    matriz = []
+    candidatos = sorted(range(1, 26), key=lambda x: scores.get(x, 0), reverse=True)
+    
+    # Filtros Pro
+    IMPARES, PRIMOS, MOLDURA = {1,3,5,7,9,11,13,15,17,19,21,23,25}, {2,3,5,7,11,13,17,19,23}, {1,2,3,4,5,6,10,11,15,16,20,21,22,23,24,25}
+    max_imp, max_prim, max_mold = round(qtd_matriz * 0.54) + 1, round(qtd_matriz * 0.36) + 1, round(qtd_matriz * 0.66) + 1
+
+    for n in candidatos:
+        if len(matriz) >= qtd_matriz: break
+        if n in IMPARES and sum(1 for x in matriz if x in IMPARES) >= max_imp: continue
+        if n in PRIMOS and sum(1 for x in matriz if x in PRIMOS) >= max_prim: continue
+        if n in MOLDURA and sum(1 for x in matriz if x in MOLDURA) >= max_mold: continue
+        matriz.append(n)
+
+    if len(matriz) < qtd_matriz:
+        for n in candidatos:
+            if len(matriz) >= qtd_matriz: break
+            if n not in matriz: matriz.append(n)
+            
+    matriz = sorted(matriz)
+    return {
+        "estrategia": cod_est, "motivo_est": tatic_desc, "pesos": scores,
+        "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1,
+        "qtd_matriz": qtd_matriz, "matriz_base": matriz
+    }
+
+def auditar_bilhetes_lotofacil(db_loto):
+    historico = {h['concurso']: h for h in db_loto['historico_dados']}
+    lucro_sessao = 0.0
+    for j in db_loto['jogos_salvos']:
+        if j['status'] == "Aguardando Sorteio" and j['concurso_alvo'] in historico:
+            conc_data = historico[j['concurso_alvo']]
+            sorteadas = set(conc_data['dezenas'])
+            rateios = {p.get('acertos', 0): float(p.get('premio', 0.0)) for p in conc_data.get('premiacoes', [])}
+            
+            pontos = len(set(j['dezenas']).intersection(sorteadas))
+            j['acertos'] = pontos
+            j['premio_valor'] = calcular_premio_lotofacil(j['tamanho'], pontos, rateios)
+            
+            db_loto["ledger_track"]["bilhetes"] += 1
+            if pontos >= 11:
+                j['status'] = "Premiado"
+                lucro_sessao += j['premio_valor']
+                db_loto["historico_premios"] += j['premio_valor']
+                db_loto["ledger_track"]["premiados_geral"] += 1
+                if pontos >= 14: db_loto["ledger_track"]["elite"] += 1
+                db_loto["global_hits"][str(pontos)] = db_loto["global_hits"].get(str(pontos), 0) + 1
+            else: j['status'] = "Não Premiado"
+    return lucro_sessao
 
 def tela_lotofacil():
-    exibir_cabecalho(loteria_especifica="LOTOFÁCIL PRO", cor_loteria="#930089", icone_loteria="🍀")
-    st.markdown("""<style>:root { --roxo: #930089; --roxo-hover: #7a0072; } .stApp { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; } .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); } .stTabs [data-baseweb="tab"] { border-radius: 8px; padding: 10px 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; transition: all 0.3s ease; } .stTabs [aria-selected="true"] { background-color: var(--roxo) !important; color: white !important; border: none; box-shadow: 0 4px 10px rgba(147,0,137,0.3); } div[data-testid="stMetric"] { background-color: white; padding: 20px; border-radius: 12px; border-left: 6px solid var(--roxo); box-shadow: 0 4px 6px rgba(0,0,0,0.04); } div[data-testid="stAlert"] { background-color: #fdf5ff !important; border-left: 5px solid var(--roxo) !important; color: #333 !important; border-radius: 8px !important; } button[kind="primary"] { background-color: var(--roxo) !important; border: none !important; border-radius: 8px !important; font-weight: bold !important; color: white !important; box-shadow: 0 4px 10px rgba(147,0,137,0.4) !important; transition: all 0.3s ease !important; } button[kind="primary"]:hover { background-color: var(--roxo-hover) !important; transform: translateY(-2px); }</style>""", unsafe_allow_html=True)
-    if "data" not in st.session_state: st.session_state.data = sanitizar_dados({})
-    if 'auth' not in st.session_state: st.session_state.auth = False
-    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio", "🏆 5. Sincronização e Entrada"])
+    exibir_cabecalho("LOTOFÁCIL PRO", "#930089", "🍀")
+    db_loto = st.session_state.db["lotofacil"]
+    
+    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio"])
 
     with tabs[0]:
-        st.markdown("### 💾 Central de Dados e Livro-Caixa da Operação")
-        t_custos, t_premios = st.session_state.data["historico_custos"], st.session_state.data["historico_premios"]
-        resultado_global = t_premios - t_custos
-
-        with st.container(border=True):
-            st.markdown("#### 📈 Balanço Financeiro Global (ROI)")
-            ind1, ind2, ind3 = st.columns(3)
-            ind1.metric("📥 Total Investido (Gastos)", f"R$ {t_custos:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            ind2.metric("📤 Total Retornado (Prêmios)", f"R$ {t_premios:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            str_res = f"R$ {resultado_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            if resultado_global > 0: ind3.metric("📊 Lucro Real do Projeto", str_res, "A Máquina está Paga")
-            elif resultado_global < 0: ind3.metric("📊 Prejuízo Real do Projeto", str_res, "Buscando Recuperação")
-            else: ind3.metric("📊 Balanço do Projeto", "R$ 0,00", "Empate / Ponto Zero")
-
-        c1, c2 = st.columns(2)
-        with c1:
-            with st.container(border=True):
-                st.markdown("**📂 Gerenciamento do Cofre (Backup)**")
-                st.file_uploader("📥 Carregar Arquivo Cofre.json", type="json", key="uploader_cofre", on_change=cb_carregar_cofre)
-                st.info(f"📊 **Concursos Oficiais Salvos:** {len(st.session_state.data.get('historico_dados', []))}.")
-                st.download_button("📤 Baixar Backup Consolidado", json.dumps(st.session_state.data), "Cofre.json", type="primary", use_container_width=True)
-        with c2:
-            with st.container(border=True):
-                st.markdown("**💸 Correção Manual de Livro-Caixa**")
-                valor_mov = st.number_input("Digite o Valor (R$):", min_value=0.0, step=10.0, key="input_movimentacao")
-                col_dep, col_sac = st.columns(2)
-                with col_dep:
-                    if st.button("➕ Adicionar Gasto Extra", use_container_width=True) and valor_mov > 0:
-                        st.session_state.data["historico_custos"] += valor_mov
-                        salvar_dados(st.session_state.data)
-                        st.rerun()
-                with col_sac:
-                    if st.button("✅ Adicionar Prêmio Extra", use_container_width=True) and valor_mov > 0:
-                        st.session_state.data["historico_premios"] += valor_mov
-                        salvar_dados(st.session_state.data)
-                        st.rerun()
-                st.divider()
-                if st.button("🔄 ZERAR CONTABILIDADE E ROI (MANTER IA)", use_container_width=True, type="secondary"):
-                    st.session_state.data["historico_custos"] = st.session_state.data["historico_premios"] = 0.0
-                    st.session_state.data["ledger_track"] = {"bilhetes": 0, "premiados_geral": 0, "elite": 0, "custo": 0.0, "retorno": 0.0}
-                    salvar_dados(st.session_state.data)
-                    st.rerun()
+        exibir_mini_painel_financeiro("lotofacil", "#930089")
+        st.markdown("### 💾 Gerenciamento Interno (Lotofácil)")
+        st.info(f"Concursos Oficiais Salvos: **{len(db_loto['historico_dados'])}**")
+        if st.button("🔄 ZERAR CONTABILIDADE (LOTOFÁCIL)", type="secondary"):
+            db_loto["historico_custos"] = db_loto["historico_premios"] = 0.0
+            salvar_db_unico(); st.rerun()
 
     with tabs[1]:
-        exibir_mini_painel_financeiro()
-        st.markdown("### 🧠 Diagnóstico da Inteligência Artificial")
-        track = st.session_state.data.get("ledger_track", {"bilhetes": 0, "premiados_geral": 0, "elite": 0})
-        custo_real, retorno_real = st.session_state.data.get("historico_custos", 0.0), st.session_state.data.get("historico_premios", 0.0)
-        win_rate = (track['premiados_geral'] / track['bilhetes'] * 100) if track.get('bilhetes', 0) > 0 else 0.0
-        roi_val, roi_pct = retorno_real - custo_real, ((retorno_real - custo_real) / custo_real * 100) if custo_real > 0 else 0.0
-
-        with st.container(border=True):
-            st.markdown("#### 📈 Track Record: A Máquina em Ação (Dados Reais)")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("🎟️ Bilhetes Operados", track.get('bilhetes', 0))
-            c2.metric("🎯 Win Rate (Prêmios)", f"{win_rate:.1f}%")
-            elite_rate = (track.get('elite', 0) / track.get('premiados_geral', 1) * 100) if track.get('premiados_geral', 0) > 0 else 0.0
-            c3.metric("💎 Freq. de Elite (14/15 nos Bilhetes)", f"{elite_rate:.1f}%" if elite_rate > 0 else "0.0%")
-            c4.metric("📈 ROI Financeiro", f"{roi_pct:.1f}%", f"R$ {roi_val:.2f}")
-
-        st.markdown("### 🏆 Performance Oficial (Pós-Auditoria Vida Real)")
-        hits_matriz = st.session_state.data.get("matrizes_reais_hits", {})
-        tm_total = hits_matriz.get("total", 0)
-        media_acertos_matriz = hits_matriz.get("soma_acertos", 0) / tm_total if tm_total > 0 else 0.0
-
-        with st.container(border=True):
-            st.markdown("#### 🎯 Força da Matriz da IA")
-            st.metric("Média de Acertos da Matriz", f"{media_acertos_matriz:.2f} / 15")
-            cm1, cm2, cm3, cm4, cm5 = st.columns(5)
-            cm1.metric("Matriz Acertou 11", hits_matriz.get(11, hits_matriz.get("11", 0)))
-            cm2.metric("Matriz Acertou 12", hits_matriz.get(12, hits_matriz.get("12", 0)))
-            cm3.metric("Matriz Acertou 13", hits_matriz.get(13, hits_matriz.get("13", 0)))
-            cm4.metric("Matriz Acertou 14", hits_matriz.get(14, hits_matriz.get("14", 0)))
-            cm5.metric("Matriz Acertou 15", hits_matriz.get(15, hits_matriz.get("15", 0)))
-
-        hits_bilhetes = st.session_state.data.get("global_hits", {})
-        with st.container(border=True):
-            st.markdown("#### 🎫 Prêmios Retidos nos Bilhetes")
-            cb1, cb2, cb3, cb4, cb5 = st.columns(5)
-            cb1.metric("Bilhetes com 11", hits_bilhetes.get(11, hits_bilhetes.get("11", 0)))
-            cb2.metric("Bilhetes com 12", hits_bilhetes.get(12, hits_bilhetes.get("12", 0)))
-            cb3.metric("Bilhetes com 13", hits_bilhetes.get(13, hits_bilhetes.get("13", 0)))
-            cb4.metric("Bilhetes com 14", hits_bilhetes.get(14, hits_bilhetes.get("14", 0)))
-            cb5.metric("Bilhetes com 15", hits_bilhetes.get(15, hits_bilhetes.get("15", 0)))
-
-        st.markdown("#### 🧬 Raio-X da Evolução Neural (Pesos Dinâmicos)")
-        pesos_ia = st.session_state.data.get("ia_pesos", {})
-        if pesos_ia:
-            cols_pesos = st.columns(len(pesos_ia))
-            for idx, (nome_est, parametros) in enumerate(pesos_ia.items()):
-                with cols_pesos[idx]:
-                    html_card = f"<div style='background-color: white; padding: 15px; border-radius: 10px; border-top: 5px solid #930089; box-shadow: 0px 4px 10px rgba(0,0,0,0.06); height: 100%;'><div style='font-size: 14px; font-weight: 900; color: #333; text-align: center; margin-bottom: 5px;'>{nome_est.upper()}</div><hr style='margin: 10px 0; border: none; border-top: 1px solid #f0f0f0;'>"
-                    for chave, valor in parametros.items(): html_card += f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;'><span style='font-size: 12px; color: #777; font-weight: 700;'>{chave.upper()}</span><span style='font-size: 15px; font-weight: 900; color: #930089;'>{valor:.2f}</span></div>"
-                    html_card += "</div>"
-                    st.markdown(html_card, unsafe_allow_html=True)
-                
-        historico_painel = st.session_state.data.get("historico_dados", [])
-        if historico_painel:
-            ia = raciocinio_total_ia(historico_painel, st.session_state.data.get("ia_memoria", {}))
-            if ia:
-                tamanho_m = ia['qtd_matriz']
-                st.markdown(f"### 🎯 Matriz Cirúrgica Atual — {tamanho_m} Dezenas")
-                with st.container(border=True):
-                    garantia_alvo = st.radio("Alvo do Fechamento:", options=[15, 14, 13], format_func=lambda x: f"Garantia Absoluta de {x} Pontos", horizontal=True, key="radio_garantia_aba2")
-                    jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
-                    st.success(f"**Diagnóstico Matemático:** Para garantir **{garantia_alvo} pontos**, o sistema vai desdobrar **{jogos_exatos} bilhetes**.\n💸 **Custo Fixo Total: R$ {custo_exato:.2f}**")
-
-                st.markdown(f"#### 🧠 Diagnóstico Autônomo — Concurso Alvo {ia['alvo']}")
-                st.info(f"⚡ **LINHA TÁTICA ATIVADA:** {ia['estrategia']}\n\n**DIRETRIZ DA DECISÃO:** {ia['motivo_est']}\n\n🎯 **GRUPO DE ELITE:** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]))
-
-                pesos_ordenados = sorted(ia['pesos'].items(), key=lambda x: x[0])
-                cols = st.columns(5)
-                for idx, (dez, peso) in enumerate(pesos_ordenados):
-                    with cols[idx % 5]:
-                        is_elite = dez in ia['matriz_base']
-                        bg_color, txt_color, border = ("#930089", "white", "none") if is_elite else ("#f4f6f9", "#333", "1px solid #ddd")
-                        st.markdown(f"<div style='background-color: {bg_color}; color: {txt_color}; padding: 10px; border-radius: 8px; border: {border}; text-align: center; margin-bottom: 10px;'><div style='font-size: 20px; font-weight: 900;'>{dez:02d}</div><div style='font-size: 11px; opacity: 0.9;'>Peso: {peso:.1f}</div>{f'<div style=\"font-size: 10px; font-weight: bold; margin-top: 5px; background: rgba(0,0,0,0.2); border-radius: 4px;\">ELITE</div>' if is_elite else ''}</div>", unsafe_allow_html=True)
-        else: st.warning("⚠️ Carregue o Cofre.json na Aba 1 para ativar a Inteligência Artificial.")
+        exibir_mini_painel_financeiro("lotofacil", "#930089")
+        st.markdown("### 🧠 Como a IA da Lotofácil funciona (Detalhado)")
+        st.write("A Lotofácil opera baseada no Fator Termal e Microciclos. A IA varre os últimos sorteios lendo a frequência de aparição de cada dezena, aplicando pesos para tendências de repetição e quebra de ciclo. Ela usa as restrições matemáticas dos Sindicatos: limite rígido de Ímpares, Primos e dezenas na Moldura.")
+        
+        if db_loto["historico_dados"]:
+            ia = raciocinio_ia_lotofacil(db_loto["historico_dados"], db_loto)
+            st.info(f"⚡ **ESTRATÉGIA:** {ia['estrategia']} | **MATRIZ ({ia['qtd_matriz']} Dezenas):** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]))
+        else: st.warning("Sincronize o banco de dados no Pré-Lobby primeiro.")
 
     with tabs[2]:
-        exibir_mini_painel_financeiro()
-        st.markdown("### 🚀 Engenharia Combinatória (100% Exato)")
-        if st.session_state.data["historico_dados"]:
-            ia = raciocinio_total_ia(st.session_state.data["historico_dados"], st.session_state.data.get("ia_memoria", {}))
+        exibir_mini_painel_financeiro("lotofacil", "#930089")
+        if db_loto["historico_dados"]:
+            ia = raciocinio_ia_lotofacil(db_loto["historico_dados"], db_loto)
+            st.markdown(f"<div style='background-color: #fdf5ff; border-left: 5px solid #930089; padding: 15px; border-radius: 5px; margin-bottom: 20px;'><h4 style='color: #930089; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO</h4><p>Se as 15 sorteadas caírem DENTRO da sua Matriz de {ia['qtd_matriz']} dezenas, o prêmio está matematicamente trancado.</p></div>", unsafe_allow_html=True)
             
-            # CAIXA DE AVISO ESCANCARADA INSERIDA AQUI
-            st.markdown(obter_garantia_lotofacil(ia['qtd_matriz']), unsafe_allow_html=True)
-            
-            with st.container(border=True):
-                st.markdown("#### 🎯 Alvo da Garantia Matemática")
-                garantia_alvo = st.radio("Garantia:", options=[15, 14, 13], format_func=lambda x: f"Garantia Absoluta de {x} Pontos", horizontal=True, key="radio_garantia_aba3")
-                jogos_exatos, custo_exato = obter_dados_fechamento(ia['matriz_base'], garantia_alvo)
-                st.info(f"📊 **Volume Exato:** {jogos_exatos} Bilhetes\n\n💸 **Investimento Cravado:** R$ {custo_exato:.2f}")
-                
-                if st.button("🧬 GERAR FECHAMENTO EXATO", type="primary", use_container_width=True):
-                    st.session_state.data["jogos_salvos"] = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
-                    matriz_reduzida = gerar_fechamento_matematico(tuple(ia['matriz_base']), garantia_alvo)
-                    prog_a = st.progress(0)
-                    for i, dezenas_jogo in enumerate(matriz_reduzida):
-                        st.session_state.data["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": sorted(list(dezenas_jogo)), "tamanho": len(dezenas_jogo), "estrategia": ia['cod_estrategia'], "justificativa": f"Matriz {ia['cod_estrategia']}. Garantia 100% de {garantia_alvo} pts.", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0, "matriz_origem": ia['matriz_base']})
-                        if i % max(1, (len(matriz_reduzida) // 10)) == 0: prog_a.progress(min((i+1)/len(matriz_reduzida), 1.0))
-                    st.session_state.data['historico_custos'] += len(matriz_reduzida) * 3.50
-                    salvar_dados(st.session_state.data)
-                    st.success(f"**🥇 FECHAMENTO CONCLUÍDO!** {len(matriz_reduzida)} bilhetes gerados exatos.")
-                    st.rerun()
-
-        jogos_espera = [j for j in st.session_state.data.get("jogos_salvos", []) if j.get('status') == "Aguardando Sorteio"]
-        if jogos_espera:
-            st.markdown("#### 👀 Pré-visualização dos Bilhetes Gerados")
-            bilhetes_por_pagina = 30
-            total_paginas = (len(jogos_espera) // bilhetes_por_pagina) + (1 if len(jogos_espera) % bilhetes_por_pagina > 0 else 0)
-            pagina_atual = st.selectbox("Página (Aba 3)", range(1, total_paginas + 1), label_visibility="collapsed", key="pag_aba3") if total_paginas > 1 else 1
-            inicio, fim = (pagina_atual - 1) * bilhetes_por_pagina, ((pagina_atual - 1) * bilhetes_por_pagina) + bilhetes_por_pagina
-            cols = st.columns(3)
-            for idx, jogo in enumerate(jogos_espera[inicio:fim]):
-                with cols[idx % 3]: exibir_card_volante(jogo, inicio + idx + 1)
+            garantia = st.radio("Garantia do Fechamento:", [15, 14, 13], horizontal=True)
+            if st.button("🧬 GERAR FECHAMENTO EXATO (R$ 3,50/jogo)", type="primary"):
+                jogos = gerar_fechamento_lotofacil(tuple(ia['matriz_base']), garantia)
+                for b in jogos:
+                    db_loto["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": b, "tamanho": 15, "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0})
+                db_loto["historico_custos"] += len(jogos) * 3.50; salvar_db_unico(); st.success(f"Gerado {len(jogos)} bilhetes!"); st.rerun()
 
     with tabs[3]:
-        exibir_mini_painel_financeiro()
-        jogos_em_espera = [j for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Aguardando Sorteio"]
-        total_premio = sum(j.get("premio_valor", 0) for j in st.session_state.data["jogos_salvos"] if j.get('status') == "Premiado")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("🎫 Jogos em Espera", len(jogos_em_espera))
-        c2.metric("💰 Premiação Acumulada", f"R$ {total_premio:.2f}")
-        c3.metric("📊 Bilhetes Auditados", len([j for j in st.session_state.data["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]))
-        st.markdown("---")
-        if st.session_state.data.get("jogos_salvos") and st.session_state.data.get("historico_dados"):
-            ultimo_jogo_criado = st.session_state.data["jogos_salvos"][-1]
-            alvo_foco = ultimo_jogo_criado.get("concurso_alvo")
-            if ultimo_jogo_criado.get("matriz_origem"):
-                st.write(f"**Matriz de {len(ultimo_jogo_criado['matriz_origem'])} dezenas usada para o Concurso {alvo_foco}:**")
-                st.code(", ".join([f"{n:02d}" for n in sorted(list(ultimo_jogo_criado['matriz_origem']))]))
+        exibir_mini_painel_financeiro("lotofacil", "#930089")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 AUDITAR BILHETES PENDENTES", type="primary", use_container_width=True):
+                lucro = auditar_bilhetes_lotofacil(db_loto); salvar_db_unico()
+                st.success(f"Auditoria concluída! Lucro obtido nos acertos: R$ {lucro:,.2f}"); st.rerun()
+        with col2:
+            if st.button("🗑️ LIMPAR FILA", type="secondary", use_container_width=True):
+                db_loto["jogos_salvos"] = []; salvar_db_unico(); st.rerun()
+                
+        st.markdown("#### Últimos Bilhetes")
+        for j in reversed(db_loto["jogos_salvos"][-10:]):
+            st.code(f"Alvo: {j['concurso_alvo']} | {j['dezenas']} | Status: {j['status']} | Prêmio: R$ {j.get('premio_valor', 0):.2f}")
+
+# =====================================================================
+# 5. MOTOR ANALÍTICO - MEGA-SENA
+# =====================================================================
+def calcular_premio_mega(acertos, rateios):
+    if acertos == 6: return rateios.get(6, 35000000.0)
+    if acertos == 5: return rateios.get(5, 45000.0)
+    if acertos == 4: return rateios.get(4, 1200.0)
+    return 0.0
+
+@st.cache_data(show_spinner="🧠 Mega-Sena: Aplicando Filtros Elite e Set Cover...")
+def gerar_fechamento_mega(dezenas_tuple, garantia):
+    dezenas = list(dezenas_tuple)
+    todas_comb = list(itertools.combinations(dezenas, 6))
+    
+    comb_filtradas = []
+    for c in todas_comb:
+        soma = sum(c)
+        mult_10 = sum(1 for x in c if x % 10 == 0)
+        # Filtro de Gauss + Restrição de Coluna Zero
+        if 120 <= soma <= 240 and mult_10 <= 2:
+            comb_filtradas.append(c)
+            
+    if garantia == 6 or len(dezenas) <= 6: return [list(c) for c in comb_filtradas]
+
+    comb_bits = [sum(1 << num for num in c) for c in comb_filtradas]
+    sorteios_possiveis = set(range(len(comb_bits)))
+    bilhetes_escolhidos, cobertura = [], []
+    for b in comb_bits: cobertura.append({j for j, s in enumerate(comb_bits) if (b & s).bit_count() >= garantia})
+    while sorteios_possiveis:
+        melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
+        bilhetes_escolhidos.append(list(comb_filtradas[melhor_idx]))
+        sorteios_possiveis -= cobertura[melhor_idx]
+    return bilhetes_escolhidos
+
+def raciocinio_ia_mega(historico, db_mega):
+    if not historico: return None
+    atrasos, dez_enc = {n: 0 for n in range(1, 61)}, {n: False for n in range(1, 61)}
+    for h in reversed(historico):
+        for n in range(1, 61):
+            if n in h['dezenas']: dez_enc[n] = True
+            elif not dez_enc[n]: atrasos[n] += 1
+
+    cod_est, qtd_matriz, tatic_desc = "Arbitragem de Massa", 13, "Fuga do Padrão Humano + Análise Espacial."
+    scores = {}
+    for n in range(1, 61):
+        d = atrasos.get(n, 0); sc = 0.0
+        if 5 <= d <= 25: sc += 30.0
+        elif d > 25: sc += 15.0 
+        else: sc += 5.0 
+        if n > 31: sc += 20.0 # Tendência da metade inferior
+        if n % 10 in [9, 0]: sc += 15.0
+        scores[n] = sc
+
+    Q1 = set(range(1, 6)) | set(range(11, 16)) | set(range(21, 26))
+    Q2 = set(range(6, 11)) | set(range(16, 21)) | set(range(26, 31))
+    Q3 = set(range(31, 36)) | set(range(41, 46)) | set(range(51, 56))
+    Q4 = set(range(36, 41)) | set(range(46, 51)) | set(range(56, 61))
+    
+    max_por_quad = round(qtd_matriz * 0.35) + 1 
+    matriz = []
+    candidatos = sorted(range(1, 61), key=lambda x: scores.get(x, 0), reverse=True)
+    for n in candidatos:
+        if len(matriz) >= qtd_matriz: break
+        if n in Q1 and sum(1 for x in matriz if x in Q1) >= max_por_quad: continue
+        if n in Q2 and sum(1 for x in matriz if x in Q2) >= max_por_quad: continue
+        if n in Q3 and sum(1 for x in matriz if x in Q3) >= max_por_quad: continue
+        if n in Q4 and sum(1 for x in matriz if x in Q4) >= max_por_quad: continue
+        matriz.append(n)
         
-        if st.session_state.data["jogos_salvos"]:
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1: st.button("🗑️ LIMPAR TODOS", on_click=cb_excluir_todos, type="secondary", use_container_width=True)
-            with col_btn2:
-                ultimas_dezenas = st.session_state.caixa_latest['dezenas'] if 'caixa_latest' in st.session_state and 'dezenas' in st.session_state.caixa_latest else []
-                pdf_bytes = gerar_pdf_jogos(st.session_state.data["jogos_salvos"], ultimas_dezenas)
-                st.download_button("📤 EXPORTAR RELATÓRIO (PDF)", data=pdf_bytes, file_name="Relatorio_LotoMatrix.pdf", mime="application/pdf", type="primary", use_container_width=True)
+    return {
+        "estrategia": cod_est, "motivo_est": tatic_desc, "pesos": scores,
+        "alvo": int((historico[-1]['concurso'] + 1)) if historico else 1,
+        "qtd_matriz": qtd_matriz, "matriz_base": sorted(matriz)
+    }
 
-        jogos = st.session_state.data.get("jogos_salvos", [])
-        if jogos:
-            bilhetes_por_pagina, total_paginas = 30, (len(jogos) // 30) + (1 if len(jogos) % 30 > 0 else 0)
-            pagina_atual = st.selectbox("Navegação de Páginas", range(1, total_paginas + 1), label_visibility="collapsed", key="pag_aba4") if total_paginas > 1 else 1
-            inicio, fim = (pagina_atual - 1) * bilhetes_por_pagina, ((pagina_atual - 1) * bilhetes_por_pagina) + bilhetes_por_pagina
-            cols = st.columns(3)
-            for idx, j in enumerate(jogos[inicio:fim]):
-                with cols[idx % 3]:
-                    exibir_card_volante(j, inicio + idx + 1)
-                    if j.get('status') == "Premiado": st.success(f"✅ PREMIADO ({j.get('acertos', 0)} pts)\n💰 R$ {j.get('premio_valor', 0):.2f}")
-                    elif j.get('status') == "Não Premiado": st.error(f"❌ NÃO PREMIADO ({j.get('acertos', 0)} pts)")
-                    else: st.info("⏳ AGUARDANDO")
-                    st.button("🗑️ Apagar", key=f"del_{j.get('id', uuid.uuid4())}", on_click=cb_excluir_jogo, args=(j.get('id'),), use_container_width=True)
-        else: st.info("Nenhum bilhete registrado na fila.")
-
-    with tabs[4]:
-        exibir_mini_painel_financeiro()
-        with st.container(border=True):
-            col_massa1, col_massa2 = st.columns(2)
-            with col_massa1:
-                if st.button("🛸 BUSCAR FALTANTES E AUDITAR (GAP)", type="primary", use_container_width=True):
-                    historico = st.session_state.data.get("historico_dados", [])
-                    if historico:
-                        try:
-                            res_latest = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest", verify=False, timeout=10).json()
-                            ultimo_salvo, ultimo_oficial = int(historico[-1]["concurso"]), int(res_latest['concurso'])
-                            if ultimo_salvo >= ultimo_oficial: st.info("O sistema já está atualizado.")
-                            else:
-                                barra, lucro_acumulado_massa, logs_massa = st.progress(0), 0.0, []
-                                for i, num in enumerate(list(range(ultimo_salvo + 1, ultimo_oficial + 1))):
-                                    res_conc = requests.get(f"https://loteriascaixa-api.herokuapp.com/api/lotofacil/{num}", verify=False, timeout=10).json()
-                                    if 'concurso' in res_conc:
-                                        dezenas_sorteadas = sorted([int(d) for d in res_conc['dezenas']])
-                                        st.session_state.data["historico_dados"].append({"concurso": num, "dezenas": dezenas_sorteadas, "data": res_conc.get('data', '')})
-                                        lucro_parcial, relatorio_parcial = auditar_e_aprender_unificado(num, dezenas_sorteadas, extrair_rateios_api(res_conc.get('premiacoes', [])))
-                                        lucro_acumulado_massa += lucro_parcial
-                                        logs_massa.extend(relatorio_parcial)
-                                    barra.progress((i + 1) / (ultimo_oficial - ultimo_salvo))
-                                st.session_state.ultimo_aprendizado = list(set(logs_massa))
-                                salvar_dados(st.session_state.data)
-                                st.success(f"✅ GAPs processados com sucesso! R$ {lucro_acumulado_massa:.2f} creditados.")
-                                st.rerun()
-                        except Exception as e: st.error(f"Erro: {e}")
-            with col_massa2:
-                if st.button("📥 1. BAIXAR SORTEIOS (DO 1 AO ATUAL)", type="secondary", use_container_width=True):
-                    with st.spinner("Baixando base de dados da Caixa..."):
-                        try:
-                            res_todos = sorted(requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil", verify=False, timeout=60).json(), key=lambda k: int(k['concurso']))
-                            st.session_state.data["historico_dados"] = [{"concurso": int(r['concurso']), "dezenas": sorted([int(d) for d in r['dezenas']]), "data": r.get('data', '')} for r in res_todos]
-                            salvar_dados(st.session_state.data)
-                            st.success(f"✅ Download de {len(res_todos)} sorteios concluído.")
-                        except Exception as e: st.error(f"Erro na conexão com API: {e}")
-
-        col_sync1, col_sync2 = st.columns(2)
-        with col_sync1:
-            with st.container(border=True):
-                st.markdown("#### 🌐 Sincronização Automática (API Caixa)")
-                if st.button("🔄 Buscar Último Resultado Oficial", type="primary", use_container_width=True):
-                    with st.spinner("Conectando à API da Caixa..."):
-                        try:
-                            resp = requests.get("https://loteriascaixa-api.herokuapp.com/api/lotofacil/latest", verify=False, timeout=15)
-                            if resp.status_code == 200:
-                                res = resp.json()
-                                num_c, dez_o = int(res['concurso']), [int(x) for x in res['dezenas']]
-                                novo_dado = {"concurso": num_c, "data": res['data'], "dezenas": dez_o, "premiacoes": res.get('premiacoes', [])}
-                                if not any(h['concurso'] == num_c for h in st.session_state.data["historico_dados"]): st.session_state.data["historico_dados"].append(novo_dado)
-                                st.session_state.caixa_latest = novo_dado
-                                lucro_total, rel = auditar_e_aprender_unificado(num_c, dez_o, extrair_rateios_api(res.get('premiacoes', [])))
-                                if rel: st.session_state.ultimo_aprendizado = list(set(rel))
-                                salvar_dados(st.session_state.data)
-                                st.success(f"✅ Sincronização Automática Concluída! Prêmios Auditados: R$ {lucro_total:.2f}")
-                                st.rerun()
-                        except Exception as e: st.error(f"Falha de conexão com a API: {e}")
-        with col_sync2:
-            with st.container(border=True):
-                st.markdown("#### 🛠️ Inserção e Conferência Manual")
-                concurso_manual = st.number_input("Número do Concurso:", min_value=1, step=1, key="num_conc_manual")
-                dezenas_texto = st.text_input("Cole as 15 Dezenas Sorteadas:", key="dez_manual_input")
-                if st.button("✅ Confirmar e Auditar Manualmente", use_container_width=True):
-                    try:
-                        dezenas_oficiais = sorted([int(n) for n in re.findall(r'\d+', dezenas_texto)])
-                        if len(dezenas_oficiais) != 15: st.error(f"Insira exatamente 15. Identificados: {len(dezenas_oficiais)}.")
-                        else:
-                            lucro_total, rel = auditar_e_aprender_unificado(concurso_manual, dezenas_oficiais, rateios=None)
-                            if not any(h['concurso'] == concurso_manual for h in st.session_state.data["historico_dados"]):
-                                st.session_state.data["historico_dados"].append({"concurso": concurso_manual, "data": datetime.now().strftime("%d/%m/%Y"), "dezenas": dezenas_oficiais, "premiacoes": []})
-                            if rel: st.session_state.ultimo_aprendizado = list(set(rel))
-                            salvar_dados(st.session_state.data)
-                            st.success(f"✅ Operação Manual Concluída. Prêmios auditados no ROI: R$ {lucro_total:.2f}.")
-                            st.rerun()
-                    except ValueError: st.error("Erro na conversão.")
-
-        with st.container(border=True):
-            st.markdown("#### 🧠 Forçar Reprocessamento da Inteligência Artificial")
-            if st.button("🔄 ATUALIZAR E FORÇAR LEITURA PARA O PRÓXIMO SORTEIO", type="primary", use_container_width=True):
-                st.session_state.data["ia_memoria"] = {}
-                if 'ultimo_aprendizado' in st.session_state: st.session_state.ultimo_aprendizado = []
-                salvar_dados(st.session_state.data)
-                st.success("✅ Memória Cache zerada! A IA recalculará a matriz no próximo acesso.")
-                st.rerun()            
-
-        if 'caixa_latest' in st.session_state:
-            r = st.session_state.caixa_latest
-            st.markdown(f"#### 🏛️ Último Extrato Salvo da Caixa: Concurso {r['concurso']}")
-            if r.get('premiacoes'): st.table(pd.DataFrame(r['premiacoes']))
-    exibir_rodape()
+def auditar_bilhetes_mega(db_mega):
+    historico = {h['concurso']: h for h in db_mega['historico_dados']}
+    lucro_sessao = 0.0
+    for j in db_mega['jogos_salvos']:
+        if j['status'] == "Aguardando Sorteio" and j['concurso_alvo'] in historico:
+            conc_data = historico[j['concurso_alvo']]
+            sorteadas = set(conc_data['dezenas'])
+            rateios = {}
+            for p in conc_data.get('premiacoes', []):
+                desc = p.get('descricao', '').lower()
+                if '6 acertos' in desc or 'sena' in desc: rateios[6] = float(p.get('valorPremio', 0.0))
+                elif '5 acertos' in desc or 'quina' in desc: rateios[5] = float(p.get('valorPremio', 0.0))
+                elif '4 acertos' in desc or 'quadra' in desc: rateios[4] = float(p.get('valorPremio', 0.0))
+            
+            pontos = len(set(j['dezenas']).intersection(sorteadas))
+            j['acertos'] = pontos
+            j['premio_valor'] = calcular_premio_mega(pontos, rateios)
+            
+            db_mega["ledger_track"]["bilhetes"] += 1
+            if pontos >= 4:
+                j['status'] = "Premiado"
+                lucro_sessao += j['premio_valor']
+                db_mega["historico_premios"] += j['premio_valor']
+                db_mega["ledger_track"]["premiados_geral"] += 1
+                if pontos >= 5: db_mega["ledger_track"]["elite"] += 1
+                db_mega["global_hits"][str(pontos)] = db_mega["global_hits"].get(str(pontos), 0) + 1
+            else: j['status'] = "Não Premiado"
+    return lucro_sessao
 
 def tela_megasena():
-    exibir_cabecalho(loteria_especifica="MEGA-SENA PRO", cor_loteria="#209869", icone_loteria="🍀")
-    st.markdown("""<style>:root { --verde: #209869; --verde-hover: #16704d; } .stApp { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; } .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); } .stTabs [data-baseweb="tab"] { border-radius: 8px; padding: 10px 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; transition: all 0.3s ease; } .stTabs [aria-selected="true"] { background-color: var(--verde) !important; color: white !important; border: none; box-shadow: 0 4px 10px rgba(32,152,105,0.3); } div[data-testid="stMetric"] { background-color: white; padding: 20px; border-radius: 12px; border-left: 6px solid var(--verde); box-shadow: 0 4px 6px rgba(0,0,0,0.04); } div[data-testid="stAlert"] { background-color: #f2fbf6 !important; border-left: 5px solid var(--verde) !important; color: #333 !important; border-radius: 8px !important; } button[kind="primary"] { background-color: var(--verde) !important; border: none !important; border-radius: 8px !important; font-weight: bold !important; color: white !important; box-shadow: 0 4px 10px rgba(32,152,105,0.4) !important; transition: all 0.3s ease !important; } button[kind="primary"]:hover { background-color: var(--verde-hover) !important; transform: translateY(-2px); }</style>""", unsafe_allow_html=True)
+    exibir_cabecalho("MEGA-SENA PRO", "#209869", "🟢")
+    db_mega = st.session_state.db["megasena"]
     
-    if "data_mega" not in st.session_state: st.session_state.data_mega = sanitizar_dados_mega({})
-
-    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio", "🏆 5. Sincronização e Entrada"])
+    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio"])
 
     with tabs[0]:
-        st.markdown("### 💾 Central de Dados e Livro-Caixa da Mega-Sena")
-        t_custos, t_premios = st.session_state.data_mega["historico_custos"], st.session_state.data_mega["historico_premios"]
-        resultado_global = t_premios - t_custos
-
-        with st.container(border=True):
-            st.markdown("#### 📈 Balanço Financeiro Global (ROI)")
-            ind1, ind2, ind3 = st.columns(3)
-            ind1.metric("📥 Total Investido (Gastos)", f"R$ {t_custos:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            ind2.metric("📤 Total Retornado (Prêmios)", f"R$ {t_premios:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            str_res = f"R$ {resultado_global:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            if resultado_global > 0: ind3.metric("📊 Lucro Real do Projeto", str_res, "A Máquina está Paga")
-            elif resultado_global < 0: ind3.metric("📊 Prejuízo Real do Projeto", str_res, "Buscando Recuperação")
-            else: ind3.metric("📊 Balanço do Projeto", "R$ 0,00", "Empate / Ponto Zero")
-
-        c1, c2 = st.columns(2)
-        with c1:
-            with st.container(border=True):
-                st.markdown("**📂 Gerenciamento do Cofre Mega-Sena**")
-                st.file_uploader("📥 Carregar Arquivo Cofre_Mega.json", type="json", key="uploader_cofre_mega", on_change=cb_carregar_cofre_mega)
-                st.info(f"📊 **Concursos Oficiais Salvos:** {len(st.session_state.data_mega.get('historico_dados', []))}.")
-                st.download_button("📤 Baixar Backup Consolidado", json.dumps(st.session_state.data_mega), "Cofre_Mega.json", type="primary", use_container_width=True)
-        with c2:
-            with st.container(border=True):
-                st.markdown("**💸 Correção Manual de Livro-Caixa**")
-                valor_mov = st.number_input("Digite o Valor (R$):", min_value=0.0, step=10.0, key="input_mov_mega")
-                col_dep, col_sac = st.columns(2)
-                with col_dep:
-                    if st.button("➕ Adicionar Gasto Extra", key="btn_gasto_mega", use_container_width=True) and valor_mov > 0:
-                        st.session_state.data_mega["historico_custos"] += valor_mov
-                        salvar_dados_mega(st.session_state.data_mega)
-                        st.rerun()
-                with col_sac:
-                    if st.button("✅ Adicionar Prêmio Extra", key="btn_premio_mega", use_container_width=True) and valor_mov > 0:
-                        st.session_state.data_mega["historico_premios"] += valor_mov
-                        salvar_dados_mega(st.session_state.data_mega)
-                        st.rerun()
-                st.divider()
-                if st.button("🔄 ZERAR CONTABILIDADE", key="btn_zerar_mega", use_container_width=True, type="secondary"):
-                    st.session_state.data_mega["historico_custos"] = st.session_state.data_mega["historico_premios"] = 0.0
-                    st.session_state.data_mega["ledger_track"] = {"bilhetes": 0, "premiados_geral": 0, "elite": 0}
-                    salvar_dados_mega(st.session_state.data_mega)
-                    st.rerun()
+        exibir_mini_painel_financeiro("megasena", "#209869")
+        st.info(f"Concursos Oficiais Salvos: **{len(db_mega['historico_dados'])}**")
+        if st.button("🔄 ZERAR CONTABILIDADE (MEGA)", type="secondary"):
+            db_mega["historico_custos"] = db_mega["historico_premios"] = 0.0
+            salvar_db_unico(); st.rerun()
 
     with tabs[1]:
-        exibir_mini_painel_financeiro_mega()
-        st.markdown("### 🧠 Diagnóstico da Inteligência Artificial (Mega-Sena)")
-        track = st.session_state.data_mega.get("ledger_track", {"bilhetes": 0, "premiados_geral": 0, "elite": 0})
-        custo_real, retorno_real = st.session_state.data_mega.get("historico_custos", 0.0), st.session_state.data_mega.get("historico_premios", 0.0)
-        win_rate = (track['premiados_geral'] / track['bilhetes'] * 100) if track.get('bilhetes', 0) > 0 else 0.0
-        roi_val, roi_pct = retorno_real - custo_real, ((retorno_real - custo_real) / custo_real * 100) if custo_real > 0 else 0.0
-
-        with st.container(border=True):
-            st.markdown("#### 📈 Track Record: A Máquina em Ação")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("🎟️ Bilhetes Operados", track.get('bilhetes', 0))
-            c2.metric("🎯 Win Rate (Prêmios)", f"{win_rate:.1f}%")
-            elite_rate = (track.get('elite', 0) / track.get('premiados_geral', 1) * 100) if track.get('premiados_geral', 0) > 0 else 0.0
-            c3.metric("💎 Freq. Quina/Sena", f"{elite_rate:.1f}%" if elite_rate > 0 else "0.0%")
-            c4.metric("📈 ROI Financeiro", f"{roi_pct:.1f}%", f"R$ {roi_val:.2f}")
-
-        hits_matriz = st.session_state.data_mega.get("matrizes_reais_hits", {})
-        with st.container(border=True):
-            st.markdown("#### 🎯 Força da Matriz da IA")
-            cm1, cm2, cm3 = st.columns(3)
-            cm1.metric("Matriz Acertou Quadra", hits_matriz.get(4, hits_matriz.get("4", 0)))
-            cm2.metric("Matriz Acertou Quina", hits_matriz.get(5, hits_matriz.get("5", 0)))
-            cm3.metric("Matriz Acertou Sena", hits_matriz.get(6, hits_matriz.get("6", 0)))
-
-        hits_bilhetes = st.session_state.data_mega.get("global_hits", {})
-        with st.container(border=True):
-            st.markdown("#### 🎫 Prêmios Retidos nos Bilhetes")
-            cb1, cb2, cb3 = st.columns(3)
-            cb1.metric("Bilhetes com Quadra", hits_bilhetes.get(4, hits_bilhetes.get("4", 0)))
-            cb2.metric("Bilhetes com Quina", hits_bilhetes.get(5, hits_bilhetes.get("5", 0)))
-            cb3.metric("Bilhetes com Sena", hits_bilhetes.get(6, hits_bilhetes.get("6", 0)))
-
-        st.markdown("#### 🧬 Raio-X da Evolução Neural (Pesos Dinâmicos)")
-        pesos_ia = st.session_state.data_mega.get("ia_pesos", {})
-        if pesos_ia:
-            cols_pesos = st.columns(len(pesos_ia))
-            for idx, (nome_est, parametros) in enumerate(pesos_ia.items()):
-                with cols_pesos[idx]:
-                    html_card = f"<div style='background-color: white; padding: 15px; border-radius: 10px; border-top: 5px solid #209869; box-shadow: 0px 4px 10px rgba(0,0,0,0.06); height: 100%;'><div style='font-size: 14px; font-weight: 900; color: #333; text-align: center; margin-bottom: 5px;'>{nome_est.upper()}</div><hr style='margin: 10px 0; border: none; border-top: 1px solid #f0f0f0;'>"
-                    for chave, valor in parametros.items(): html_card += f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;'><span style='font-size: 12px; color: #777; font-weight: 700;'>{chave.upper()}</span><span style='font-size: 15px; font-weight: 900; color: #209869;'>{valor:.2f}</span></div>"
-                    html_card += "</div>"
-                    st.markdown(html_card, unsafe_allow_html=True)
-                
-        historico_painel = st.session_state.data_mega.get("historico_dados", [])
-        if historico_painel:
-            ia = raciocinio_total_ia_mega(historico_painel, {})
-            if ia:
-                tamanho_m = ia['qtd_matriz']
-                st.markdown(f"### 🎯 Matriz Cirúrgica Atual — {tamanho_m} Dezenas")
-                with st.container(border=True):
-                    st.info(f"⚡ **LINHA TÁTICA ATIVADA:** {ia['estrategia']}\n\n**DIRETRIZ DA DECISÃO:** {ia['motivo_est']}\n\n🎯 **GRUPO DE ELITE:** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]))
-                    st.markdown("#### 🗺️ Heatmap Espacial de 60 Dezenas")
-                    pesos_ordenados = sorted(ia['pesos'].items(), key=lambda x: x[0])
-                    cols = st.columns(10)
-                    for idx, (dez, peso) in enumerate(pesos_ordenados):
-                        with cols[idx % 10]:
-                            is_elite = dez in ia['matriz_base']
-                            bg_color, tx_color, border = ("#209869", "white", "none") if is_elite else ("#f4f6f9", "#333", "1px solid #ddd")
-                            st.markdown(f"<div style='background-color:{bg_color}; color:{tx_color}; width:100%; aspect-ratio:1; border-radius:8px; border:{border}; display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:8px;'><div style='font-size:16px; font-weight:900;'>{dez:02d}</div><div style='font-size:9px;'>{peso:.1f}</div></div>", unsafe_allow_html=True)
-        else: st.warning("⚠️ Carregue o Cofre_Mega.json na Aba 1.")
+        exibir_mini_painel_financeiro("megasena", "#209869")
+        st.markdown("### 🧠 Como a IA da Mega-Sena funciona (Detalhado)")
+        st.write("Diferente da Lotofácil, a Mega-Sena requer análise Espacial. A IA mapeia o volante dividindo-o em 4 quadrantes estritos e previne que o desdobramento se aglomere em uma única área geométrica. Além disso, a máquina elimina automaticamente bilhetes cuja soma seja menor que 120 ou maior que 240 (Regra de Ouro de Gauss).")
+        if db_mega["historico_dados"]:
+            ia = raciocinio_ia_mega(db_mega["historico_dados"], db_mega)
+            st.info(f"⚡ **ESTRATÉGIA:** {ia['estrategia']} | **MATRIZ ({ia['qtd_matriz']} Dezenas):** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]))
+        else: st.warning("Sincronize o banco de dados no Pré-Lobby primeiro.")
 
     with tabs[2]:
-        exibir_mini_painel_financeiro_mega()
-        st.markdown("### 🚀 Engenharia Combinatória Mega-Sena (Nível Elite Ativado)")
-        
-        if st.session_state.data_mega["historico_dados"]:
-            ia = raciocinio_total_ia_mega(st.session_state.data_mega["historico_dados"], {})
+        exibir_mini_painel_financeiro("megasena", "#209869")
+        if db_mega["historico_dados"]:
+            ia = raciocinio_ia_mega(db_mega["historico_dados"], db_mega)
+            st.markdown(f"<div style='background-color: #f2fbf6; border-left: 5px solid #209869; padding: 15px; border-radius: 5px; margin-bottom: 20px;'><h4 style='color: #209869; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO (Filtros Ativos)</h4><p>Se as 6 sorteadas estiverem DENTRO da sua Matriz de {ia['qtd_matriz']} dezenas e passarem no Filtro de Gauss, a sua garantia é 100% honrada.</p></div>", unsafe_allow_html=True)
             
-            # CAIXA DE AVISO ESCANCARADA INSERIDA AQUI
-            st.markdown(obter_garantia_megasena(ia['qtd_matriz']), unsafe_allow_html=True)
-            
-            # CHECAGEM FINANCEIRA DE EV (VALOR ESPERADO)
-            st.markdown("#### ⚖️ Trava Financeira (Valor Esperado - EV)")
-            premio_atual_input = st.number_input("Valor Estimado do Prêmio Hoje (R$):", min_value=0.0, value=5000000.0, step=1000000.0)
-            teto_ev = 80000000.0
-            if premio_atual_input < teto_ev:
-                st.warning(f"⚠️ **ALERTA DE RISCO:** O prêmio de R$ {premio_atual_input:,.2f} é matematicamente BAIXO para desdobramentos pesados. Profissionais focam na Mega quando acumula acima de 80 Milhões.")
-            else:
-                st.success(f"✅ **EV POSITIVO:** Prêmio atrativo (Maior que 80 Milhões). Investimento justificado.")
-
-            with st.container(border=True):
-                garantia_alvo = st.radio("Garantia:", options=[6, 5, 4], format_func=lambda x: f"Garantia Absoluta de {x} Pontos", horizontal=True, key="radio_garantia_mega_aba3")
-                jogos_exatos, custo_exato = obter_dados_fechamento_mega(ia['matriz_base'], garantia_alvo)
-                st.info(f"📊 **Volume Exato Pós-Filtro Elite:** {jogos_exatos} Bilhetes\n\n💸 **Investimento:** R$ {custo_exato:.2f}")
-
-                if st.button("🧬 GERAR FECHAMENTO EXATO COM FILTROS ELITE", type="primary", use_container_width=True, key="btn_gerar_mega"):
-                    st.session_state.data_mega["jogos_salvos"] = [j for j in st.session_state.data_mega["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
-                    matriz_reduzida = gerar_fechamento_matematico_mega(tuple(ia['matriz_base']), garantia_alvo)
-                    prog_a = st.progress(0)
-                    for i, dezenas_jogo in enumerate(matriz_reduzida):
-                        st.session_state.data_mega["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": sorted(list(dezenas_jogo)), "tamanho": len(dezenas_jogo), "estrategia": ia['cod_estrategia'], "justificativa": f"Garantia de {garantia_alvo} pts. Filtros Elite ON.", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0, "matriz_origem": ia['matriz_base']})
-                        if i % max(1, (len(matriz_reduzida) // 10)) == 0: prog_a.progress(min((i+1)/len(matriz_reduzida), 1.0))
-                    st.session_state.data_mega['historico_custos'] += len(matriz_reduzida) * 5.00
-                    salvar_dados_mega(st.session_state.data_mega)
-                    st.success(f"**🥇 FECHAMENTO ELITE CONCLUÍDO!** {len(matriz_reduzida)} bilhetes validados matematicamente.")
-                    st.rerun()
-
-        jogos_espera = [j for j in st.session_state.data_mega.get("jogos_salvos", []) if j.get('status') == "Aguardando Sorteio"]
-        if jogos_espera:
-            st.markdown("#### 👀 Pré-visualização")
-            bilhetes_por_pagina, total_paginas = 30, (len(jogos_espera) // 30) + (1 if len(jogos_espera) % 30 > 0 else 0)
-            pagina_atual = st.selectbox("Página", range(1, total_paginas + 1), label_visibility="collapsed", key="pag_mega_aba3") if total_paginas > 1 else 1
-            inicio, fim = (pagina_atual - 1) * bilhetes_por_pagina, ((pagina_atual - 1) * bilhetes_por_pagina) + bilhetes_por_pagina
-            cols = st.columns(3)
-            for idx, jogo in enumerate(jogos_espera[inicio:fim]):
-                with cols[idx % 3]: exibir_card_volante_mega(jogo, inicio + idx + 1)
+            garantia = st.radio("Garantia do Fechamento:", [6, 5, 4], horizontal=True)
+            if st.button("🧬 GERAR FECHAMENTO DE ELITE (R$ 6,00/jogo)", type="primary"):
+                jogos = gerar_fechamento_mega(tuple(ia['matriz_base']), garantia)
+                for b in jogos:
+                    db_mega["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": b, "tamanho": 6, "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0})
+                db_mega["historico_custos"] += len(jogos) * 6.00; salvar_db_unico(); st.success(f"Gerado {len(jogos)} bilhetes filtrados!"); st.rerun()
 
     with tabs[3]:
-        exibir_mini_painel_financeiro_mega()
-        jogos_em_espera = [j for j in st.session_state.data_mega.get("jogos_salvos", []) if j.get('status') == "Aguardando Sorteio"]
-        total_premio = sum(j.get("premio_valor", 0) for j in st.session_state.data_mega.get("jogos_salvos", []) if j.get('status') == "Premiado")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("🎫 Jogos em Espera", len(jogos_em_espera))
-        c2.metric("💰 Premiação Total", f"R$ {total_premio:.2f}")
-        c3.metric("📊 Bilhetes Auditados", len([j for j in st.session_state.data_mega.get("jogos_salvos", []) if j.get('status') != "Aguardando Sorteio"]))
+        exibir_mini_painel_financeiro("megasena", "#209869")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 AUDITAR BILHETES PENDENTES", type="primary", use_container_width=True):
+                lucro = auditar_bilhetes_mega(db_mega); salvar_db_unico()
+                st.success(f"Auditoria concluída! Lucro obtido: R$ {lucro:,.2f}"); st.rerun()
+        with col2:
+            if st.button("🗑️ LIMPAR FILA", type="secondary", use_container_width=True):
+                db_mega["jogos_salvos"] = []; salvar_db_unico(); st.rerun()
+                
+        st.markdown("#### Últimos Bilhetes")
+        for j in reversed(db_mega["jogos_salvos"][-10:]):
+            st.code(f"Alvo: {j['concurso_alvo']} | {j['dezenas']} | Status: {j['status']} | Prêmio: R$ {j.get('premio_valor', 0):.2f}")
+
+# =====================================================================
+# 6. MOTOR ANALÍTICO - LOTOMANIA (ELITE ESTOCÁSTICO)
+# =====================================================================
+def calcular_premio_lotomania(acertos, rateios):
+    if acertos == 20: return rateios.get(20, 5000000.0)
+    if acertos == 19: return rateios.get(19, 50000.0)
+    if acertos == 18: return rateios.get(18, 2500.0)
+    if acertos == 17: return rateios.get(17, 250.0)
+    if acertos == 16: return rateios.get(16, 30.0)
+    if acertos == 15: return rateios.get(15, 10.0)
+    if acertos == 0: return rateios.get(0, 150000.0)
+    return 0.0
+
+def validar_filtros_lotomania(jogo):
+    soma = sum(jogo)
+    if not (2100 <= soma <= 2800): return False # Curva de Gauss (Massiva)
+    q1 = q2 = q3 = q4 = 0
+    for dezena in jogo:
+        lin, col = dezena // 10, dezena % 10
+        if lin < 5 and col < 5: q1 += 1
+        elif lin < 5 and col >= 5: q2 += 1
+        elif lin >= 5 and col < 5: q3 += 1
+        else: q4 += 1
+    # Balanceamento restrito de quadrantes para evitar bolos no volante
+    if any(q < 8 or q > 17 for q in [q1, q2, q3, q4]): return False
+    return True
+
+@st.cache_data(show_spinner="🧠 Lotomania: Aplicando Filtros de Monte Carlo...")
+def gerar_estrategia_super_matriz(top_dezenas, qtd_jogos=5):
+    jogos_aprovados = []
+    max_tentativas = 20000 
+    tentativas = 0
+    while len(jogos_aprovados) < qtd_jogos and tentativas < max_tentativas:
+        candidato = sorted(random.sample(top_dezenas, 50))
+        if validar_filtros_lotomania(candidato): jogos_aprovados.append(candidato)
+        tentativas += 1
+    return jogos_aprovados
+
+def raciocinio_ia_lotomania(historico, db_lotomania):
+    if not historico: return None
+    atrasos = {n: 0 for n in range(100)}
+    dez_enc = {n: False for n in range(100)}
     
-        if st.session_state.data_mega.get("jogos_salvos") and st.session_state.data_mega.get("historico_dados"):
-            ultimo_jogo_criado = st.session_state.data_mega["jogos_salvos"][-1]
-            if ultimo_jogo_criado.get("matriz_origem"):
-                st.write(f"**Matriz Usada (Alvo {ultimo_jogo_criado.get('concurso_alvo')}):**")
-                st.code(", ".join([f"{n:02d}" for n in sorted(list(set(ultimo_jogo_criado.get("matriz_origem"))))]))
+    for h in reversed(historico):
+        for n in range(100):
+            if n in h['dezenas'] or f"{n:02d}" in h['dezenas']: dez_enc[n] = True
+            elif not dez_enc[n]: atrasos[n] += 1
+
+    scores = {}
+    for n in range(100):
+        d = atrasos.get(n, 0)
+        sc = 50.0
+        if n % 10 in [0, 9]: sc += 10.0 # Fuga de humanos (pontas)
+        if 3 <= d <= 12: sc += 25.0 # Fervura Térmica
+        elif d > 20: sc -= 15.0 # Zona Congelada
+        scores[n] = round(sc, 2)
+
+    ranking = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    top_70 = sorted([x[0] for x in ranking[:70]]) # Para acertar 20
+    zona_morta = sorted([x[0] for x in ranking[-50:]]) # Para errar tudo (0 acertos)
+
+    return {
+        "estrategia": "Monte Carlo Estocástico", 
+        "motivo_est": "Ataque Massivo com Análise de Quadrantes e Ponto de Fervura.",
+        "pesos": scores, "alvo": int(historico[-1]['concurso'] + 1) if historico else 1,
+        "top_70": top_70, "zona_morta": zona_morta
+    }
+
+def auditar_bilhetes_lotomania(db_lotomania):
+    historico = {h['concurso']: h for h in db_lotomania['historico_dados']}
+    lucro_sessao = 0.0
+    for j in db_lotomania['jogos_salvos']:
+        if j['status'] == "Aguardando Sorteio" and j['concurso_alvo'] in historico:
+            conc_data = historico[j['concurso_alvo']]
+            sorteadas = set(conc_data['dezenas'])
+            rateios = {}
+            for p in conc_data.get('premiacoes', []):
+                desc = p.get('descricao', '').lower()
+                if '20 acertos' in desc: rateios[20] = float(p.get('valorPremio', 0.0))
+                elif '19 acertos' in desc: rateios[19] = float(p.get('valorPremio', 0.0))
+                elif '18 acertos' in desc: rateios[18] = float(p.get('valorPremio', 0.0))
+                elif '17 acertos' in desc: rateios[17] = float(p.get('valorPremio', 0.0))
+                elif '16 acertos' in desc: rateios[16] = float(p.get('valorPremio', 0.0))
+                elif '15 acertos' in desc: rateios[15] = float(p.get('valorPremio', 0.0))
+                elif '0 acertos' in desc or 'nenhum' in desc: rateios[0] = float(p.get('valorPremio', 0.0))
+            
+            pontos = len(set(j['dezenas']).intersection(sorteadas))
+            j['acertos'] = pontos
+            j['premio_valor'] = calcular_premio_lotomania(pontos, rateios)
+            
+            db_lotomania["ledger_track"]["bilhetes"] += 1
+            if pontos in [0, 15, 16, 17, 18, 19, 20]:
+                j['status'] = "Premiado"
+                lucro_sessao += j['premio_valor']
+                db_lotomania["historico_premios"] += j['premio_valor']
+                db_lotomania["ledger_track"]["premiados_geral"] += 1
+                if pontos in [0, 19, 20]: db_lotomania["ledger_track"]["elite"] += 1
+                db_lotomania["global_hits"][str(pontos)] = db_lotomania["global_hits"].get(str(pontos), 0) + 1
+            else: j['status'] = "Não Premiado"
+    return lucro_sessao
+
+def tela_lotomania():
+    exibir_cabecalho("LOTOMANIA PRO", "#F78100", "🟠")
+    db_lotomania = st.session_state.db["lotomania"]
+    
+    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio"])
+
+    with tabs[0]:
+        exibir_mini_painel_financeiro("lotomania", "#F78100")
+        st.info(f"Concursos Oficiais Salvos: **{len(db_lotomania['historico_dados'])}**")
+        if st.button("🔄 ZERAR CONTABILIDADE (LOTOMANIA)", type="secondary"):
+            db_lotomania["historico_custos"] = db_lotomania["historico_premios"] = 0.0
+            salvar_db_unico(); st.rerun()
+
+    with tabs[1]:
+        exibir_mini_painel_financeiro("lotomania", "#F78100")
+        st.markdown("### 🧠 Como a IA da Lotomania funciona (Detalhado)")
+        st.write("A escala da Lotomania é massiva. Fazer Set Cover absoluto trava supercomputadores. A IA usa **Filtros Estocásticos (Monte Carlo)**. Ela mapeia os 100 números, isola as 70 melhores dezenas ('Super Matriz') e as 50 piores dezenas ('Zona Morta'). Ao gerar, aplica a Curva de Gauss exigindo que a soma caia entre 2100 e 2800 e balanceia os quadrantes para não dar erro na lotérica.")
         
-        if st.session_state.data_mega.get("jogos_salvos"):
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1: st.button("🗑️ LIMPAR TODOS", on_click=cb_excluir_todos_mega, type="secondary", use_container_width=True, key="btn_limpar_todos_mega")
-            with col_btn2:
-                ultimas_dezenas = st.session_state.data_mega["historico_dados"][-1]['dezenas'] if st.session_state.data_mega.get("historico_dados") else []
-                pdf_bytes = gerar_pdf_jogos_mega(st.session_state.data_mega["jogos_salvos"], ultimas_dezenas)
-                st.download_button("📤 EXPORTAR RELATÓRIO", data=pdf_bytes, file_name="Relatorio_Mega.pdf", mime="application/pdf", type="primary", use_container_width=True)
+        if db_lotomania["historico_dados"]:
+            ia = raciocinio_ia_lotomania(db_lotomania["historico_dados"], db_lotomania)
+            col_b, col_r = st.columns(2)
+            with col_b:
+                st.success(f"🎯 **SUPER MATRIZ (Top 70):**\n\n" + ", ".join([f"{n:02d}" for n in ia['top_70']]))
+            with col_r:
+                st.error(f"🪞 **ZONA MORTA (Piores 50):**\n\n" + ", ".join([f"{n:02d}" for n in ia['zona_morta']]))
+        else: st.warning("Sincronize o banco de dados no Pré-Lobby primeiro.")
 
-        jogos = st.session_state.data_mega.get("jogos_salvos", [])
-        if jogos:
-            bilhetes_por_pagina, total_paginas = 30, (len(jogos) // 30) + (1 if len(jogos) % 30 > 0 else 0)
-            pagina_atual = st.selectbox("Navegação", range(1, total_paginas + 1), key="pag_mega_aba4") if total_paginas > 1 else 1
-            inicio, fim = (pagina_atual - 1) * bilhetes_por_pagina, ((pagina_atual - 1) * bilhetes_por_pagina) + bilhetes_por_pagina
-            cols = st.columns(3)
-            for idx, j in enumerate(jogos[inicio:fim]):
-                with cols[idx % 3]:
-                    exibir_card_volante_mega(j, inicio + idx + 1)
-                    if j.get('status') == "Premiado": st.success(f"✅ PREMIADO ({j.get('acertos', 0)} pts)\n💰 R$ {j.get('premio_valor', 0):.2f}")
-                    elif j.get('status') == "Não Premiado": st.error(f"❌ NÃO PREMIADO ({j.get('acertos', 0)} pts)")
-                    else: st.info("⏳ AGUARDANDO")
-                    st.button("🗑️ Apagar", key=f"del_mega_{j.get('id', uuid.uuid4())}", on_click=cb_excluir_jogo_mega, args=(j.get('id'),), use_container_width=True)
+    with tabs[2]:
+        exibir_mini_painel_financeiro("lotomania", "#F78100")
+        if db_lotomania["historico_dados"]:
+            ia = raciocinio_ia_lotomania(db_lotomania["historico_dados"], db_lotomania)
+            st.markdown(f"<div style='background-color: #fff8f0; border-left: 5px solid #F78100; padding: 15px; border-radius: 5px; margin-bottom: 20px;'><h4 style='color: #F78100; margin-top: 0;'>🔒 LIBERDADE DE COMBATE</h4><p>Você decide a abordagem matemática. Ataque a Super Matriz para focar em 20 pontos, ou foque na Zona Morta para focar em 0 pontos através da aposta Espelho.</p></div>", unsafe_allow_html=True)
+            
+            tipo = st.radio("Escolha sua Diretriz Tática:", ["1. Super Matriz (Tentar Acertar 20 Pontos)", "2. Zona Morta (Tentar Acertar 0 Pontos - ESPELHO)"], key="radio_tatico_loto")
+            
+            if "Super" in tipo:
+                qtd = st.slider("Quantidade de Bilhetes:", 1, 30, 5)
+                if st.button(f"🧬 GERAR LOTOMANIA ELITE (R$ {qtd * 3.00:.2f})", type="primary"):
+                    db_lotomania["jogos_salvos"] = [j for j in db_lotomania["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
+                    aprovados = gerar_estrategia_super_matriz(ia['top_70'], qtd)
+                    for b in aprovados:
+                        db_lotomania["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": b, "tamanho": 50, "estrategia": "Super 70 (Gauss)", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0})
+                    db_lotomania["historico_custos"] += len(aprovados) * 3.00; salvar_db_unico(); st.success(f"Gerado {len(aprovados)} bilhetes validados!"); st.rerun()
+            else:
+                st.warning("⚠️ **INSTRUÇÃO SINDICAL:** Ao registrar este bilhete, você DEVE marcar a opção 'Aposta Espelho' no volante para cobrir os 0 acertos com a máquina da Caixa.")
+                if st.button("🪞 GERAR BILHETE TÓXICO (R$ 6,00 c/ Espelho)", type="primary"):
+                    db_lotomania["jogos_salvos"] = [j for j in db_lotomania["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
+                    db_lotomania["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": ia['zona_morta'], "tamanho": 50, "estrategia": "Espelho Reverso (0 pts)", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0})
+                    db_lotomania["historico_custos"] += 6.00; salvar_db_unico(); st.success("Bilhete de Ataque Reverso gerado!"); st.rerun()
 
-    with tabs[4]:
-        exibir_mini_painel_financeiro_mega()
-        with st.container(border=True):
-            col_massa1, col_massa2 = st.columns(2)
-            with col_massa1:
-                st.markdown("#### 🛸 Buscar Faltantes (API)")
-                if st.button("🛸 AUDITAR GAPs MEGA-SENA", type="primary", use_container_width=True, key="btn_gap_mega"):
-                    historico = st.session_state.data_mega.get("historico_dados", [])
-                    if historico:
-                        try:
-                            res_latest = requests.get("https://loteriascaixa-api.herokuapp.com/api/megasena/latest", verify=False, timeout=10).json()
-                            ultimo_salvo, ultimo_oficial = int(historico[-1]["concurso"]), int(res_latest['concurso'])
-                            if ultimo_salvo >= ultimo_oficial: st.info("O sistema já está atualizado.")
-                            else:
-                                barra, lucro_acumulado_massa = st.progress(0), 0.0
-                                for i, num in enumerate(list(range(ultimo_salvo + 1, ultimo_oficial + 1))):
-                                    res_conc = requests.get(f"https://loteriascaixa-api.herokuapp.com/api/megasena/{num}", verify=False, timeout=10).json()
-                                    if 'concurso' in res_conc:
-                                        dezenas_sorteadas = sorted([int(d) for d in res_conc['dezenas']])
-                                        st.session_state.data_mega["historico_dados"].append({"concurso": num, "dezenas": dezenas_sorteadas, "data": res_conc.get('data', '')})
-                                        lucro_parcial, _ = auditar_e_aprender_unificado_mega(num, dezenas_sorteadas, extrair_rateios_api_mega(res_conc.get('premiacoes', [])))
-                                        lucro_acumulado_massa += lucro_parcial
-                                    barra.progress((i + 1) / (ultimo_oficial - ultimo_salvo))
-                                salvar_dados_mega(st.session_state.data_mega)
-                                st.success(f"✅ GAPs processados. R$ {lucro_acumulado_massa:.2f} creditados.")
-                                st.rerun()
-                        except Exception as e: st.error(f"Erro: {e}")
-            with col_massa2:
-                st.markdown("#### ☢️ Iniciar Operação (Download Base)")
-                if st.button("📥 BAIXAR TODOS OS SORTEIOS", type="secondary", use_container_width=True, key="btn_down_mega"):
-                    with st.spinner("Baixando base de dados da Mega-Sena..."):
-                        try:
-                            res_todos = sorted(requests.get("https://loteriascaixa-api.herokuapp.com/api/megasena", verify=False, timeout=60).json(), key=lambda k: int(k['concurso']))
-                            st.session_state.data_mega["historico_dados"] = [{"concurso": int(r['concurso']), "dezenas": sorted([int(d) for d in r['dezenas']]), "data": r.get('data', '')} for r in res_todos]
-                            salvar_dados_mega(st.session_state.data_mega)
-                            st.success("✅ Download concluído.")
-                        except Exception as e: st.error(f"Erro na conexão com API: {e}")
-
-        col_sync1, col_sync2 = st.columns(2)
-        with col_sync1:
-            with st.container(border=True):
-                st.markdown("#### 🌐 Sincronização Automática")
-                if st.button("🔄 Buscar Último Resultado Oficial", type="primary", use_container_width=True, key="btn_sync_mega"):
-                    with st.spinner("Conectando à API..."):
-                        try:
-                            resp = requests.get("https://loteriascaixa-api.herokuapp.com/api/megasena/latest", verify=False, timeout=15)
-                            if resp.status_code == 200:
-                                res = resp.json()
-                                num_c, dez_o = int(res['concurso']), sorted([int(x) for x in res['dezenas']])
-                                novo_dado = {"concurso": num_c, "data": res.get('data',''), "dezenas": dez_o, "premiacoes": res.get('premiacoes', [])}
-                                if not any(h['concurso'] == num_c for h in st.session_state.data_mega["historico_dados"]): st.session_state.data_mega["historico_dados"].append(novo_dado)
-                                st.session_state.caixa_latest_mega = novo_dado
-                                lucro_total, _ = auditar_e_aprender_unificado_mega(num_c, dez_o, extrair_rateios_api_mega(res.get('premiacoes', [])))
-                                salvar_dados_mega(st.session_state.data_mega)
-                                st.success(f"✅ Atualizado! R$ {lucro_total:.2f} contabilizados.")
-                                st.rerun()
-                        except Exception as e: st.error(f"Erro: {e}")
-        with col_sync2:
-            with st.container(border=True):
-                st.markdown("#### 🛠️ Inserção Manual")
-                concurso_manual = st.number_input("Número do Concurso:", min_value=1, step=1, key="num_conc_manual_mega")
-                dezenas_texto = st.text_input("Cole 6 Dezenas Sorteadas:", key="dez_manual_input_mega")
-                if st.button("✅ Confirmar e Auditar", use_container_width=True, key="btn_man_mega"):
-                    try:
-                        dezenas_oficiais = sorted([int(n) for n in re.findall(r'\d+', dezenas_texto)])
-                        if len(dezenas_oficiais) != 6: st.error("Insira exatamente 6 números.")
-                        else:
-                            lucro_total, _ = auditar_e_aprender_unificado_mega(concurso_manual, dezenas_oficiais, rateios=None)
-                            if not any(h['concurso'] == concurso_manual for h in st.session_state.data_mega["historico_dados"]):
-                                novo_dado = {"concurso": concurso_manual, "data": datetime.now().strftime("%d/%m/%Y"), "dezenas": dezenas_oficiais, "premiacoes": []}
-                                st.session_state.data_mega["historico_dados"].append(novo_dado)
-                                st.session_state.caixa_latest_mega = novo_dado
-                            salvar_dados_mega(st.session_state.data_mega)
-                            st.success(f"✅ Sucesso. Prêmios: R$ {lucro_total:.2f}.")
-                            st.rerun()
-                    except ValueError: st.error("Erro na conversão.")
-
-        with st.container(border=True):
-            st.markdown("#### 🧠 Forçar Reprocessamento da Inteligência Artificial")
-            if st.button("🔄 ATUALIZAR E FORÇAR LEITURA PARA O PRÓXIMO SORTEIO", type="primary", use_container_width=True, key="btn_force_mega"):
-                st.session_state.data_mega["ia_memoria"] = {}
-                salvar_dados_mega(st.session_state.data_mega)
-                st.success("✅ Memória Cache zerada! A IA recalculará a matriz no próximo acesso.")
-                st.rerun() 
-
-        if 'caixa_latest_mega' in st.session_state:
-            r = st.session_state.caixa_latest_mega
-            st.markdown(f"#### 🏛️ Último Extrato Salvo da Caixa: Concurso {r['concurso']}")
-            if r.get('premiacoes'): st.table(pd.DataFrame(r['premiacoes']))
-
-    exibir_rodape()
+    with tabs[3]:
+        exibir_mini_painel_financeiro("lotomania", "#F78100")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 AUDITAR BILHETES PENDENTES", type="primary", use_container_width=True, key="audit_loto"):
+                lucro = auditar_bilhetes_lotomania(db_lotomania); salvar_db_unico()
+                st.success(f"Auditoria concluída! Lucro obtido: R$ {lucro:,.2f}"); st.rerun()
+        with col2:
+            if st.button("🗑️ LIMPAR FILA", type="secondary", use_container_width=True, key="clean_loto"):
+                db_lotomania["jogos_salvos"] = []; salvar_db_unico(); st.rerun()
+                
+        st.markdown("#### Últimos Bilhetes")
+        for j in reversed(db_lotomania["jogos_salvos"][-10:]):
+            st.code(f"Alvo: {j['concurso_alvo']} | {j.get('estrategia','')} | Status: {j['status']} | Acertos: {j.get('acertos',0)} | R$ {j.get('premio_valor', 0):.2f}")
 
 # =====================================================================
-# 5. INICIALIZAÇÃO DO ROTEADOR
+# 7. MOTOR ANALÍTICO - QUINA
 # =====================================================================
-if st.session_state.pagina_atual == "login":
+def calcular_premio_quina(acertos, rateios):
+    if acertos == 5: return rateios.get(5, 5000000.0)
+    if acertos == 4: return rateios.get(4, 8000.0)
+    if acertos == 3: return rateios.get(3, 100.0)
+    if acertos == 2: return rateios.get(2, 4.0)
+    return 0.0
+
+@st.cache_data(show_spinner="🧠 Quina: Aplicando Filtros de Dispersão...")
+def gerar_fechamento_quina(dezenas_tuple, garantia):
+    dezenas = list(dezenas_tuple)
+    todas_comb = list(itertools.combinations(dezenas, 5))
+    
+    comb_filtradas = []
+    for c in todas_comb:
+        soma = sum(c)
+        cols = [n % 10 for n in c]
+        # Filtro: Gauss + Bloqueio de 3+ dezenas na mesma coluna vertical
+        if 100 <= soma <= 300 and not any(cols.count(col) > 2 for col in set(cols)):
+            comb_filtradas.append(c)
+
+    if garantia == 5 or len(dezenas) <= 5: return [list(c) for c in comb_filtradas]
+
+    comb_bits = [sum(1 << num for num in c) for c in comb_filtradas]
+    sorteios_possiveis = set(range(len(comb_bits)))
+    bilhetes_escolhidos, cobertura = [], []
+    for b in comb_bits: cobertura.append({j for j, s in enumerate(comb_bits) if (b & s).bit_count() >= garantia})
+    while sorteios_possiveis:
+        melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
+        bilhetes_escolhidos.append(list(comb_filtradas[melhor_idx]))
+        sorteios_possiveis -= cobertura[melhor_idx]
+    return bilhetes_escolhidos
+
+def raciocinio_ia_quina(historico, db_quina):
+    if not historico: return None
+    atrasos = {n: 0 for n in range(1, 81)}
+    for h in reversed(historico):
+        for n in range(1, 81):
+            if n in h['dezenas']: pass
+            elif atrasos[n] == 0: atrasos[n] += 1
+            
+    scores = {}
+    for n in range(1, 81):
+        sc = 10.0; d = atrasos.get(n, 0)
+        if 8 <= d <= 35: sc += 40.0 # Ponto quente Quina
+        if n % 10 in [3, 7]: sc += 10.0 # Final com maior dispersão geométrica
+        scores[n] = sc
+        
+    ranking = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    matriz = sorted([x[0] for x in ranking[:15]]) # Matriz de 15
+    return {
+        "estrategia": "Rastreio Termal de Colunas", "motivo_est": "Filtra dispersões verticais e soma harmônica.",
+        "pesos": scores, "alvo": int(historico[-1]['concurso'] + 1) if historico else 1,
+        "qtd_matriz": 15, "matriz_base": matriz
+    }
+
+def auditar_bilhetes_quina(db_quina):
+    historico = {h['concurso']: h for h in db_quina['historico_dados']}
+    lucro_sessao = 0.0
+    for j in db_quina['jogos_salvos']:
+        if j['status'] == "Aguardando Sorteio" and j['concurso_alvo'] in historico:
+            conc_data = historico[j['concurso_alvo']]
+            sorteadas = set(conc_data['dezenas'])
+            rateios = {}
+            for p in conc_data.get('premiacoes', []):
+                desc = p.get('descricao', '').lower()
+                if '5 acertos' in desc or 'quina' in desc: rateios[5] = float(p.get('valorPremio', 0.0))
+                elif '4 acertos' in desc or 'quadra' in desc: rateios[4] = float(p.get('valorPremio', 0.0))
+                elif '3 acertos' in desc or 'terno' in desc: rateios[3] = float(p.get('valorPremio', 0.0))
+                elif '2 acertos' in desc or 'duque' in desc: rateios[2] = float(p.get('valorPremio', 0.0))
+            
+            pontos = len(set(j['dezenas']).intersection(sorteadas))
+            j['acertos'] = pontos
+            j['premio_valor'] = calcular_premio_quina(pontos, rateios)
+            
+            db_quina["ledger_track"]["bilhetes"] += 1
+            if pontos >= 2:
+                j['status'] = "Premiado"
+                lucro_sessao += j['premio_valor']
+                db_quina["historico_premios"] += j['premio_valor']
+                db_quina["ledger_track"]["premiados_geral"] += 1
+                if pontos >= 4: db_quina["ledger_track"]["elite"] += 1
+                db_quina["global_hits"][str(pontos)] = db_quina["global_hits"].get(str(pontos), 0) + 1
+            else: j['status'] = "Não Premiado"
+    return lucro_sessao
+
+def tela_quina():
+    exibir_cabecalho("QUINA PRO", "#260085", "🔵")
+    db_quina = st.session_state.db["quina"]
+    
+    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio"])
+
+    with tabs[0]:
+        exibir_mini_painel_financeiro("quina", "#260085")
+        st.info(f"Concursos Oficiais Salvos: **{len(db_quina['historico_dados'])}**")
+        if st.button("🔄 ZERAR CONTABILIDADE (QUINA)", type="secondary"):
+            db_quina["historico_custos"] = db_quina["historico_premios"] = 0.0
+            salvar_db_unico(); st.rerun()
+
+    with tabs[1]:
+        exibir_mini_painel_financeiro("quina", "#260085")
+        st.markdown("### 🧠 Como a IA da Quina funciona (Detalhado)")
+        st.write("A Quina é um jogo de Dispersão Colunar extrema. A IA rastreia o atraso de dezenas e bloqueia severamente a geração de bilhetes que tenham 3 ou mais números terminados no mesmo dígito vertical. Se a curva de Gauss não estiver batendo 100 a 300 pontos de soma, o bilhete é destruído pela IA antes de chegar a você.")
+        
+        if db_quina["historico_dados"]:
+            ia = raciocinio_ia_quina(db_quina["historico_dados"], db_quina)
+            st.info(f"⚡ **ESTRATÉGIA:** {ia['estrategia']} | **MATRIZ ({ia['qtd_matriz']} Dezenas):** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]))
+        else: st.warning("Sincronize o banco de dados no Pré-Lobby primeiro.")
+
+    with tabs[2]:
+        exibir_mini_painel_financeiro("quina", "#260085")
+        if db_quina["historico_dados"]:
+            ia = raciocinio_ia_quina(db_quina["historico_dados"], db_quina)
+            st.markdown(f"<div style='background-color: #f0f4ff; border-left: 5px solid #260085; padding: 15px; border-radius: 5px; margin-bottom: 20px;'><h4 style='color: #260085; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO</h4><p>Garantia real apenas se as 5 sorteadas caírem DENTRO da sua Matriz de {ia['qtd_matriz']} dezenas.</p></div>", unsafe_allow_html=True)
+            
+            garantia = st.radio("Garantia do Fechamento:", [5, 4, 3], horizontal=True)
+            if st.button("🧬 GERAR FECHAMENTO (R$ 3,00/jogo)", type="primary"):
+                db_quina["jogos_salvos"] = [j for j in db_quina["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
+                jogos = gerar_fechamento_quina(tuple(ia['matriz_base']), garantia)
+                for b in jogos:
+                    db_quina["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": b, "tamanho": 5, "estrategia": "Fechamento Dispersão", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0})
+                db_quina["historico_custos"] += len(jogos) * 3.00; salvar_db_unico(); st.success(f"Gerado {len(jogos)} bilhetes!"); st.rerun()
+
+    with tabs[3]:
+        exibir_mini_painel_financeiro("quina", "#260085")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 AUDITAR BILHETES PENDENTES", type="primary", use_container_width=True, key="audit_quina"):
+                lucro = auditar_bilhetes_quina(db_quina); salvar_db_unico()
+                st.success(f"Auditoria concluída! Lucro obtido: R$ {lucro:,.2f}"); st.rerun()
+        with col2:
+            if st.button("🗑️ LIMPAR FILA", type="secondary", use_container_width=True, key="clean_quina"):
+                db_quina["jogos_salvos"] = []; salvar_db_unico(); st.rerun()
+                
+        st.markdown("#### Últimos Bilhetes")
+        for j in reversed(db_quina["jogos_salvos"][-10:]):
+            st.code(f"Alvo: {j['concurso_alvo']} | {j['dezenas']} | Status: {j['status']} | Acertos: {j.get('acertos',0)} | R$ {j.get('premio_valor', 0):.2f}")
+
+# =====================================================================
+# 8. MOTOR ANALÍTICO - DUPLA SENA
+# =====================================================================
+def calcular_premio_duplasena(acertos, rateios):
+    # A Dupla Sena paga Quadra, Quina e Sena nos 2 sorteios. Usaremos o maior valor para o acerto.
+    if acertos == 6: return rateios.get(6, 2000000.0)
+    if acertos == 5: return rateios.get(5, 4000.0)
+    if acertos == 4: return rateios.get(4, 100.0)
+    if acertos == 3: return rateios.get(3, 2.50)
+    return 0.0
+
+@st.cache_data(show_spinner="🧠 Dupla Sena: Aplicando Filtro Gaussiano Âncora...")
+def gerar_fechamento_duplasena(dezenas_tuple, garantia):
+    dezenas = list(dezenas_tuple)
+    todas_comb = list(itertools.combinations(dezenas, 6))
+    
+    comb_filtradas = []
+    for c in todas_comb:
+        # Filtro Elite: Proibir que todos sejam pares ou ímpares e limitar a soma
+        pares = sum(1 for x in c if x % 2 == 0)
+        soma = sum(c)
+        if (2 <= pares <= 4) and (80 <= soma <= 220):
+            comb_filtradas.append(c)
+
+    if garantia == 6 or len(dezenas) <= 6: return [list(c) for c in comb_filtradas]
+
+    comb_bits = [sum(1 << num for num in c) for c in comb_filtradas]
+    sorteios_possiveis = set(range(len(comb_bits)))
+    bilhetes_escolhidos, cobertura = [], []
+    for b in comb_bits: cobertura.append({j for j, s in enumerate(comb_bits) if (b & s).bit_count() >= garantia})
+    while sorteios_possiveis:
+        melhor_idx = max(range(len(cobertura)), key=lambda i: len(cobertura[i].intersection(sorteios_possiveis)))
+        bilhetes_escolhidos.append(list(comb_filtradas[melhor_idx]))
+        sorteios_possiveis -= cobertura[melhor_idx]
+    return bilhetes_escolhidos
+
+def raciocinio_ia_duplasena(historico, db_duplasena):
+    if not historico: return None
+    # Análise Âncora: Baseada primariamente no globo 1
+    atrasos = {n: 0 for n in range(1, 51)}
+    for h in reversed(historico):
+        for n in range(1, 51):
+            if n in h['dezenas']: pass
+            elif atrasos[n] == 0: atrasos[n] += 1
+            
+    scores = {}
+    for n in range(1, 51):
+        sc = 20.0; d = atrasos.get(n, 0)
+        if 4 <= d <= 15: sc += 30.0 # Ponto de Fervura Dupla Sena
+        if n % 10 in [0, 5]: sc += 5.0
+        scores[n] = sc
+        
+    ranking = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    matriz = sorted([x[0] for x in ranking[:14]]) # Matriz de 14 Elite
+    return {
+        "estrategia": "Análise Âncora (1º Sorteio)", "motivo_est": "Ignora o 2º sorteio para prever a física primária do globo principal.",
+        "pesos": scores, "alvo": int(historico[-1]['concurso'] + 1) if historico else 1,
+        "qtd_matriz": 14, "matriz_base": matriz
+    }
+
+def auditar_bilhetes_duplasena(db_duplasena):
+    historico = {h['concurso']: h for h in db_duplasena['historico_dados']}
+    lucro_sessao = 0.0
+    for j in db_duplasena['jogos_salvos']:
+        if j['status'] == "Aguardando Sorteio" and j['concurso_alvo'] in historico:
+            conc_data = historico[j['concurso_alvo']]
+            sorteadas = set(conc_data['dezenas'])
+            rateios = {}
+            for p in conc_data.get('premiacoes', []):
+                desc = p.get('descricao', '').lower()
+                if '6 acertos' in desc or 'sena' in desc: rateios[6] = float(p.get('valorPremio', 0.0))
+                elif '5 acertos' in desc or 'quina' in desc: rateios[5] = float(p.get('valorPremio', 0.0))
+                elif '4 acertos' in desc or 'quadra' in desc: rateios[4] = float(p.get('valorPremio', 0.0))
+                elif '3 acertos' in desc or 'terno' in desc: rateios[3] = float(p.get('valorPremio', 0.0))
+            
+            pontos = len(set(j['dezenas']).intersection(sorteadas))
+            j['acertos'] = pontos
+            j['premio_valor'] = calcular_premio_duplasena(pontos, rateios)
+            
+            db_duplasena["ledger_track"]["bilhetes"] += 1
+            if pontos >= 3:
+                j['status'] = "Premiado"
+                lucro_sessao += j['premio_valor']
+                db_duplasena["historico_premios"] += j['premio_valor']
+                db_duplasena["ledger_track"]["premiados_geral"] += 1
+                if pontos >= 5: db_duplasena["ledger_track"]["elite"] += 1
+                db_duplasena["global_hits"][str(pontos)] = db_duplasena["global_hits"].get(str(pontos), 0) + 1
+            else: j['status'] = "Não Premiado"
+    return lucro_sessao
+
+def tela_duplasena():
+    exibir_cabecalho("DUPLA SENA PRO", "#ED1622", "🔴")
+    db_duplasena = st.session_state.db["duplasena"]
+    
+    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio"])
+
+    with tabs[0]:
+        exibir_mini_painel_financeiro("duplasena", "#ED1622")
+        st.info(f"Concursos Oficiais Salvos: **{len(db_duplasena['historico_dados'])}**")
+        if st.button("🔄 ZERAR CONTABILIDADE (DUPLA SENA)", type="secondary"):
+            db_duplasena["historico_custos"] = db_duplasena["historico_premios"] = 0.0
+            salvar_db_unico(); st.rerun()
+
+    with tabs[1]:
+        exibir_mini_painel_financeiro("duplasena", "#ED1622")
+        st.markdown("### 🧠 Como a IA da Dupla Sena funciona (Detalhado)")
+        st.write("A Dupla Sena tem dois sorteios, mas a IA usa a **Análise Âncora**. Ela ignora o segundo sorteio para cálculos de tendência primária, pois a física da primeira extração dita a matemática original do globo. A IA exige que haja balanço absoluto de ímpares e pares (proibido jogar 6 pares ou 6 ímpares).")
+        
+        if db_duplasena["historico_dados"]:
+            ia = raciocinio_ia_duplasena(db_duplasena["historico_dados"], db_duplasena)
+            st.info(f"⚡ **ESTRATÉGIA:** {ia['estrategia']} | **MATRIZ ({ia['qtd_matriz']} Dezenas):** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]))
+        else: st.warning("Sincronize o banco de dados no Pré-Lobby primeiro.")
+
+    with tabs[2]:
+        exibir_mini_painel_financeiro("duplasena", "#ED1622")
+        if db_duplasena["historico_dados"]:
+            ia = raciocinio_ia_duplasena(db_duplasena["historico_dados"], db_duplasena)
+            st.markdown(f"<div style='background-color: #fff0f0; border-left: 5px solid #ED1622; padding: 15px; border-radius: 5px; margin-bottom: 20px;'><h4 style='color: #ED1622; margin-top: 0;'>🔒 O CADEADO MATEMÁTICO</h4><p>Garantia real aplicável se as 6 sorteadas do Globo Primário caírem DENTRO da sua Matriz de {ia['qtd_matriz']} dezenas.</p></div>", unsafe_allow_html=True)
+            
+            garantia = st.radio("Garantia do Fechamento:", [6, 5, 4], horizontal=True)
+            if st.button("🧬 GERAR FECHAMENTO (R$ 3,00/jogo)", type="primary"):
+                db_duplasena["jogos_salvos"] = [j for j in db_duplasena["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
+                jogos = gerar_fechamento_duplasena(tuple(ia['matriz_base']), garantia)
+                for b in jogos:
+                    db_duplasena["jogos_salvos"].append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": b, "tamanho": 6, "estrategia": "Fechamento Âncora", "status": "Aguardando Sorteio", "acertos": 0, "premio_valor": 0.0})
+                db_duplasena["historico_custos"] += len(jogos) * 3.00; salvar_db_unico(); st.success(f"Gerado {len(jogos)} bilhetes!"); st.rerun()
+
+    with tabs[3]:
+        exibir_mini_painel_financeiro("duplasena", "#ED1622")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 AUDITAR BILHETES PENDENTES", type="primary", use_container_width=True, key="audit_dupla"):
+                lucro = auditar_bilhetes_duplasena(db_duplasena); salvar_db_unico()
+                st.success(f"Auditoria concluída! Lucro obtido: R$ {lucro:,.2f}"); st.rerun()
+        with col2:
+            if st.button("🗑️ LIMPAR FILA", type="secondary", use_container_width=True, key="clean_dupla"):
+                db_duplasena["jogos_salvos"] = []; salvar_db_unico(); st.rerun()
+                
+        st.markdown("#### Últimos Bilhetes")
+        for j in reversed(db_duplasena["jogos_salvos"][-10:]):
+            st.code(f"Alvo: {j['concurso_alvo']} | {j['dezenas']} | Status: {j['status']} | Acertos: {j.get('acertos',0)} | R$ {j.get('premio_valor', 0):.2f}")
+
+
+# =====================================================================
+# 9. MOTOR ANALÍTICO - +MILIONÁRIA
+# =====================================================================
+def calcular_premio_maismilionaria(acertos_dez, acertos_trevos, rateios):
+    key = f"{acertos_dez}+{acertos_trevos}"
+    # Mapeamento aproximado das chaves de rateio para +Milionaria
+    mapa = {"6+2": rateios.get('6+2', 10000000.0), "6+1": rateios.get('6+1', 300000.0), "6+0": rateios.get('6+0', 50000.0),
+            "5+2": rateios.get('5+2', 10000.0), "5+1": rateios.get('5+1', 1000.0), "5+0": rateios.get('5+0', 500.0),
+            "4+2": rateios.get('4+2', 200.0), "4+1": rateios.get('4+1', 100.0), "4+0": rateios.get('4+0', 50.0),
+            "3+2": rateios.get('3+2', 50.0), "3+1": rateios.get('3+1', 24.0), "2+2": rateios.get('2+2', 12.0), "2+1": rateios.get('2+1', 6.0)}
+    return mapa.get(key, 0.0)
+
+def raciocinio_ia_maismilionaria(historico, db_maismili):
+    if not historico: return None
+    # Motor Duplo (Dezenas e Trevos separadamente)
+    atrasos_dez = {n: 0 for n in range(1, 51)}
+    atrasos_trevo = {n: 0 for n in range(1, 7)}
+    
+    for h in reversed(historico):
+        for n in range(1, 51):
+            if n in h['dezenas']: pass
+            elif atrasos_dez[n] == 0: atrasos_dez[n] += 1
+        for t in range(1, 7):
+            if t in h.get('trevos', []): pass
+            elif atrasos_trevo[t] == 0: atrasos_trevo[t] += 1
+
+    scores_dez = {}
+    for n in range(1, 51):
+        sc = 10.0; d = atrasos_dez.get(n, 0)
+        if 5 <= d <= 18: sc += 30.0 # Caos Térmico Dezenas
+        scores_dez[n] = sc
+        
+    scores_trevo = {}
+    for t in range(1, 7):
+        sc_t = 10.0; d_t = atrasos_trevo.get(t, 0)
+        if d_t >= 3: sc_t += 50.0 # Fervura de Trevos (curto ciclo)
+        scores_trevo[t] = sc_t
+        
+    matriz_dez = sorted([x[0] for x in sorted(scores_dez.items(), key=lambda x: x[1], reverse=True)[:10]]) # 10 Dezenas Elite
+    matriz_trevos = sorted([x[0] for x in sorted(scores_trevo.items(), key=lambda x: x[1], reverse=True)[:3]]) # 3 Trevos Elite
+    
+    return {
+        "estrategia": "Motor Duplo Cruzado (Dez + Trevos)", "motivo_est": "Analisa 50 dezenas e 6 trevos em instâncias de IAs isoladas.",
+        "alvo": int(historico[-1]['concurso'] + 1) if historico else 1,
+        "qtd_matriz": 10, "matriz_base": matriz_dez, "trevos_base": matriz_trevos
+    }
+
+def auditar_bilhetes_maismilionaria(db_maismili):
+    historico = {h['concurso']: h for h in db_maismili['historico_dados']}
+    lucro_sessao = 0.0
+    for j in db_maismili['jogos_salvos']:
+        if j['status'] == "Aguardando Sorteio" and j['concurso_alvo'] in historico:
+            conc_data = historico[j['concurso_alvo']]
+            sorteadas = set(conc_data['dezenas'])
+            sorteados_trevos = set(conc_data.get('trevos', []))
+            
+            rateios = {} # Simplificação para puxar da API (Mapearemos as faixas na base)
+            for p in conc_data.get('premiacoes', []):
+                desc = p.get('descricao', '')
+                if 'Faixa 1' in desc: rateios['6+2'] = float(p.get('valorPremio', 0.0))
+                elif 'Faixa 2' in desc: rateios['6+1'] = float(p.get('valorPremio', 0.0))
+                # ... (resto das faixas, mas usaremos valores estáticos no fallback)
+
+            acertos_d = len(set(j['dezenas']).intersection(sorteadas))
+            acertos_t = len(set(j.get('trevos',[])).intersection(sorteados_trevos))
+            
+            j['acertos'] = acertos_d
+            j['acertos_trevo'] = acertos_t
+            j['premio_valor'] = calcular_premio_maismilionaria(acertos_d, acertos_t, rateios)
+            
+            db_maismili["ledger_track"]["bilhetes"] += 1
+            if j['premio_valor'] > 0:
+                j['status'] = "Premiado"
+                lucro_sessao += j['premio_valor']
+                db_maismili["historico_premios"] += j['premio_valor']
+                db_maismili["ledger_track"]["premiados_geral"] += 1
+                if acertos_d >= 5: db_maismili["ledger_track"]["elite"] += 1
+            else: j['status'] = "Não Premiado"
+    return lucro_sessao
+
+def tela_maismilionaria():
+    exibir_cabecalho("+MILIONÁRIA PRO", "#0066b3", "🌟")
+    db_maismili = st.session_state.db["maismilionaria"]
+    
+    tabs = st.tabs(["📂 1. Banco de Dados", "🧠 2. Cérebro Analítico (IA)", "🤖 3. Geração Autônoma", "📜 4. Fila de Sorteio"])
+
+    with tabs[0]:
+        exibir_mini_painel_financeiro("maismilionaria", "#0066b3")
+        st.info(f"Concursos Oficiais Salvos: **{len(db_maismili['historico_dados'])}**")
+        if st.button("🔄 ZERAR CONTABILIDADE (+MILIONÁRIA)", type="secondary"):
+            db_maismili["historico_custos"] = db_maismili["historico_premios"] = 0.0
+            salvar_db_unico(); st.rerun()
+
+    with tabs[1]:
+        exibir_mini_painel_financeiro("maismilionaria", "#0066b3")
+        st.markdown("### 🧠 Como a IA da +Milionária funciona (Detalhado)")
+        st.write("A loteria mais difícil do país requer o **Motor Duplo Cruzado**. Um cérebro avalia as 50 dezenas normais procurando a matriz primária. Um segundo cérebro avalia exclusivamente os 6 Trevos procurando o ponto de fervura curto. O desdobramento une as melhores dezenas com os melhores trevos calculados.")
+        
+        if db_maismili["historico_dados"]:
+            ia = raciocinio_ia_maismilionaria(db_maismili["historico_dados"], db_maismili)
+            st.info(f"⚡ **ESTRATÉGIA:** {ia['estrategia']}\n\n🎯 **MATRIZ ({ia['qtd_matriz']} Dez):** " + ", ".join([f"{n:02d}" for n in ia['matriz_base']]) + f"\n\n🍀 **TREVOS DE ELITE:** {ia['trevos_base']}")
+        else: st.warning("Sincronize o banco de dados no Pré-Lobby primeiro.")
+
+    with tabs[2]:
+        exibir_mini_painel_financeiro("maismilionaria", "#0066b3")
+        if db_maismili["historico_dados"]:
+            ia = raciocinio_ia_maismilionaria(db_maismili["historico_dados"], db_maismili)
+            st.markdown(f"<div style='background-color: #e6f3ff; border-left: 5px solid #0066b3; padding: 15px; border-radius: 5px; margin-bottom: 20px;'><h4 style='color: #0066b3; margin-top: 0;'>🔒 O CADEADO DUPLO (Dez + Trevo)</h4><p>O prêmio colossal requer que as 6 dezenas sorteadas caiam DENTRO das suas {ia['qtd_matriz']} selecionadas E os 2 Trevos sorteados sejam do seu pool de {len(ia['trevos_base'])}.</p></div>", unsafe_allow_html=True)
+            
+            if st.button("🧬 GERAR CRUZAMENTO +MILIONÁRIA (R$ 6,00/jogo)", type="primary"):
+                db_maismili["jogos_salvos"] = [j for j in db_maismili["jogos_salvos"] if j.get('status') != "Aguardando Sorteio"]
+                
+                # Cruzamento de Desdobramento Limitado para evitar custos absurdos
+                comb_dez = list(itertools.combinations(ia['matriz_base'], 6))
+                comb_trevo = list(itertools.combinations(ia['trevos_base'], 2))
+                
+                bilhetes = []
+                for b_dez in random.sample(comb_dez, min(len(comb_dez), 10)): # Foca em 10 combinações primárias
+                    for b_trevo in comb_trevo: # Multiplica pelas combinações de trevos (3x)
+                        bilhetes.append({"id": str(uuid.uuid4()), "concurso_alvo": ia['alvo'], "dezenas": list(b_dez), "trevos": list(b_trevo), "estrategia": "Cruzamento Elite", "status": "Aguardando Sorteio", "acertos": 0, "acertos_trevo": 0, "premio_valor": 0.0})
+                
+                db_maismili["jogos_salvos"].extend(bilhetes)
+                db_maismili["historico_custos"] += len(bilhetes) * 6.00; salvar_db_unico(); st.success(f"Gerado {len(bilhetes)} bilhetes cruzados!"); st.rerun()
+
+    with tabs[3]:
+        exibir_mini_painel_financeiro("maismilionaria", "#0066b3")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔍 AUDITAR BILHETES PENDENTES", type="primary", use_container_width=True, key="audit_mili"):
+                lucro = auditar_bilhetes_maismilionaria(db_maismili); salvar_db_unico()
+                st.success(f"Auditoria concluída! Lucro obtido: R$ {lucro:,.2f}"); st.rerun()
+        with col2:
+            if st.button("🗑️ LIMPAR FILA", type="secondary", use_container_width=True, key="clean_mili"):
+                db_maismili["jogos_salvos"] = []; salvar_db_unico(); st.rerun()
+                
+        st.markdown("#### Últimos Bilhetes")
+        for j in reversed(db_maismili["jogos_salvos"][-10:]):
+            st.code(f"Alvo: {j['concurso_alvo']} | Dez: {j['dezenas']} | Trevos: {j.get('trevos',[])} | Status: {j['status']} | Prêmio: R$ {j.get('premio_valor', 0):.2f}")
+
+
+# =====================================================================
+# 10. INICIALIZAÇÃO DO ROTEADOR PRINCIPAL DO SISTEMA
+# =====================================================================
+if not st.session_state.autenticado:
     tela_login()
-elif st.session_state.pagina_atual == "lobby" and st.session_state.autenticado:
+elif st.session_state.pagina_atual == "pre_lobby":
+    tela_pre_lobby()
+elif st.session_state.pagina_atual == "lobby":
     tela_lobby()
-elif st.session_state.pagina_atual == "lotofacil" and st.session_state.autenticado:
+elif st.session_state.pagina_atual == "lotofacil":
     tela_lotofacil()
-elif st.session_state.pagina_atual == "megasena" and st.session_state.autenticado:
+elif st.session_state.pagina_atual == "megasena":
     tela_megasena()
+elif st.session_state.pagina_atual == "lotomania":
+    tela_lotomania()
+elif st.session_state.pagina_atual == "quina":
+    tela_quina()
+elif st.session_state.pagina_atual == "duplasena":
+    tela_duplasena()
+elif st.session_state.pagina_atual == "maismilionaria":
+    tela_maismilionaria()
 else:
-    st.session_state.pagina_atual = "login"
-    st.session_state.autenticado = False
+    st.session_state.pagina_atual = "pre_lobby"
     st.rerun()
+            
