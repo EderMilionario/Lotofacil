@@ -291,14 +291,14 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     atrasos = {int(n): 0 for n in range(1, 26)}
     dezena_encontrada = {int(n): False for n in range(1, 26)}
     for h in reversed(historico):
+        dezenas_limpas = [int(x) for x in h['dezenas']] # CORREÇÃO AQUI
         for n in range(1, 26):
-            if int(n) in h['dezenas']: dezena_encontrada[int(n)] = True
-            elif not dezena_encontrada[int(n)]: atrasos[int(n)] += 1
-
+            if n in dezenas_limpas: dezena_encontrada[n] = True
+            elif not dezena_encontrada[n]: atrasos[n] += 1
     ciclo_atual = set()
     jogos_ciclo = 0
     for h in historico:
-        ciclo_atual.update(h['dezenas'])
+        ciclo_atual.update([int(x) for x in h['dezenas']])
         jogos_ciclo += 1
         if len(ciclo_atual) == 25:
             ciclo_atual = set() 
@@ -312,7 +312,8 @@ def raciocinio_total_ia(historico, memoria, estrategia_instinto="Tendencia", tam
     repeticoes_recentes = []
     try:
         for j in range(1, min(6, len(historico))):
-            rep = len(set(historico[-j]['dezenas']) & set(historico[-(j+1)]['dezenas']))
+            # ADICIONAMOS A CONVERSÃO PARA INT AQUI TAMBÉM:
+            rep = len(set([int(x) for x in historico[-j]['dezenas']]) & set([int(x) for x in historico[-(j+1)]['dezenas']]))
             repeticoes_recentes.append(rep)
         media_volatilidade = float(sum(repeticoes_recentes) / len(repeticoes_recentes)) if repeticoes_recentes else 9.0
     except:
